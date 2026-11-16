@@ -21,6 +21,8 @@ def load_prices(years_back=None):
     if "chg" not in p.columns: p["chg"] = np.nan
     p["date"] = pd.to_datetime(p.date)
     p = p[~p.code.str.startswith("0")].drop_duplicates(["date", "code"], keep="last")
+    tw = set(p.loc[p.market == "TWSE", "date"])
+    p = p[(p.market == "TWSE") | p.date.isin(tw)]  # 證交所休市的日子，櫃買的資料不採用
     return p
 
 def panels(p):

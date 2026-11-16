@@ -90,9 +90,14 @@ def tpex(d):
             if row:
                 out.append(row)
         return out
+    if j is not None:
+        return []  # 新網址正常回覆但沒資料 → 休市（舊網址遇到休市會回傳最新一天的行情，不能用）
     j2 = get(f"https://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php?l=zh-tw&d={d.year-1911}/{d:%m/%d}&o=json")
     if j2 is None:
-        return None if j is None else []
+        return None
+    rd = str(j2.get("reportDate") or j2.get("date") or "")
+    if rd and rd.replace("/", "").lstrip("0") not in (f"{d.year-1911}{d:%m%d}", f"{d:%Y%m%d}"):
+        return []  # 回傳日期不是要的那天
     for r in j2.get("aaData") or j2.get("tables", [{}])[0].get("data", []):
         row = keep("TPEX", d, r[0], r[1], r[4], r[5], r[6], r[2], r[8], r[9], tpex_chg(r[3]))
         if row:
