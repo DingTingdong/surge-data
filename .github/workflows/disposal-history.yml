@@ -1,23 +1,23 @@
-name: probe-apis
+name: disposal-history
 on:
   workflow_dispatch:
 permissions:
   contents: write
 jobs:
-  probe:
+  run:
     runs-on: ubuntu-latest
+    concurrency: data-writes
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install requests
-      - run: python tools/probe_disposal.py
-      - name: push to probe branch
+      - run: python fetch_disposal.py 2020-01-01
+      - name: commit
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
-          git checkout -B probe
-          git add -f probe
-          git commit -q -m "probe results" || true
-          git push -f origin probe
+          git add data/disposal.csv
+          if ! git diff --cached --quiet; then git commit -m "disposal history 2020+" && git pull --rebase -q && git push; fi
