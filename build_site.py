@@ -5,56 +5,23 @@
 - data/days.csv：每天一列，含各級檔數（零檔的日子也記），用來區分「沒有訊號」與「沒有跑」
 """
 import json, os, numpy as np, pandas as pd
+from radar_core import load_prices, panels, features, tiers, AM_MIN
 
-RULE_VERSION = "v1.1"        # 門檻 11/16 定案；11/17 修正缺值與歷史市場別後重算紀錄
+RULE_VERSION = "v1.2"        # 門檻同 11/16；v1.1 修正缺值與市場別；v1.2 起用參考價做除權息／減資調整
 FORWARD_START = "2026-11-16" # 這天（含）以後的名單才算真正的新資料驗證；之前的是規則制定期間的回測
 SEED_DAYS = 40               # 第一次建立紀錄時往回補算的交易日數（標為回測）
 HOLD = 5                     # 隔日開盤買、第5個交易日收盤賣
 COST = 1.1                   # 手續費＋稅＋滑價，約1.1%
 LOCK = 0.095                 # 一價到底且漲跌幅達此比例 → 視為漲跌停鎖死
-AM_MIN = 2.0
 SIG, DAYS = "data/signals.csv", "data/days.csv"
 
-p = pd.read_csv("data/prices.csv", dtype={"code": str}); p["date"] = pd.to_datetime(p.date)
-p = p[~p.code.str.startswith("0")].drop_duplicates(["date", "code"], keep="last")
-pv = lambda c: p.pivot(index="date", columns="code", values=c).sort_index()
-C, O, H, L, A, MK = pv("close"), pv("open"), pv("high"), pv("low"), pv("amount"), pv("market")
+p = load_prices(years_back=1)
+P = panels(p)                                       # 已做除權息／減資調整
+C, O, H, L = P["C"], P["O"], P["H"], P["L"]
 days = C.index; last = days[-1]
 name = p.sort_values("date").drop_duplicates("code", keep="last").set_index("code").name
-r1 = C.pct_change(fill_method=None)   # 停牌中斷不補價，避免把兩天的漲跌算成一天
-R = lambda df, n, f: getattr(df.rolling(n, min_periods=n), f)()
-tr = pd.concat([(H - L), (H - C.shift()).abs(), (C.shift() - L).abs()]).groupby(level=0).max()
-
-# ---- 每日指標（全部日期一次算好，只往回看）----
-f = {}
-f["v"] = R(r1, 20, "std") * 100
-f["rg"] = (R(H, 10, "max") - R(L, 10, "min")) / C * 100
-f["atr"] = R(tr, 14, "mean") / C * 100
-f["lu"] = R((r1 >= 0.09).astype(float).where(r1.notna()), 20, "sum")
-f["mx"] = (C / C.shift(5) - 1).rolling(40, min_periods=40).max() * 100
-f["am"] = R(A, 5, "mean") / R(A, 20, "mean"); f["amt"] = R(A, 20, "mean") / 1e6
-f["ch"] = r1 * 100; f["r5"] = (C / C.shift(5) - 1) * 100; f["r20"] = (C / C.shift(20) - 1) * 100
-f["dh"] = (C / R(C, 60, "max") - 1) * 100; f["c"] = C
-f["n60"] = C.rolling(60, min_periods=60).count(); f["ma20"] = R(C, 20, "mean")
-f["bk"] = pd.concat([(C.shift(5 * k) / C.shift(5 * k + 5) - 1) * 100 for k in range(4)], keys=range(4)).groupby(level=1).max().reindex(days)
-idx = np.arange(len(days))[:, None]
-pos = pd.DataFrame(np.where((r1 >= 0.09).values, idx, np.nan), index=days, columns=C.columns).ffill()
-f["sn"] = pd.DataFrame(idx - pos.values, index=days, columns=C.columns).fillna(99)  # 0 = 今天漲停
-
-S = pd.DataFrame({k: v.stack(future_stack=True) for k, v in f.items()})
-S.index.names = ["date", "code"]
-S = S.dropna(subset=["v", "rg", "atr", "lu", "mx", "am", "bk", "c"])
-S = S[(S.n60 >= 55) & (S.amt >= 10)].reset_index()  # 允許近60日偶有停牌缺幾天
-S["mk"] = MK.stack().reindex(pd.MultiIndex.from_frame(S[["date", "code"]])).map({"TPEX": "櫃", "TWSE": "市"}).values  # 當天的市場別
-g = S.groupby(["date", "mk"])
-S["rv"] = g.v.rank(pct=True)
-S["rc"] = pd.concat([g[c].rank(pct=True) for c in ["v", "rg", "atr", "lu", "mx"]], axis=1).mean(axis=1)
-S["rc"] = S.groupby(["date", "mk"]).rc.rank(pct=True)
-# 分級：仍在動 = 活躍度前10% 且 今天或前10個交易日內有漲停；精選再加 當天上漲、量能比≥2；觀察 = 量能比 1～2
-S["hot"] = (S.rc >= 0.9) & (S.sn <= 10)
-S["pk"] = S.hot & (S.ch > 0) & (S.am >= AM_MIN)
-S["wt"] = S.hot & (S.ch > 0) & (S.am >= 1) & ~S.pk
-S["tier"] = np.select([S.pk, S.wt, S.hot], ["精選", "觀察", "仍在動"], "")
+f = features(P)
+S = tiers(f, P["MK"], since=days[max(0, len(days) - 70)])  # 網站只需近期；指標仍用完整歷史算
 
 # ---- 紀錄：只新增，不改舊的 ----
 os.makedirs("data", exist_ok=True)
