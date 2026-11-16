@@ -45,7 +45,10 @@ g = S.groupby(["date", "mk"])
 S["rv"] = g.v.rank(pct=True)
 S["rc"] = pd.concat([g[c].rank(pct=True) for c in ["v", "rg", "atr", "lu", "mx"]], axis=1).mean(axis=1)
 S["rc"] = S.groupby(["date", "mk"]).rc.rank(pct=True)
-S["pk"] = (S.rc >= 0.9) & (S.sn <= 10) & (S.ch > 0) & (S.am >= 1)
+# 精選門檻（2026/11/16 定案）：活躍度前10%、10日內有漲停、當天收紅、量能比（5日均額/20日均額）至少2
+AM_MIN = 2.0
+S["hot"] = (S.rc >= 0.9) & (S.sn <= 10)
+S["pk"] = S.hot & (S.ch > 0) & (S.am >= AM_MIN)
 
 # ---- 精選紀錄：只新增，不改舊的 ----
 cols_log = ["date", "code", "name", "mk", "close", "kind"]
@@ -108,7 +111,8 @@ for code, r in d.iterrows():
     data.append(x)
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
-        "above": int(round(allc.a.mean() * 100)), "rule": RULE_SET, "hold": HOLD}
+        "above": int(round(allc.a.mean() * 100)), "rule": RULE_SET, "hold": HOLD, "am": AM_MIN,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1)}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
 html = html.replace("/*DATA*/[]", J(data)).replace("/*META*/{}", J(meta)).replace("/*TRACK*/[]", J(track))

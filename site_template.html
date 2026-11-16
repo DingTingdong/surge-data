@@ -56,7 +56,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 </head><body>
 <header><h1>強勢股雷達</h1><div class="sub n" id="sub"></div><div class="chips" id="rules"></div></header>
 <section class="pg on" id="p1">
-<div class="bar"><input id="q" type="search" placeholder="搜尋代號或名稱" aria-label="搜尋"><select id="sort" aria-label="排序"><option value="rc">活躍度</option><option value="am">量能比</option><option value="v">波動</option><option value="r5">5日漲幅</option></select></div>
+<div class="bar"><input id="q" type="search" placeholder="搜尋代號或名稱" aria-label="搜尋"><select id="sort" aria-label="排序"><option value="am">量能比</option><option value="rc">活躍度</option><option value="v">波動</option><option value="r5">5日漲幅</option></select></div>
 <div style="padding:0 16px"><div class="chips" id="flt"></div></div>
 <main><div class="nt" id="mkt"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
@@ -89,15 +89,23 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <tr><td>前10%</td><td><b>約8%</b></td><td>約2.5%</td><td>約+0.2%</td></tr>
 <tr><td>前10%到20%</td><td>4.5%</td><td>2.4%</td><td>−1.1%</td></tr></table>
 <p>所以「仍在動」是活躍度前10%、且10日內有漲停；已降溫的另列。「新面孔」（近20日沒有任何5日漲20%以上）和「延續型」只是標籤：兩者大漲率約5.3%對6.4%，差距不大也不穩定，不能說哪個比較好。</p></div>
-<div class="doc"><h2>為什麼「精選」只剩二三十檔</h2>
-<p>「仍在動」每週約80到90檔，太多。再加兩個條件：<b>當天收紅</b>、<b>近5日均額不低於近20日（量能增溫）</b>，每週約25檔。</p>
-<table class="tb n"><tr><th>期間</th><th>檔數/週</th><th>大漲20%+</th><th>大跌20%+</th><th>平均報酬</th></tr>
-<tr><td>8到9月 精選</td><td>25</td><td><b>12.2%</b></td><td>0.5%</td><td>+0.7%</td></tr>
-<tr><td>8到9月 全體</td><td>1,039</td><td>2.8%</td><td>0.2%</td><td>+0.4%</td></tr>
-<tr><td>10月到11/2 精選</td><td>25</td><td><b>6.1%</b></td><td>0.7%</td><td>−1.5%</td></tr>
-<tr><td>10月到11/2 全體</td><td>1,006</td><td>1.1%</td><td>2.9%</td><td>−3.7%</td></tr></table>
-<p>兩段期間精選的大漲率都是全體的4到5倍，而且在10月大盤走弱時，大跌比例反而比全體低、平均報酬也少跌。11/9大反彈那週只有5檔入選、1檔大漲，樣本太少不算數。</p>
-<p>注意：這兩個條件是看過這15週資料後才選的，等於用同一批資料找規律又驗證規律。要等之後幾週的新資料，才知道它是不是真的有效。</p></div>
+<div class="doc"><h2>精選的門檻怎麼定的</h2>
+<p>四個條件全部符合才入選：</p>
+<ul><li><b>活躍度前10%</b>：波動、振幅、平均真實波幅、漲停天數、近期最大5日漲幅的綜合排名（上市、上櫃分開排）。</li>
+<li><b>10日內有漲停</b>（單日漲9%以上），排除早就熄火的。</li>
+<li><b>當天收紅</b>。</li>
+<li><b>量能比至少2</b>：近5日平均成交額是近20日的2倍以上，代表資金正在湧入。</li></ul>
+<p>前三個條件之前已驗證過；量能比的門檻這次用每日資料重新定。做法是先只看7/28到9/30（訓練期）挑門檻，再拿10/1到11/6（驗證期）檢查。報酬是隔天開盤買、第5個交易日收盤賣，扣約1.1%成本。</p>
+<table class="tb n"><tr><th></th><th>檔數/日</th><th>平均報酬</th><th>賠10%以上</th></tr>
+<tr><td>訓練期 全體</td><td>1,040</td><td>+0.45%</td><td>4%</td></tr>
+<tr><td>訓練期 量能比≥1</td><td>25.6</td><td>+0.86%</td><td>16%</td></tr>
+<tr><td>訓練期 <b>量能比≥2</b></td><td><b>5.5</b></td><td><b>+1.61%</b></td><td>12%</td></tr>
+<tr><td>驗證期 全體</td><td>1,018</td><td>−3.58%</td><td>18%</td></tr>
+<tr><td>驗證期 量能比≥1</td><td>19.7</td><td>−3.85%</td><td>35%</td></tr>
+<tr><td>驗證期 <b>量能比≥2</b></td><td><b>6.5</b></td><td><b>−2.84%</b></td><td>30%</td></tr></table>
+<p>量能比≥2把檔數從每天約20多檔減到約6檔，兩段期間的平均報酬都比較好。量能比在1到2之間的放在「觀察」。</p>
+<p>我也試過加上波動、振幅、距高點、20日漲幅等門檻：在訓練期看起來最好的組合，到驗證期反而變差，所以沒有採用。也試過用「大盤站上20日均線的比例」決定要不要選股，兩段期間結果相反，同樣沒有採用。</p>
+<p><b>風險</b>：精選股在大盤下跌時一樣會跌，而且賠10%以上的比例明顯比全體高（驗證期30%對18%）。驗證期只有約5週，請看「追蹤」頁累積的實際結果。</p></div>
 <div class="doc"><h2>要看清楚的地方</h2>
 <ul><li>這個規則找出的是<b>大漲機率高約2.5到3倍</b>的股票，但它們<b>跌起來也更兇</b>。10月到11/2大盤走弱，入選股的平均報酬比全體更差，單週跌20%以上的比例是漲20%以上的三倍。</li>
 <li>方向主要看大盤。11/2當週個股報酬中位數約−12%，11/9當週約+6.5%。入選股只是把大盤的漲跌放大。</li>
@@ -112,14 +120,14 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <section class="pg" id="p3"><main><div class="doc"><h2>資料與更新</h2>
 <p>行情來自證交所與櫃買中心每日收盤資料，雲端排程每個平日台北18:30自動抓取並重新計算。清單包含近20日平均成交額1,000萬元以上、已有60日行情的上市櫃普通股。</p>
 <h2>各欄位</h2>
-<ul><li>精選：活躍度前10%、10日內有漲停、當天收紅、量能比至少1。</li><li>新進：今天進入精選、昨天還不在。</li><li>卡片上的線：近30個交易日收盤走勢，紅色代表期間上漲。</li><li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li><li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li><li>漲停：近20日內單日漲9%以上的天數。</li></ul>
+<ul><li>精選：活躍度前10%、10日內有漲停、當天收紅、量能比至少2。</li><li>觀察：同上，但量能比在1到2之間。</li><li>新進：今天進入精選、昨天還不在。</li><li>卡片上的線：近30個交易日收盤走勢，紅色代表期間上漲。</li><li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li><li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li><li>漲停：近20日內單日漲9%以上的天數。</li></ul>
 <p>本頁是研究整理，不是買賣建議。</p></div></main></section>
 <nav><button data-p="p1" aria-current="page">雷達</button><button data-p="p4">追蹤</button><button data-p="p2">共同點</button><button data-p="p3">說明</button></nav>
 <script>
 const D=/*DATA*/[];const META=/*META*/{};const T=/*TRACK*/[];
-const st={rule:"P",mk:"",q:"",sort:"rc"};const $=i=>document.getElementById(i);
+const st={rule:"P",mk:"",q:"",sort:"am"};const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
-const PK=s=>s.rc>=.9&&s.sn<=10&&s.ch>0&&s.am>=1;const RL={P:["精選",PK],A:["仍在動",s=>s.rc>=.9&&s.sn<=10],F:["已降溫",s=>s.rc>=.8&&s.sn>10],ALL:["全部",s=>true]};
+const HOT=s=>s.rc>=.9&&s.sn<=10,PK=s=>HOT(s)&&s.ch>0&&s.am>=META.am,WT=s=>HOT(s)&&s.ch>0&&s.am>=1&&!PK(s);const RL={P:["精選",PK],W:["觀察",WT],A:["仍在動",HOT],ALL:["全部",s=>true]};
 function base(){return D.filter(s=>!st.mk||s.mk===st.mk)}
 function chips(){const b=base();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip" data-r="${k}" aria-pressed="${st.rule===k}">${RL[k][0]}<small class="n">${b.filter(RL[k][1]).length}</small></button>`).join("");
 $("flt").innerHTML=[["","不分市場"],["櫃","上櫃"],["市","上市"]].map(x=>`<button class="chip" data-m="${x[0]}" aria-pressed="${st.mk===x[0]}">${x[1]}</button>`).join("")}
@@ -128,7 +136,7 @@ a.sort((x,y)=>y[st.sort]-x[st.sort]||x.t.localeCompare(y.t));$("cnt").textConten
 $("list").innerHTML=a.length?a.slice(0,100).map(row).join(""):'<div class="empty">沒有符合的股票。</div>'}
 function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
 <div class="l2 n"><span>波動 <b>${s.v.toFixed(1)}%</b></span><span>10日振幅 <b>${s.rg.toFixed(0)}%</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>量能比 <b>${s.am.toFixed(2)}</b></span></div>
-${s.rc>=.8?'<div class="tg">'+(s.nw?'<span class="tag nw">新進</span>':'')+(PK(s)?'<span class="tag">精選</span>':'')+'<span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
+${s.rc>=.8?'<div class="tg">'+(s.nw?'<span class="tag nw">新進</span>':'')+(PK(s)?'<span class="tag">精選</span>':WT(s)?'<span class="tag">觀察</span>':'')+'<span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+s.rc*100+'%"></i></div>'}</button>
 <div class="dt n"><div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${s.bk.toFixed(1)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
@@ -149,6 +157,6 @@ else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.tog
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
 $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEventListener("change",e=>{st.sort=e.target.value;list()});
 $("sub").textContent=META.date+" 收盤，分析 "+D.length+" 檔";
-$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單只表示「容易大幅波動」，漲跌方向要看大盤。";
+$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單只表示「容易大幅波動」，漲跌方向要看大盤。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
 chips();list();track();
 </script></body></html>
