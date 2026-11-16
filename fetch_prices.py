@@ -76,6 +76,8 @@ def tpex(d):
     return out
 
 def main():
+    """休市只在連續確認後才記下；最近14天內記過的休市每次都重新查一次，避免把一次抓取失敗永久當成休市。
+    抓取失敗與空資料另外記在 data/fetch_log.csv。"""
     os.makedirs("data", exist_ok=True)
     have = set()
     if os.path.exists(OUT):
@@ -83,27 +85,48 @@ def main():
             for r in csv.DictReader(f):
                 have.add((r["date"], r["market"]))
     hol = set(open(HOL).read().split()) if os.path.exists(HOL) else set()
+    today = dt.date.today()
+    recheck = (today - dt.timedelta(days=14)).isoformat()
+    skip = {h for h in hol if h < recheck}
     new = not os.path.exists(OUT)
-    today, d = dt.date.today(), START
+    issues = []
+    d = START
     with open(OUT, "a", newline="", encoding="utf-8") as fo:
         w = csv.writer(fo)
         if new:
             w.writerow(COLS)
         while d <= today:
-            if d.weekday() < 5 and d.isoformat() not in hol:
-                got = 0
+            ds = d.isoformat()
+            if d.weekday() < 5 and ds not in skip:
+                res = {}
                 for m, fn in (("TWSE", twse), ("TPEX", tpex)):
-                    if (d.isoformat(), m) in have:
+                    if (ds, m) in have:
+                        res[m] = "have"
                         continue
                     rows = fn(d)
                     time.sleep(3.5)
                     if rows:
-                        w.writerows(rows); fo.flush(); got += len(rows)
+                        w.writerows(rows); fo.flush(); res[m] = "ok"
                         print(d, m, len(rows), flush=True)
-                    elif rows is not None and d < today - dt.timedelta(days=1):
-                        hol.add(d.isoformat()) if m == "TPEX" and got == 0 and not any((d.isoformat(), x) in have for x in ("TWSE", "TPEX")) else None
+                    else:
+                        res[m] = "failed" if rows is None else "empty"
+                if ds in hol and "ok" in res.values():
+                    hol.discard(ds)  # 之前誤記成休市，現在有資料了
+                closed = all(v == "empty" for v in res.values())
+                if closed and d < today - dt.timedelta(days=1):
+                    hol.add(ds)  # 兩個市場都回空資料、且不是今天昨天 → 休市
+                for m, v in res.items():
+                    if v in ("failed", "empty") and not (closed and ds in hol):
+                        issues.append([dt.datetime.utcnow().isoformat(timespec="seconds"), ds, m, v])
             d += dt.timedelta(days=1)
     open(HOL, "w").write("\n".join(sorted(hol)))
+    if issues:
+        newlog = not os.path.exists("data/fetch_log.csv")
+        with open("data/fetch_log.csv", "a", newline="", encoding="utf-8") as f:
+            lw = csv.writer(f)
+            if newlog:
+                lw.writerow(["run_utc", "date", "market", "status"])
+            lw.writerows(issues)
 
 if __name__ == "__main__":
     main()
