@@ -106,11 +106,16 @@ d = S[S.date == last].set_index("code").copy()
 prev_pk = set(S[(S.date == days[-2]) & S.pk].code) if len(days) > 1 else set()
 d["n"] = d.index.map(name); d["nw"] = d.pk & ~d.index.isin(prev_pk)
 cols = ["n", "mk", "c", "ch", "v", "rg", "atr", "lu", "am", "rc", "rv", "r5", "r20", "dh", "amt", "sn", "bk"]
+# 近20個交易日進過精選／觀察的紀錄（從存檔讀，不重算）
+rs_days = set(days[-20:].strftime("%Y-%m-%d"))
+rh = sig[sig.date.isin(rs_days) & sig.tier.isin(["精選", "觀察"])].sort_values("date")
+recent_hist = {c: [[x.date[5:].replace("-", "/"), x.tier] for x in g.itertuples()] for c, g in rh.groupby("code")}
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
     for k in cols: x[k] = r[k] if k in ("n", "mk") else round(float(r[k]), 2)
     x["lu"] = int(x["lu"]); x["amt"] = int(x["amt"]); x["sn"] = int(x["sn"]); x["nw"] = bool(r.nw)
+    if code in recent_hist: x["hs"] = recent_hist[code]
     if r.rc >= 0.8:  # 只給可能顯示的股票附上走勢，控制檔案大小
         x["sp"] = [round(float(v), 2) for v in C[code].iloc[-30:].tolist() if v == v]
     data.append(x)
