@@ -1,0 +1,33 @@
+name: merge-backfill-run
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "backfill-history 那次執行的 run id（重新合併它的檔案，不重抓）"
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas requests
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - run: ls -la incoming && python merge_history.py incoming
+      - name: commit
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add data
+          if ! git diff --cached --quiet; then git commit -q -m "backfill history (merged run ${{ inputs.run_id }})" && git pull --rebase -q && git push; fi

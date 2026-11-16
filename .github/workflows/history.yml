@@ -61,9 +61,8 @@ jobs:
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
-          git pull --rebase -q
           git add data
-          if ! git diff --cached --quiet; then git commit -m "backfill history ${{ inputs.start }}..${{ inputs.end }}" && git push; fi
+          if ! git diff --cached --quiet; then git commit -q -m "backfill history ${{ inputs.start }}..${{ inputs.end }}" && git pull --rebase -q && git push; fi
       - name: preview branch (test runs)
         if: ${{ !inputs.commit }}
         run: |
