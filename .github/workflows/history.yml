@@ -1,0 +1,71 @@
+name: backfill-history
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "開始日 YYYY-MM-DD"
+        default: "2020-01-01"
+      end:
+        description: "結束日 YYYY-MM-DD"
+        default: "2026-11-16"
+      commit:
+        description: "寫回 repo（測試時設 false）"
+        type: boolean
+        default: true
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas
+      - name: fetch year
+        run: |
+          S=$(python -c "print(max('${{ inputs.start }}', '${{ matrix.year }}-01-01'))")
+          E=$(python -c "print(min('${{ inputs.end }}', '${{ matrix.year }}-12-31'))")
+          mkdir -p out
+          if [[ "$S" > "$E" ]]; then echo "nothing to fetch"; exit 0; fi
+          python fetch_history.py "$S" "$E" "out/${{ matrix.year }}.csv.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hist-${{ matrix.year }}
+          path: out/
+          if-no-files-found: ignore
+  merge:
+    needs: fetch
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: ls -la incoming && python merge_history.py incoming
+      - name: commit
+        if: ${{ inputs.commit }}
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git pull --rebase -q
+          git add data
+          if ! git diff --cached --quiet; then git commit -m "backfill history ${{ inputs.start }}..${{ inputs.end }}" && git push; fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.commit }}
+        with:
+          name: merged-preview
+          path: data/

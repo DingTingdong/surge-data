@@ -2,14 +2,17 @@
 第一次執行會從 START 補到今天；之後只補缺的日期。"""
 import csv, os, re, time, datetime as dt, requests
 
-START = dt.date(2026, 5, 1)
+START = dt.date(2026, 1, 1)
 OUT, HOL = "data/prices.csv", "data/holidays.txt"
-COLS = ["date", "market", "code", "name", "open", "high", "low", "close", "volume", "amount"]
+# chg = 對當天「參考價」的漲跌（官方欄位）。參考價已反映除權息與減資，所以 close − chg 就是參考價，
+# 用它算漲跌幅就不會把除息當成下跌。舊資料沒有這欄時留空。
+COLS = ["date", "market", "code", "name", "open", "high", "low", "close", "volume", "amount", "chg"]
 H = {"User-Agent": "Mozilla/5.0 (compatible; personal-research)"}
 
 def num(x):
     try:
-        return float(str(x).replace(",", "").strip())
+        v = float(str(x).replace(",", "").strip())
+        return v if v == v else None
     except ValueError:
         return None
 
@@ -24,61 +27,94 @@ def get(url, tries=4):
         time.sleep(4 * (i + 1))
     return None  # 連線失敗(不是休市)
 
-def idx(fields, key):
+def idx(fields, key, exact=False):
     for i, f in enumerate(fields):
-        if key in f:
+        f = re.sub(r"<[^>]+>", "", str(f)).strip()
+        if (f == key) if exact else (key in f):
             return i
     return None
 
-def keep(market, d, code, name, o, h, l, c, v, a):
+def signed(sign, value):
+    """證交所：漲跌(+/-) 可能是 HTML，'X' 表示不比價（例如除權息、新上市）→ 無法判定。"""
+    s = re.sub(r"<[^>]+>", "", str(sign)).strip()
+    v = num(value)
+    if v is None or "X" in s.upper():
+        return None
+    return -v if "-" in s else v
+
+def keep(market, d, code, name, o, h, l, c, v, a, chg=None):
     code = str(code).strip()
     if re.fullmatch(r"\d{4}", code) and num(c) is not None:
-        return [d.isoformat(), market, code, str(name).strip(), num(o), num(h), num(l), num(c), num(v), num(a)]
+        return [d.isoformat(), market, code, str(name).strip(), num(o), num(h), num(l), num(c), num(v), num(a), chg]
 
 def twse(d):
     j = get(f"https://www.twse.com.tw/exchangeReport/MI_INDEX?response=json&date={d:%Y%m%d}&type=ALLBUT0999")
     if j is None:
         return None
-    tabs = j.get("tables") or [{"fields": j.get("fields9"), "data": j.get("data9")}]
+    tabs = list(j.get("tables") or [])
+    for n in range(1, 10):  # 舊格式：fields9/data9 等
+        if j.get(f"fields{n}"):
+            tabs.append({"fields": j.get(f"fields{n}"), "data": j.get(f"data{n}")})
     out = []
     for t in tabs:
         f, data = t.get("fields") or [], t.get("data") or []
         if idx(f, "證券代號") is None or idx(f, "收盤價") is None:
             continue
         k = [idx(f, x) for x in ["證券代號", "證券名稱", "開盤價", "最高價", "最低價", "收盤價", "成交股數", "成交金額"]]
+        ks, kv = idx(f, "漲跌(+/-)", True), idx(f, "漲跌價差", True)
         for r in data:
-            row = keep("TWSE", d, r[k[0]], r[k[1]], r[k[2]], r[k[3]], r[k[4]], r[k[5]], r[k[6]], r[k[7]])
+            chg = signed(r[ks], r[kv]) if ks is not None and kv is not None else None
+            row = keep("TWSE", d, r[k[0]], r[k[1]], r[k[2]], r[k[3]], r[k[4]], r[k[5]], r[k[6]], r[k[7]], chg)
             if row:
                 out.append(row)
     return out
 
+def tpex_chg(x):
+    s = str(x).replace(",", "").strip()
+    return num(s) if re.fullmatch(r"[+-]?\d+(\.\d+)?", s) else None  # 「除息」等文字 → 無法判定
+
 def tpex(d):
     j = get(f"https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={d:%Y/%m/%d}&type=EW&response=json")
     out = []
-    if j is not None and j.get("tables"):
+    if j is not None and j.get("tables") and (j["tables"][0].get("data") or []):
         t = j["tables"][0]
         f, data = t.get("fields") or [], t.get("data") or []
         k = [idx(f, x) for x in ["代號", "名稱", "開盤", "最高", "最低", "收盤", "成交股數", "成交金額"]]
+        kc = idx(f, "漲跌", True)
         if None in k:
             k = [0, 1, 4, 5, 6, 2, 7, 8]
+        if kc is None:
+            kc = 3
         for r in data:
-            row = keep("TPEX", d, r[k[0]], r[k[1]], r[k[2]], r[k[3]], r[k[4]], r[k[5]], r[k[6]], r[k[7]])
+            row = keep("TPEX", d, r[k[0]], r[k[1]], r[k[2]], r[k[3]], r[k[4]], r[k[5]], r[k[6]], r[k[7]], tpex_chg(r[kc]))
             if row:
                 out.append(row)
         return out
-    j = get(f"https://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php?l=zh-tw&d={d.year-1911}/{d:%m/%d}&o=json")
-    if j is None:
-        return None
-    for r in j.get("aaData") or j.get("tables", [{}])[0].get("data", []):
-        row = keep("TPEX", d, r[0], r[1], r[4], r[5], r[6], r[2], r[8], r[9])
+    j2 = get(f"https://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php?l=zh-tw&d={d.year-1911}/{d:%m/%d}&o=json")
+    if j2 is None:
+        return None if j is None else []
+    for r in j2.get("aaData") or j2.get("tables", [{}])[0].get("data", []):
+        row = keep("TPEX", d, r[0], r[1], r[4], r[5], r[6], r[2], r[8], r[9], tpex_chg(r[3]))
         if row:
             out.append(row)
     return out
+
+def migrate():
+    """舊的 prices.csv 沒有 chg 欄 → 補一個空欄。"""
+    if not os.path.exists(OUT):
+        return
+    with open(OUT, encoding="utf-8") as f:
+        head = f.readline().strip().split(",")
+    if "chg" in head:
+        return
+    import pandas as pd
+    pd.read_csv(OUT, dtype={"code": str}).assign(chg=None)[COLS].to_csv(OUT, index=False)
 
 def main():
     """休市只在連續確認後才記下；最近14天內記過的休市每次都重新查一次，避免把一次抓取失敗永久當成休市。
     抓取失敗與空資料另外記在 data/fetch_log.csv。"""
     os.makedirs("data", exist_ok=True)
+    migrate()
     have = set()
     if os.path.exists(OUT):
         with open(OUT, encoding="utf-8") as f:
