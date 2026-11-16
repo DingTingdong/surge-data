@@ -1,8 +1,8 @@
 """雷達的共用計算：讀行情、除權息調整、每日指標、分級。網站（build_site.py）與長期回測（research/）都用這一份。
 
-除權息與減資：官方行情的 chg 是對當天「參考價」的漲跌，參考價 = close − chg。
-參考價和前一天收盤不同的那天就是除權息或減資，比例 = 參考價 ÷ 前收。把之前的價格乘上這些比例（向後調整），
-漲跌幅、振幅、波動就不會被除息缺口或減資恢復交易的假漲跌干擾。沒有 chg 的舊資料不調整。
+除權息與減資：用證交所、櫃買中心公布的除權息計算結果與減資恢復買賣參考價（data/adjust.csv，由 fetch_adjust.py 抓），
+比例 = 參考價 ÷ 前一交易日收盤。把該日之前的價格乘上這些比例（向後調整），漲跌幅、振幅、波動、報酬
+就不會被除息缺口或減資恢復交易的假漲跌干擾。沒有 adjust.csv 時不調整。
 """
 import glob, os, numpy as np, pandas as pd
 
@@ -27,11 +27,15 @@ def load_prices(years_back=None):
 
 def panels(p):
     pv = lambda c: p.pivot(index="date", columns="code", values=c).sort_index()
-    C, O, H, L, A, MK, CH = pv("close"), pv("open"), pv("high"), pv("low"), pv("amount"), pv("market"), pv("chg")
-    prev = C.ffill().shift()                       # 最後可得的前一個收盤（跨停牌）
-    ref = C - CH                                   # 官方參考價
-    fac = (ref / prev).where(CH.notna() & prev.notna() & (ref > 0) & ((ref - prev).abs() > 0.005), 1.0)
-    fac = fac.where((fac >= 0.05) & (fac <= 20), 1.0)  # 異常值不採用
+    C, O, H, L, A, MK = pv("close"), pv("open"), pv("high"), pv("low"), pv("amount"), pv("market")
+    # 官方除權息／減資比例（data/adjust.csv）；同一天多筆（例如除權又除息）相乘
+    fac = pd.DataFrame(1.0, index=C.index, columns=C.columns)
+    if os.path.exists("data/adjust.csv"):
+        a = pd.read_csv("data/adjust.csv", dtype={"code": str})
+        a["date"] = pd.to_datetime(a.date)
+        a = a[a.code.isin(C.columns) & a.date.isin(C.index) & (a.ratio > 0.05) & (a.ratio < 20)]
+        r = a.groupby(["date", "code"]).ratio.prod().unstack().reindex(index=C.index, columns=C.columns)
+        fac = r.fillna(1.0)
     M = fac.iloc[::-1].cumprod().iloc[::-1].shift(-1).fillna(1.0)  # 該日之後所有調整的乘積
     adj = lambda X: X * M
     return {"C": adj(C), "O": adj(O), "H": adj(H), "L": adj(L), "A": A, "MK": MK, "rawC": C, "fac": fac}

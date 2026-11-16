@@ -18,6 +18,7 @@ jobs:
       - run: pip install requests pandas numpy
       - run: python fetch_prices.py
       - run: python fetch_disposal.py || echo 'disposal fetch failed, continuing'
+      - run: python fetch_adjust.py || echo 'adjust fetch failed, continuing'
       - run: python build_site.py
       - name: commit
         run: |
