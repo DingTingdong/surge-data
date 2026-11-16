@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0d6b66"><title>強勢股雷達</title>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0d6b66"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="強勢股雷達"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>強勢股雷達</title>
 <style>
 :root{--bg:#f4f6f4;--sf:#fff;--ink:#14201b;--mu:#66736c;--ln:#dde3df;--up:#d3322a;--dn:#15854f;--ac:#0d6b66;--acs:#dcefed;--hd:#f4f6f4;color-scheme:light;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -42,7 +42,7 @@ main{padding:8px 16px}
 .row.o .dt{display:block}
 .dt div{display:flex;justify-content:space-between;padding:3px 0}
 .dt b{color:var(--ink);font-weight:600}
-.dt p{margin:8px 0 0}
+.dt p{margin:8px 0 0}.act{display:flex;gap:8px;margin-top:10px}.act button,.act a{flex:1;text-align:center;border:1px solid var(--ln);background:var(--bg);color:var(--ink);border-radius:10px;padding:9px 0;font:inherit;font-size:14px;text-decoration:none;min-height:40px}.act button[aria-pressed="true"]{border-color:var(--ac);color:var(--ac);font-weight:650}.star{color:#e0a800;margin-right:4px}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--sf);border-top:1px solid var(--ln);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);z-index:9}
 nav button{flex:1;border:0;background:none;color:var(--mu);font:inherit;font-size:14px;padding:13px 0;min-height:52px}
 nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset 0 2px 0 var(--ac)}
@@ -117,7 +117,8 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <div id="tsum"></div>
 <p>「實際」是規則訂好之後才產生的名單，才算真正的驗證；「回測」是規則制定期間的名單，只供參考。</p></div>
 <div id="tlist"></div></main></section>
-<section class="pg" id="p3"><main><div class="doc"><h2>資料與更新</h2>
+<section class="pg" id="p3"><main><div class="doc"><h2>加到手機主畫面</h2><ul><li>iPhone（Safari）：按下方分享鈕 → 加入主畫面。</li><li>Android（Chrome）：按右上角 ⋮ → 加到主畫面（或「安裝應用程式」）。</li></ul><p>之後從主畫面圖示打開，就像App一樣全螢幕顯示。自選股存在這支手機的瀏覽器裡，換手機或清除瀏覽資料會消失。</p></div>
+<div class="doc"><h2>資料與更新</h2>
 <p>行情來自證交所與櫃買中心每日收盤資料，雲端排程每個平日台北18:30自動抓取並重新計算。清單包含近20日平均成交額1,000萬元以上、已有60日行情的上市櫃普通股。</p>
 <h2>各欄位</h2>
 <ul><li>精選：活躍度前10%、10日內有漲停、當天收紅、量能比至少2。</li><li>觀察：同上，但量能比在1到2之間。</li><li>新進：今天進入精選、昨天還不在。</li><li>卡片上的線：近30個交易日收盤走勢，紅色代表期間上漲。</li><li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li><li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li><li>漲停：近20日內單日漲9%以上的天數。</li></ul>
@@ -127,18 +128,23 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 const D=/*DATA*/[];const META=/*META*/{};const T=/*TRACK*/[];
 const st={rule:"P",mk:"",q:"",sort:"am"};const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
-const HOT=s=>s.rc>=.9&&s.sn<=10,PK=s=>HOT(s)&&s.ch>0&&s.am>=META.am,WT=s=>HOT(s)&&s.ch>0&&s.am>=1&&!PK(s);const RL={P:["精選",PK],W:["觀察",WT],A:["仍在動",HOT],ALL:["全部",s=>true]};
+const HOT=s=>s.rc>=.9&&s.sn<=10,PK=s=>HOT(s)&&s.ch>0&&s.am>=META.am,WT=s=>HOT(s)&&s.ch>0&&s.am>=1&&!PK(s);const RL={P:["精選",PK],W:["觀察",WT],A:["仍在動",HOT],F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
+let FAV=new Set();try{FAV=new Set(JSON.parse(localStorage.getItem("fav")||"[]"))}catch(e){}
+function saveFav(){try{localStorage.setItem("fav",JSON.stringify([...FAV]))}catch(e){}}
+const kurl=s=>"https://tw.stock.yahoo.com/quote/"+s.t+(s.mk==="櫃"?".TWO":".TW")+"/technical-analysis";
 function base(){return D.filter(s=>!st.mk||s.mk===st.mk)}
 function chips(){const b=base();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip" data-r="${k}" aria-pressed="${st.rule===k}">${RL[k][0]}<small class="n">${b.filter(RL[k][1]).length}</small></button>`).join("");
 $("flt").innerHTML=[["","不分市場"],["櫃","上櫃"],["市","上市"]].map(x=>`<button class="chip" data-m="${x[0]}" aria-pressed="${st.mk===x[0]}">${x[1]}</button>`).join("")}
 function list(){const q=st.q.trim().toLowerCase();let a=base().filter(s=>RL[st.rule][1](s)&&(!q||(s.t+s.n).toLowerCase().includes(q)));
 a.sort((x,y)=>y[st.sort]-x[st.sort]||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔"+(a.length>100?"，顯示前100檔":"");
-$("list").innerHTML=a.length?a.slice(0,100).map(row).join(""):'<div class="empty">沒有符合的股票。</div>'}
-function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
+const miss=st.rule==="F"?[...FAV].filter(c=>!D.some(s=>s.t===c)):[];
+$("list").innerHTML=(a.length?a.slice(0,100).map(row).join(""):'<div class="empty">'+(st.rule==="F"&&!FAV.size?"還沒有自選股。點開任一檔股票，按「加入自選」。":"沒有符合的股票。")+'</div>')
++(miss.length?'<div class="cnt">今天不在分析範圍內（成交額太低或資料不足）：'+miss.join("、")+' <button class="chip" data-clr="1">移除這些</button></div>':"")}
+function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${FAV.has(s.t)?'<span class="star">★</span>':""}${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
 <div class="l2 n"><span>波動 <b>${s.v.toFixed(1)}%</b></span><span>10日振幅 <b>${s.rg.toFixed(0)}%</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>量能比 <b>${s.am.toFixed(2)}</b></span></div>
 ${s.rc>=.8?'<div class="tg">'+(s.nw?'<span class="tag nw">新進</span>':'')+(PK(s)?'<span class="tag">精選</span>':WT(s)?'<span class="tag">觀察</span>':'')+'<span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+s.rc*100+'%"></i></div>'}</button>
-<div class="dt n"><div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${s.bk.toFixed(1)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div></div></div>`}
+<div class="dt n"><div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${s.bk.toFixed(1)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
@@ -154,9 +160,14 @@ $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><d
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
 if(t.dataset.r){st.rule=t.dataset.r;chips();list()}else if(t.dataset.m!==undefined){st.mk=t.dataset.m;chips();list()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
+else if(t.dataset.clr){[...FAV].filter(c=>!D.some(s=>s.t===c)).forEach(c=>FAV.delete(c));saveFav();chips();list()}
+else if(t.dataset.fav){const c=t.dataset.fav;FAV.has(c)?FAV.delete(c):FAV.add(c);saveFav();
+if(st.rule==="F"){chips();list();return}const on=FAV.has(c);t.setAttribute("aria-pressed",on);t.textContent=on?"★ 已在自選":"☆ 加入自選";
+const nm=t.closest(".row").querySelector(".nm"),sv=nm.querySelector(".star");if(on&&!sv)nm.insertAdjacentHTML("afterbegin",'<span class="star">★</span>');if(!on&&sv)sv.remove();chips()}
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
 $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEventListener("change",e=>{st.sort=e.target.value;list()});
 $("sub").textContent=META.date+" 收盤，分析 "+D.length+" 檔";
 $("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單只表示「容易大幅波動」，漲跌方向要看大盤。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
 chips();list();track();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>
