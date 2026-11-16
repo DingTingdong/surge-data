@@ -60,6 +60,19 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <div style="padding:0 16px"><div class="chips" id="flt"></div></div>
 <main><div class="nt warn" id="stale" hidden></div><div class="nt" id="mkt"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
+<div class="doc"><h2>2020–2026 七年回測：精選沒有比較好</h2>
+<p>用2020年1月到2026年11月、約1,670個交易日的行情（已做除權息與減資調整），原封不動檢驗目前的門檻。報酬是隔天開盤買、第5個交易日收盤賣，扣1.1%。</p>
+<table class="tb n"><tr><th>5日報酬</th><th>精選</th><th>仍在動其他</th><th>全體</th></tr>
+<tr><td>每日檔數</td><td>8.6</td><td>68.2</td><td>993</td></tr>
+<tr><td>平均</td><td>−1.21%</td><td>−0.80%</td><td>−1.04%</td></tr>
+<tr><td>中位數</td><td>−2.80%</td><td>−2.03%</td><td>−1.40%</td></tr>
+<tr><td>賺10%以上</td><td>14%</td><td>13%</td><td>5%</td></tr>
+<tr><td>賠10%以上</td><td>18%</td><td>15%</td><td>6%</td></tr></table>
+<ul><li><b>七年每一年</b>，精選的報酬中位數都低於「仍在動的其他股票」，賠10%以上的比例也比較高。</li>
+<li>活躍度預測大漲和大跌的能力一樣（AUC 0.74 對 0.75），七年都是如此：這是<b>波動雷達</b>。</li>
+<li>精選股隔天平均<b>開高1.04%</b>，等開盤才買就把可能的優勢吃掉了。</li>
+<li>不重疊每週比較（331週）：精選比仍在動其他平均多0.34個百分點，但中位數−0.10、統計上不顯著。</li></ul>
+<p>結論：目前的價量條件<b>找得到會大幅波動的股票，但沒有證明能挑出會漲的</b>。名單請當觀察用，不要當買進訊號。</p></div>
 <div class="doc"><h2>覆核後最重要的修正：這是「波動雷達」</h2>
 <p>三份外部覆核都指出同一個問題，我用資料驗證後確認：<b>同一個活躍度指標，預測大跌的能力和預測大漲幾乎一樣強。</b></p>
 <table class="tb n"><tr><th>活躍度的區分力（AUC）</th><th>預測大漲</th><th>預測大跌</th></tr>
@@ -188,7 +201,7 @@ const nm=t.closest(".row").querySelector(".nm"),sv=nm.querySelector(".star");if(
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
 $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEventListener("change",e=>{st.sort=e.target.value;list()});
 $("sub").textContent=META.date+" 收盤，分析 "+D.length+" 檔";
-$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單是「接下來容易大漲也容易大跌」的股票，不是買進訊號，方向主要看大盤。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
+$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單是「接下來容易大漲也容易大跌」的股票，不是買進訊號。2020–2026回測中，精選並沒有比其他「仍在動」的股票好。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
 chips();list();track();
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));
