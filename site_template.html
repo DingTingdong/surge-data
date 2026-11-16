@@ -24,15 +24,15 @@ h1{margin:0;font-size:20px;letter-spacing:.02em}
 main{padding:8px 16px}
 .cnt{color:var(--mu);font-size:12.5px;margin:6px 2px}
 .row{background:var(--sf);border:1px solid var(--ln);border-radius:12px;margin:0 0 8px;overflow:hidden}
-.row>button{all:unset;display:block;width:100%;padding:11px 14px 10px;cursor:pointer}
+.row>button{all:unset;box-sizing:border-box;display:block;width:100%;padding:11px 14px 10px;cursor:pointer}
 .row>button:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
-.l1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.l1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}.l1>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.l1>span:last-child{flex:none}
 .nm{font-weight:650;font-size:16px}
 .cd{color:var(--mu);font-size:12.5px;margin-left:6px}
 .px{font-size:16px;font-weight:600}
 .pc{font-size:14px;margin-left:8px;font-weight:600}
 .up{color:var(--up)}.dn{color:var(--dn)}
-.l2{display:flex;gap:14px;color:var(--mu);font-size:12.5px;margin-top:5px;flex-wrap:wrap}
+.l2{display:flex;gap:2px 14px;color:var(--mu);font-size:12.5px;margin-top:5px;flex-wrap:wrap}
 .l2 b{color:var(--ink);font-weight:600}
 .tg{display:flex;gap:6px;margin-top:6px}
 .tag{background:var(--acs);color:var(--ac);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600}
@@ -89,6 +89,15 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <tr><td>前10%</td><td><b>約8%</b></td><td>約2.5%</td><td>約+0.2%</td></tr>
 <tr><td>前10%到20%</td><td>4.5%</td><td>2.4%</td><td>−1.1%</td></tr></table>
 <p>所以雷達預設的「仍在動」是活躍度前10%、且10日內有漲停；前10%到20%放在「次要」，已降溫的另列。「新面孔」（近20日沒有任何5日漲20%以上）和「延續型」只是標籤：兩者大漲率約5.3%對6.4%，差距不大也不穩定，不能說哪個比較好。</p></div>
+<div class="doc"><h2>為什麼「精選」只剩二三十檔</h2>
+<p>「仍在動」每週約80到90檔，太多。再加兩個條件：<b>當天收紅</b>、<b>近5日均額不低於近20日（量能增溫）</b>，每週約25檔。</p>
+<table class="tb n"><tr><th>期間</th><th>檔數/週</th><th>大漲20%+</th><th>大跌20%+</th><th>平均報酬</th></tr>
+<tr><td>8到9月 精選</td><td>25</td><td><b>12.2%</b></td><td>0.5%</td><td>+0.7%</td></tr>
+<tr><td>8到9月 全體</td><td>1,039</td><td>2.8%</td><td>0.2%</td><td>+0.4%</td></tr>
+<tr><td>10月到11/2 精選</td><td>25</td><td><b>6.1%</b></td><td>0.7%</td><td>−1.5%</td></tr>
+<tr><td>10月到11/2 全體</td><td>1,006</td><td>1.1%</td><td>2.9%</td><td>−3.7%</td></tr></table>
+<p>兩段期間精選的大漲率都是全體的4到5倍，而且在10月大盤走弱時，大跌比例反而比全體低、平均報酬也少跌。11/9大反彈那週只有5檔入選、1檔大漲，樣本太少不算數。</p>
+<p>注意：這兩個條件是看過這15週資料後才選的，等於用同一批資料找規律又驗證規律。要等之後幾週的新資料，才知道它是不是真的有效。</p></div>
 <div class="doc"><h2>要看清楚的地方</h2>
 <ul><li>這個規則找出的是<b>大漲機率高約2.5到3倍</b>的股票，但它們<b>跌起來也更兇</b>。10月到11/2大盤走弱，入選股的平均報酬比全體更差，單週跌20%以上的比例是漲20%以上的三倍。</li>
 <li>方向主要看大盤。11/2當週個股報酬中位數約−12%，11/9當週約+6.5%。入選股只是把大盤的漲跌放大。</li>
@@ -97,14 +106,14 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <section class="pg" id="p3"><main><div class="doc"><h2>資料與更新</h2>
 <p>行情來自證交所與櫃買中心每日收盤資料，雲端排程每個平日台北18:30自動抓取並重新計算。清單包含近20日平均成交額1,000萬元以上、已有60日行情的上市櫃普通股。</p>
 <h2>各欄位</h2>
-<ul><li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li><li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li><li>漲停：近20日內單日漲9%以上的天數。</li></ul>
+<ul><li>精選：活躍度前10%、10日內有漲停、當天收紅、量能比至少1。</li><li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li><li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li><li>漲停：近20日內單日漲9%以上的天數。</li></ul>
 <p>本頁是研究整理，不是買賣建議。</p></div></main></section>
 <nav><button data-p="p1" aria-current="page">雷達</button><button data-p="p2">共同點</button><button data-p="p3">說明</button></nav>
 <script>
 const D=/*DATA*/[];const META=/*META*/{};
-const st={rule:"A",mk:"",q:"",sort:"rc"};const $=i=>document.getElementById(i);
+const st={rule:"P",mk:"",q:"",sort:"rc"};const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
-const RL={A:["仍在動",s=>s.rc>=.9&&s.sn<=10],N:["新面孔",s=>s.rc>=.9&&s.sn<=10&&s.bk<20],S:["次要",s=>s.rc>=.8&&s.rc<.9&&s.sn<=10],F:["已降溫",s=>s.rc>=.8&&s.sn>10],ALL:["全部",s=>true]};
+const PK=s=>s.rc>=.9&&s.sn<=10&&s.ch>0&&s.am>=1;const RL={P:["精選",PK],A:["仍在動",s=>s.rc>=.9&&s.sn<=10],F:["已降溫",s=>s.rc>=.8&&s.sn>10],ALL:["全部",s=>true]};
 function base(){return D.filter(s=>!st.mk||s.mk===st.mk)}
 function chips(){const b=base();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip" data-r="${k}" aria-pressed="${st.rule===k}">${RL[k][0]}<small class="n">${b.filter(RL[k][1]).length}</small></button>`).join("");
 $("flt").innerHTML=[["","不分市場"],["櫃","上櫃"],["市","上市"]].map(x=>`<button class="chip" data-m="${x[0]}" aria-pressed="${st.mk===x[0]}">${x[1]}</button>`).join("")}
@@ -113,7 +122,7 @@ a.sort((x,y)=>y[st.sort]-x[st.sort]||x.t.localeCompare(y.t));$("cnt").textConten
 $("list").innerHTML=a.length?a.slice(0,100).map(row).join(""):'<div class="empty">沒有符合的股票。</div>'}
 function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
 <div class="l2 n"><span>波動 <b>${s.v.toFixed(1)}%</b></span><span>10日振幅 <b>${s.rg.toFixed(0)}%</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>量能比 <b>${s.am.toFixed(2)}</b></span></div>
-${s.rc>=.8?'<div class="tg"><span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
+${s.rc>=.8?'<div class="tg">'+(PK(s)?'<span class="tag">精選</span>':'')+'<span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
 <div class="vb"><i style="width:${s.rc*100}%"></i></div></button>
 <div class="dt n"><div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${s.bk.toFixed(1)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div></div></div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
