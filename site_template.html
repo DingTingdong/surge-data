@@ -71,12 +71,24 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <tr><td>距60日高點</td><td><b>−24%</b></td><td>−15%</td></tr></table>
 <p>共同點只有一個：<b>漲之前就已經很活躍</b>。這個差異在前8週找到，後7週再驗證仍成立，上市和上櫃都一樣（區分力指標AUC約0.70到0.80，0.5代表沒有區分力）。</p></div>
 <div class="doc"><h2>用這個共同點選股，結果如何</h2>
-<p>規則：每週在上市、上櫃各自挑「活躍度」前20%（波動、振幅、平均真實波幅、漲停天數、近40日最大5日漲幅的平均排名），每週約207檔。</p>
+<p>驗證用規則：每週在上市、上櫃各自挑「活躍度」前20%（波動、振幅、平均真實波幅、漲停天數、近40日最大5日漲幅的平均排名），每週約207檔。</p>
 <table class="tb n"><tr><th>期間</th><th>抓到大漲股</th><th>入選命中率</th><th>全體</th><th>入選平均報酬</th><th>全體</th></tr>
 <tr><td>8月到9月</td><td>57%</td><td><b>7.9%</b></td><td>2.8%</td><td>+2.3%</td><td>+0.4%</td></tr>
 <tr><td>10月到11/2</td><td>48%</td><td><b>2.7%</b></td><td>1.1%</td><td>−4.6%</td><td>−3.7%</td></tr>
 <tr><td>11/9當週</td><td>59%</td><td><b>33.8%</b></td><td>11.6%</td><td>+12.8%</td><td>+5.8%</td></tr></table>
 <p>報酬是下週一開盤買、週五收盤賣，已扣約1.1%的手續費、稅和滑價。</p></div>
+<div class="doc"><h2>要不要排除「早就熄火」的股票</h2>
+<p>要。只看活躍度前20%的股票，依「距上次單日漲9%以上」的天數分組（8/3到11/6共14週，不含11/9大反彈週）：</p>
+<table class="tb n"><tr><th>距上次漲停</th><th>大漲20%+</th><th>大跌20%+</th><th>平均報酬</th></tr>
+<tr><td>10日內（仍在動）</td><td><b>6.6%</b></td><td>2.6%</td><td>−0.4%</td></tr>
+<tr><td>11到20日前</td><td>3.3%</td><td>3.8%</td><td>−1.1%</td></tr>
+<tr><td>20日內沒有</td><td>3.3%</td><td>6.6%</td><td>−2.2%</td></tr>
+<tr><td>全體股票</td><td>2.1%</td><td>1.3%</td><td>−1.3%</td></tr></table>
+<p>再把「仍在動」依活躍度分段（同一批14週）：</p>
+<table class="tb n"><tr><th>活躍度排名</th><th>大漲20%+</th><th>大跌20%+</th><th>平均報酬</th></tr>
+<tr><td>前10%</td><td><b>約8%</b></td><td>約2.5%</td><td>約+0.2%</td></tr>
+<tr><td>前10%到20%</td><td>4.5%</td><td>2.4%</td><td>−1.1%</td></tr></table>
+<p>所以雷達預設的「仍在動」是活躍度前10%、且10日內有漲停；前10%到20%放在「次要」，已降溫的另列。「新面孔」（近20日沒有任何5日漲20%以上）和「延續型」只是標籤：兩者大漲率約5.3%對6.4%，差距不大也不穩定，不能說哪個比較好。</p></div>
 <div class="doc"><h2>要看清楚的地方</h2>
 <ul><li>這個規則找出的是<b>大漲機率高約2.5到3倍</b>的股票，但它們<b>跌起來也更兇</b>。10月到11/2大盤走弱，入選股的平均報酬比全體更差，單週跌20%以上的比例是漲20%以上的三倍。</li>
 <li>方向主要看大盤。11/2當週個股報酬中位數約−12%，11/9當週約+6.5%。入選股只是把大盤的漲跌放大。</li>
@@ -92,7 +104,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 const D=/*DATA*/[];const META=/*META*/{};
 const st={rule:"A",mk:"",q:"",sort:"rc"};const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
-const RL={A:["高活躍候選",s=>s.rc>=.8],B:["量能增溫",s=>s.rv>=.8&&s.am>=1],ALL:["全部",s=>true]};
+const RL={A:["仍在動",s=>s.rc>=.9&&s.sn<=10],N:["新面孔",s=>s.rc>=.9&&s.sn<=10&&s.bk<20],S:["次要",s=>s.rc>=.8&&s.rc<.9&&s.sn<=10],F:["已降溫",s=>s.rc>=.8&&s.sn>10],ALL:["全部",s=>true]};
 function base(){return D.filter(s=>!st.mk||s.mk===st.mk)}
 function chips(){const b=base();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip" data-r="${k}" aria-pressed="${st.rule===k}">${RL[k][0]}<small class="n">${b.filter(RL[k][1]).length}</small></button>`).join("");
 $("flt").innerHTML=[["","不分市場"],["櫃","上櫃"],["市","上市"]].map(x=>`<button class="chip" data-m="${x[0]}" aria-pressed="${st.mk===x[0]}">${x[1]}</button>`).join("")}
@@ -100,16 +112,16 @@ function list(){const q=st.q.trim().toLowerCase();let a=base().filter(s=>RL[st.r
 a.sort((x,y)=>y[st.sort]-x[st.sort]||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔"+(a.length>100?"，顯示前100檔":"");
 $("list").innerHTML=a.length?a.slice(0,100).map(row).join(""):'<div class="empty">沒有符合的股票。</div>'}
 function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
-<div class="l2 n"><span>波動 <b>${s.v.toFixed(1)}%</b></span><span>10日振幅 <b>${s.rg.toFixed(0)}%</b></span><span>漲停 <b>${s.lu}</b> 天</span><span>量能比 <b>${s.am.toFixed(2)}</b></span></div>
-${s.rc>=.8?'<div class="tg"><span class="tag">高活躍</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
+<div class="l2 n"><span>波動 <b>${s.v.toFixed(1)}%</b></span><span>10日振幅 <b>${s.rg.toFixed(0)}%</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>量能比 <b>${s.am.toFixed(2)}</b></span></div>
+${s.rc>=.8?'<div class="tg"><span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
 <div class="vb"><i style="width:${s.rc*100}%"></i></div></button>
-<div class="dt n"><div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div></div></div>`}
+<div class="dt n"><div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${s.bk.toFixed(1)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div></div></div>`}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
 if(t.dataset.r){st.rule=t.dataset.r;chips();list()}else if(t.dataset.m!==undefined){st.mk=t.dataset.m;chips();list()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
 $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEventListener("change",e=>{st.sort=e.target.value;list()});
 $("sub").textContent=META.date+" 收盤，分析 "+D.length+" 檔";
-$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。這份清單只表示「容易大幅波動」，漲跌方向要看大盤。";
+$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單只表示「容易大幅波動」，漲跌方向要看大盤。";
 chips();list();
 </script></body></html>
