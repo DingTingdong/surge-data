@@ -226,7 +226,11 @@ def build(data, out, commit, captured, floor=FLOOR):
     chips = []
     keys = set()
     for year in sorted({d[:4] for d in chip_dates}):
-        path = data / "chips" / (year + ".csv.gz")
+        # The producer switched the active year to appendable plain CSV.
+        # During rollover or migration it can coexist with the old archive.
+        # Choose exactly one file, and bind the actual path/hash in sources.
+        current = data / "chips" / (year + ".csv")
+        path = current if current.is_file() else data / "chips" / (year + ".csv.gz")
         if not path.exists():
             continue
         for c in records(source(path), CHIP):
@@ -259,4 +263,5 @@ if __name__ == "__main__":
     cli.add_argument("--captured-at", default=datetime.now(timezone.utc).isoformat())
     args = cli.parse_args()
     manifest = build(args.data_dir, args.output, args.source_commit, args.captured_at)
-    print(json.dumps({"date": manifest["asOf"], "source": manifest["sourceCommit"], "counts": {m: manifest["markets"][m]["count"] for m in MARKETS}}))
+    print(json.dumps({"date": manifest["asOf"], "source": manifest["sourceCommit"], "counts": {m: manifest["markets"][m]["count"] for m in MARKETS},
+                      "chipsThrough": manifest["chipsThrough"], "chipFiles": [s for s in manifest["sources"] if s.startswith("chips/")]}))
