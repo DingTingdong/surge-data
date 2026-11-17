@@ -127,7 +127,7 @@ data = []
 for code, r in d.iterrows():
     x = {"t": code}
     for k in cols: x[k] = r[k] if k in ("n", "mk") else (round(float(r[k]), 2) if r[k] == r[k] else None)
-    x["lu"] = int(x["lu"] or 0); x["amt"] = int(x["amt"] or 0); x["sn"] = int(x["sn"]); x["nw"] = bool(r.nw); x["e"] = bool(r.pk)
+    x["lu"] = int(x["lu"] or 0); x["amt"] = int(x["amt"] or 0); x["sn"] = int(x["sn"]); x["nw"] = bool(r.nw); x["e"] = bool(r.pk); x["u5"] = bool(r.up5 == 1); x["h"] = bool(r.hot)
     x["ru"] = round(float(ru.get(code, np.nan)), 1) if ru.get(code, np.nan) == ru.get(code, np.nan) else None
     if code in recent_hist: x["hs"] = recent_hist[code]
     if code in disp: x["dp"] = disp[code]

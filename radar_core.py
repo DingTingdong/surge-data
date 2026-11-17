@@ -57,6 +57,7 @@ def features(P):
     f["ch"] = r1 * 100; f["r5"] = (C / C.shift(5) - 1) * 100; f["r20"] = (C / C.shift(20) - 1) * 100
     f["dh"] = (C / R(C, 60, "max") - 1) * 100; f["c"] = P["rawC"]
     f["n60"] = C.rolling(60, min_periods=60).count(); f["ma20"] = R(C, 20, "mean")
+    f["up5"] = (C >= R(C, 5, "mean")).astype(float).where(C.notna())  # 收盤在5日均線上（含）＝續強
     f["bk"] = pd.concat([(C.shift(5 * k) / C.shift(5 * k + 5) - 1) * 100 for k in range(4)], keys=range(4)).groupby(level=1).max().reindex(days)
     idx = np.arange(len(days))[:, None]
     pos = pd.DataFrame(np.where((r1 >= 0.09).values, idx, np.nan), index=days, columns=C.columns).ffill()
@@ -76,7 +77,7 @@ def tiers(f, MK, since=None):
     仍在動   = 活躍度前10%（上市、上櫃分開排名，範圍：20日均額 ≥ 1,000 萬）且 今天或前10個交易日內有漲停。
     pk_v1    = 舊版精選（仍在動＋當天上漲＋量能比≥2），只給舊研究重現用。
     """
-    keep = ["v", "rg", "atr", "lu", "mx", "am", "amt", "ch", "r5", "r20", "dh", "c", "n60", "bk", "sn", "snp", "a1", "a20p", "vr", "ru"]
+    keep = ["v", "rg", "atr", "lu", "mx", "am", "amt", "ch", "r5", "r20", "dh", "c", "n60", "bk", "sn", "snp", "a1", "a20p", "vr", "ru", "up5"]
     sub = {k: (f[k] if since is None else f[k].loc[since:]) for k in keep}
     S = pd.DataFrame({k: v.stack(future_stack=True) for k, v in sub.items()})
     S.index.names = ["date", "code"]
