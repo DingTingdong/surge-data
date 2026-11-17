@@ -181,6 +181,9 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <li>「量能增溫」（近5日均額不低於近20日）標籤，在三個期間都比單看活躍度略好，但差距小，樣本也少，只當參考。</li>
 <li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></main></section>
 <section class="pg" id="p4"><main>
+<div class="doc"><h2>持有追蹤（近20個交易日的今日發動）</h2>
+<p>假設每檔都在訊號隔天開盤買進，照移動停損規則：收盤比買進後最高收盤低10%就隔天開盤賣，最多抱20個交易日。價格已依除權息調整。</p>
+<div id="holds"></div></div>
 <div class="doc"><h2>名單之後表現如何</h2>
 <p>每天收盤後，「今日發動」和「仍在動」的完整名單都會存檔，之後不再修改；規則改版就另開新紀錄（v1 的紀錄保留在 data/archive/）。報酬算法：隔天開盤買、第5個交易日收盤賣，扣約1.1%成本。開盤一價漲停視為買不到、不計入；出場日跌停鎖死順延；持有中停牌用最後收盤。</p>
 <p>比較三組：<b>今日發動</b>、<b>仍在動</b>（不含今日發動）、<b>全體</b>，都用「抱5天」算。今日發動另外用<b>移動停損</b>算：收盤比買進後的最高收盤低10%就隔天開盤賣，最多抱20天。</p>
@@ -222,13 +225,19 @@ $("list").innerHTML=(a.length?a.slice(0,100).map(row).join(""):'<div class="empt
 +(miss.length?'<div class="cnt">今天不在分析範圍內（成交額太低或資料不足）：'+miss.join("、")+' <button class="chip" data-clr="1">移除這些</button></div>':"")}
 function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${FAV.has(s.t)?'<span class="star">★</span>':""}${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
 <div class="l2 n"><span>波動 <b>${fx(s.v,1)}%</b></span><span>起漲 <b class="${cl(s.ru||0)}">${s.ru==null?"—":sg(s.ru).replace(".00","")+"%"}</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>今日量比 <b>${s.vr==null?"—":fx(s.vr,1)+"倍"}</b></span></div>
-${(s.e||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動</span>':'')+(HOT(s)?'<span class="tag">仍在動・'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
+${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.stp?'<span class="tag">停損參考 '+s.stp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動</span>':'')+(HOT(s)?'<span class="tag">仍在動・'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+(s.rc||0)*100+'%"></i></div>'}</button>
 <div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
 function rs(v){return v==null?"—":`<b class="${cl(v)}">${sg(v)}%</b>`}
+function holds(){const H=META.holds||[];const act=H.filter(h=>["明天開盤賣","持有中","明天開盤買"].includes(h.s));
+const cnt=s=>H.filter(h=>h.s===s).length;const line=h=>`<div class="ti"><span>${h.n} <small>${h.t}・${h.d}發動</small></span><span>${h.r==null?"":rs(h.r)} <small>${h.s==="已賣出"?"已賣出 "+h.sd:h.s}${h.s==="持有中"?"・停損 "+h.st+"・剩"+h.left+"天":""}${h.s==="明天開盤賣"?"・收盤 "+h.c+" 跌破 "+h.st:""}</small></span></div>`;
+const grp=(title,arr,open)=>arr.length?`<div class="row${open?" o":""}"><button aria-expanded="${open}"><div class="l1"><span class="nm">${title}</span><span class="n">${arr.length} 檔</span></div></button><div class="dt n">${arr.map(line).join("")}</div></div>`:"";
+$("holds").innerHTML=H.length?`<p class="cnt">持有中 ${cnt("持有中")}・明天開盤賣 ${cnt("明天開盤賣")}・已賣出 ${cnt("已賣出")}・到期 ${cnt("到期賣出")}・漲停買不到 ${cnt("漲停買不到")}</p>`
++grp("明天開盤要賣",H.filter(h=>h.s==="明天開盤賣"),false)+grp("持有中",H.filter(h=>h.s==="持有中"),false)+grp("明天開盤買",H.filter(h=>h.s==="明天開盤買"),false)+grp("已賣出／到期",H.filter(h=>["已賣出","到期賣出"].includes(h.s)),false)
++`<p class="cnt">自己有買的話，把股票加到「自選」，卡片上會顯示停損參考價。</p>`:"<p>近20個交易日沒有今日發動。</p>"}
 function track(){$("fwd").textContent=META.fwd.replaceAll("-","/");
 const G=[["pk","今日發動 5日"],["trail","今日發動 移動停損"],["hot","仍在動 5日"],["all","全體 5日"]],M=[["n","筆數"],["avg","平均"],["med","中位數"],["win","勝率"],["up","賺≥10%"],["dn","賠≥10%"],["w5","最差5%平均"]];
 const f=(m,v)=>v==null?"—":m==="n"?v:(m==="avg"||m==="med"||m==="w5")?`<b class="${cl(v)}">${sg(v)}%</b>`:v+"%";
@@ -249,7 +258,7 @@ else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.cl
 $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEventListener("change",e=>{st.sort=e.target.value;list()});
 $("sub").textContent=META.date+" 收盤，分析 "+D.length+" 檔";
 $("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。名單是剛發動或還在動的股票，接下來容易大漲也容易大跌，不是買進訊號。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
-chips();list();track();
+chips();list();track();holds();
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));
 const last=new Date(META.date.replaceAll("/","-")+"T00:00:00Z");let gap=0;for(let d=e;d>last;d=back(d))gap++;

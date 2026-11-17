@@ -130,6 +130,40 @@ track.sort(key=lambda x: x["d"], reverse=True)
 summary = {k: {"pk": stats(v["pk"]), "hot": stats(v["hot"]), "all": stats(v["all"]), "trail": stats(v["trail"]), "blk": v["blk"],
                "days": len({t["d"] for t in track if t["k"] == k and t["s"] in ("完成", "無訊號")})} for k, v in pool.items()}
 
+# ---- 持有追蹤：近20個交易日的今日發動，照移動停損規則算現在的狀態 ----
+def hold_state(i, code):
+    k = C.columns.get_loc(code); e = i + 1
+    if e >= len(days): return {"s": "明天開盤買"}
+    o = O.iat[e, k]
+    if not o == o or o <= 0: return None
+    if locked(o, H.iat[e, k], L.iat[e, k], C.iat[i, k], True): return {"s": "漲停買不到"}
+    end, peak, lastc = e + CAP - 1, o, o
+    for t in range(e, min(end, len(days) - 1) + 1):
+        c = C.iat[t, k]
+        if not c == c: continue
+        peak, lastc = max(peak, c), c
+        if c <= peak * (1 - TRAIL) and t < end:
+            if t == len(days) - 1:
+                return {"s": "明天開盤賣", "e": o, "c": c, "pk": peak, "st": peak * (1 - TRAIL), "dd": t - e + 1}
+            return {"s": "已賣出", "e": o, "c": c, "pk": peak, "st": peak * (1 - TRAIL), "dd": t - e + 2, "sd": days[t + 1].strftime("%m/%d")}
+    if end <= len(days) - 1:
+        return {"s": "到期賣出", "e": o, "c": lastc, "pk": peak, "st": peak * (1 - TRAIL), "dd": CAP}
+    return {"s": "持有中", "e": o, "c": lastc, "pk": peak, "st": peak * (1 - TRAIL), "dd": len(days) - e, "left": end - (len(days) - 1)}
+holds = []
+recent = set(days[-(CAP + 1):].strftime("%Y-%m-%d"))
+for r in sig[(sig.tier == "今日發動") & sig.date.isin(recent)].itertuples():
+    if r.date not in dpos: continue
+    h = hold_state(dpos[r.date], r.code)
+    if not h: continue
+    h.update({"t": r.code, "n": r.name, "d": r.date[5:].replace("-", "/")})
+    for kk in ("e", "c", "pk", "st"):
+        if kk in h: h[kk] = round(float(h[kk]), 2)
+    if "e" in h and "c" in h: h["r"] = round((h["c"] / h["e"] - 1) * 100, 2)
+    holds.append(h)
+order = {"明天開盤賣": 0, "持有中": 1, "明天開盤買": 2, "已賣出": 3, "到期賣出": 4, "漲停買不到": 5}
+holds.sort(key=lambda h: (order.get(h["s"], 9), h["d"]), reverse=False)
+active_stop = {h["t"]: h["st"] for h in holds if h["s"] in ("持有中", "明天開盤賣")}
+
 # ---- 今天的清單 ----
 d = S[S.date == last].set_index("code").copy()
 prev_pk = set(S[(S.date == days[-2]) & S.pk].code) if len(days) > 1 else set()
@@ -155,13 +189,14 @@ for code, r in d.iterrows():
     x["ru"] = round(float(ru.get(code, np.nan)), 1) if ru.get(code, np.nan) == ru.get(code, np.nan) else None
     if code in recent_hist: x["hs"] = recent_hist[code]
     if code in disp: x["dp"] = disp[code]
+    if code in active_stop: x["stp"] = active_stop[code]
     if r.pk or r.rc >= 0.8:  # 只給可能顯示的股票附上走勢，控制檔案大小
         x["sp"] = [round(float(v), 2) for v in C[code].iloc[-30:].tolist() if v == v]
     data.append(x)
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary}
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
 html = html.replace("/*DATA*/[]", J(data)).replace("/*META*/{}", J(meta)).replace("/*TRACK*/[]", J(track))
