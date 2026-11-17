@@ -24,6 +24,7 @@ v1（舊版精選）的紀錄保留在 `data/archive/`。
 | `fetch_disposal.py` | 處置股公告 |
 | `fetch_adjust.py` | 除權息、減資參考價（價格調整用） |
 | `fetch_chips.py` | 三大法人買賣超、融資融券餘額（`data/chips/YYYY.csv.gz`） |
+| `fetch_industry.py` | 產業別與實收資本額（`data/industry.csv`，只用來標示與研究，不影響分級） |
 | `fetch_history.py`, `merge_history.py` | 補 2020 年起的歷史行情 |
 | `research/backtest.py` | 長期回測（檢驗方法事先寫在檔頭，不調門檻） |
 | `research/detection.py` | 發現速度：大漲波段中第幾天抓到、抓到後還剩多少（v1） |
