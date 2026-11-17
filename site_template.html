@@ -51,7 +51,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 .doc h2{font-size:16px;margin:14px 0 4px}
 .doc p,.doc li{color:var(--mu);font-size:14px;margin:4px 0}
 .doc ul{padding-left:18px;margin:4px 0}
-.tb{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.tb th,.tb td{text-align:right;padding:5px 4px;border-bottom:1px solid var(--ln);color:var(--mu)}.tb th:first-child,.tb td:first-child{text-align:left;color:var(--ink)}.tb b{color:var(--ink)}.nt{background:var(--acs);color:var(--ink);border-radius:10px;padding:9px 12px;font-size:13.5px;margin:0 0 10px}.sp{display:block;width:100%;height:30px;margin-top:6px}.sp polyline{fill:none;stroke-width:1.5;vector-effect:non-scaling-stroke}.tag.nw{background:var(--up);color:#fff}.tag.dp{background:#b7791f;color:#fff}.sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.sum div{background:var(--bg);border-radius:10px;padding:8px 10px}.sum small{display:block;color:var(--mu);font-size:12px}.sum b{font-size:18px}.kd{font-size:11.5px;border-radius:5px;padding:0 6px;margin-left:6px;background:var(--ln);color:var(--mu)}.kd.real{background:var(--acs);color:var(--ac)}.ti{display:flex;justify-content:space-between;padding:3px 0;font-size:13px}.ti span:first-child{color:var(--ink)}.nt.warn{background:var(--up);color:#fff}.empty{text-align:center;color:var(--mu);padding:40px 12px}
+.tb{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.tb th,.tb td{text-align:right;padding:5px 4px;border-bottom:1px solid var(--ln);color:var(--mu)}.tb th:first-child,.tb td:first-child{text-align:left;color:var(--ink)}.tb b{color:var(--ink)}.nt{background:var(--acs);color:var(--ink);border-radius:10px;padding:9px 12px;font-size:13.5px;margin:0 0 10px}.sp{display:block;width:100%;height:30px;margin-top:6px}.sp polyline{fill:none;stroke-width:1.5;vector-effect:non-scaling-stroke}.tag.nw{background:var(--up);color:#fff}.tag.dp{background:#b7791f;color:#fff}.sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.sum div{background:var(--bg);border-radius:10px;padding:8px 10px}.sum small{display:block;color:var(--mu);font-size:12px}.sum b{font-size:18px}.kd{font-size:11.5px;border-radius:5px;padding:0 6px;margin-left:6px;background:var(--ln);color:var(--mu)}.kd.real{background:var(--acs);color:var(--ac)}.ti{display:flex;justify-content:space-between;padding:3px 0;font-size:13px}.ti span:first-child{color:var(--ink)}.nt.warn{background:var(--up);color:#fff}details.old{margin:4px 0 10px}details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:10px 4px;list-style:revert}.empty{text-align:center;color:var(--mu);padding:40px 12px}
 </style>
 </head><body>
 <header><h1>強勢股雷達</h1><div class="sub n" id="sub"></div><div class="chips" id="rules"></div></header>
@@ -60,6 +60,14 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <div style="padding:0 16px"><div class="chips" id="flt"></div></div>
 <main><div class="nt warn" id="stale" hidden></div><div class="nt" id="mkt"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
+<div class="doc"><h2>目前結論</h2>
+<ul><li><b>這是「波動雷達」</b>：找得到接下來會大幅波動的股票，但看不出方向（七年資料，預測大漲和大跌的能力一樣）。</li>
+<li><b>今日發動抓得最早</b>：大漲波段中位數在第7天抓到，抓到時才漲約16%；但約3成之後會先跌10%。</li>
+<li><b>買了用移動停損賣</b>：收盤比買進後最高收盤低10%就隔天開盤賣、最多抱20天。2024–2026平均每筆+0.89%，但中位數−4.47%，空頭年（2022）會賠。</li>
+<li><b>兩個待驗證的標示</b>：「逆勢」（大盤偏弱時發動）和「融資未增」，2024–2026表現明顯較好，但都是看過結果才發現的，要等之後的實際資料確認。</li>
+<li><b>試過沒幫助的</b>：只在大盤偏多時做、法人買超、續強／回落、舊版精選（量能比放大）、營收。</li>
+<li>扣掉成本後還<b>沒有證明能穩定賺錢</b>，名單請當觀察用。實際表現看「追蹤」頁，第一批5日結果在11/24。</li></ul></div>
+
 <div class="doc"><h2>籌碼有沒有幫助：大致沒有</h2>
 <p>用2020–2026年三大法人買賣超與融資餘額，事先寫好5個條件，看能不能讓「今日發動＋移動停損」更好。規則：保留至少30%的訊號、且2020–2023年平均提高至少1個百分點，才算有用。</p>
 <table class="tb n"><tr><th>移動停損平均</th><th>2020–2023</th><th>2024–2026</th><th>保留訊號</th></tr>
@@ -111,6 +119,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <p><b>要說清楚的地方</b>：沒有任何候選條件達到我事先設的標準（命中率要跟「仍在動」一樣高），代表<b>越早抓、誤報越多</b>。照事先寫的退路應選「量比3倍＋漲停」；我改選「第一根漲停」，因為它在挑選期就比較早、剩下空間更大、命中率幾乎相同，驗證期也每一項都比較好。這是看過結果後的判斷，真正的檢驗是 2026/11/17 之後的「追蹤」頁。</p>
 <p>大約四檔裡只有一檔之後會再漲20%，也有近三成會先跌10%。名單是「剛發動、值得盯」的股票，不是買進訊號；進場後怎麼出場才是關鍵。</p></div>
 
+<details class="old"><summary>舊版研究紀錄（v1「精選」時期，已不使用，點開看）</summary>
 <div class="doc"><h2>雷達多快發現發動的股票</h2>
 <p>2020–2026年共找到1,536波大漲（從近20日最低點起，20個交易日內漲50%以上；中位數漲56%、歷時19個交易日）。看雷達在這些漲勢中第幾天抓到、抓到後還剩多少：</p>
 <table class="tb n"><tr><th></th><th>舊版精選</th><th>仍在動</th></tr>
@@ -202,7 +211,8 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <ul><li>這個規則找出的是<b>大漲機率高約2.5到3倍</b>的股票，但它們<b>跌起來也更兇</b>。10月到11/2大盤走弱，入選股的平均報酬比全體更差，單週跌20%以上的比例是漲20%以上的三倍。</li>
 <li>方向主要看大盤。11/2當週個股報酬中位數約−12%，11/9當週約+6.5%。入選股只是把大盤的漲跌放大。</li>
 <li>「量能增溫」（近5日均額不低於近20日）標籤，在三個期間都比單看活躍度略好，但差距小，樣本也少，只當參考。</li>
-<li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></main></section>
+<li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></details>
+</main></section>
 <section class="pg" id="p4"><main>
 <div class="doc"><h2>持有追蹤（近20個交易日的今日發動）</h2>
 <p>假設每檔都在訊號隔天開盤買進，照移動停損規則：收盤比買進後最高收盤低10%就隔天開盤賣，最多抱20個交易日。價格已依除權息調整。</p>
@@ -228,7 +238,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li>
 <li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li></ul>
 <p>本頁是研究整理，不是買賣建議。</p></div></main></section>
-<nav><button data-p="p1" aria-current="page">雷達</button><button data-p="p4">追蹤</button><button data-p="p2">共同點</button><button data-p="p3">說明</button></nav>
+<nav><button data-p="p1" aria-current="page">雷達</button><button data-p="p4">追蹤</button><button data-p="p2">研究</button><button data-p="p3">說明</button></nav>
 <script>
 const D=/*DATA*/[];const META=/*META*/{};const T=/*TRACK*/[];
 const st={rule:"P",mk:"",q:"",sort:"vr",u5:""};const $=i=>document.getElementById(i);
