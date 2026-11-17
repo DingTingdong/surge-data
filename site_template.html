@@ -60,6 +60,18 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <div style="padding:0 16px"><div class="chips" id="flt"></div></div>
 <main><div class="nt warn" id="stale" hidden></div><div class="nt" id="mkt"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
+<div class="doc"><h2>大盤偏弱時發動的，反而比較好（探索性發現）</h2>
+<p>原本想測「只在大盤偏多時才做」能不能避開空頭的虧損。事先寫好3種大盤濾網，結果<b>三種都讓績效變差</b>，所以沒有採用。</p>
+<p>反過來看：大盤偏弱（分析範圍內股票的等權指數在60日均線下）時出現的今日發動，用移動停損出場的結果明顯比較好：</p>
+<table class="tb n"><tr><th>今日發動＋移動停損</th><th>大盤偏弱時</th><th>大盤偏多時</th></tr>
+<tr><td>2020–2023 平均</td><td><b>+1.38%</b></td><td>−0.98%</td></tr>
+<tr><td>2020–2023 中位數</td><td>−2.14%</td><td>−6.24%</td></tr>
+<tr><td>2024–2026 平均</td><td><b>+4.84%</b></td><td>−0.43%</td></tr>
+<tr><td>2024–2026 中位數</td><td><b>+2.59%</b></td><td>−6.35%</td></tr>
+<tr><td>2024–2026 勝率</td><td>56%</td><td>33%</td></tr></table>
+<p>逐年（大盤偏弱時的平均）：2020 +2.07%（只有25筆）、2021 +4.48%、2022 −1.04%、2023 +0.25%、2024 +1.04%、2025 +7.10%、2026 +4.41%。</p>
+<p>可能的解釋：大盤弱時還能漲停的股票，是真的有人在買；大盤強時漲停的，比較多是跟風。</p>
+<p><b>要看清楚</b>：這是看過結果後才發現的（把事先寫的濾網反過來看），不是事先寫好的假設；效果很依賴2025年4月、2026年11月這種急跌後的反彈；2022年這種長期空頭照樣賠。所以先<b>只做標示</b>：大盤偏弱時，今日發動會標「逆勢」，之後用實際資料檢驗，不改名單。</p></div>
 <div class="doc"><h2>買了之後怎麼賣：移動停損最好</h2>
 <p>用2020–2026年所有「今日發動」訊號，隔天開盤買，比較7種賣法（事先寫好、2020–2023挑、2024–2026驗證，每筆扣1.1%）。驗證期結果：</p>
 <table class="tb n"><tr><th>2024–2026</th><th>平均</th><th>中位數</th><th>勝率</th><th>平均抱</th><th>最差5%</th></tr>
@@ -225,7 +237,7 @@ $("list").innerHTML=(a.length?a.slice(0,100).map(row).join(""):'<div class="empt
 +(miss.length?'<div class="cnt">今天不在分析範圍內（成交額太低或資料不足）：'+miss.join("、")+' <button class="chip" data-clr="1">移除這些</button></div>':"")}
 function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${FAV.has(s.t)?'<span class="star">★</span>':""}${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
 <div class="l2 n"><span>波動 <b>${fx(s.v,1)}%</b></span><span>起漲 <b class="${cl(s.ru||0)}">${s.ru==null?"—":sg(s.ru).replace(".00","")+"%"}</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>今日量比 <b>${s.vr==null?"—":fx(s.vr,1)+"倍"}</b></span></div>
-${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.stp?'<span class="tag">停損參考 '+s.stp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動</span>':'')+(HOT(s)?'<span class="tag">仍在動・'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
+${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.stp?'<span class="tag">停損參考 '+s.stp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動'+(META.weak?'・逆勢':'')+'</span>':'')+(HOT(s)?'<span class="tag">仍在動・'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+(s.rc||0)*100+'%"></i></div>'}</button>
 <div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
@@ -257,7 +269,7 @@ const nm=t.closest(".row").querySelector(".nm"),sv=nm.querySelector(".star");if(
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
 $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEventListener("change",e=>{st.sort=e.target.value;list()});
 $("sub").textContent=META.date+" 收盤，分析 "+D.length+" 檔";
-$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。名單是剛發動或還在動的股票，接下來容易大漲也容易大跌，不是買進訊號。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
+$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。"+(META.weak?"大盤偏弱（等權指數在60日線下），今天的今日發動屬於<b>逆勢發動</b>。":"大盤偏多（等權指數在60日線上）。")+"名單是剛發動或還在動的股票，接下來容易大漲也容易大跌，不是買進訊號。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
 chips();list();track();holds();
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));

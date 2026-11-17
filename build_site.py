@@ -28,6 +28,13 @@ name = p.sort_values("date").drop_duplicates("code", keep="last").set_index("cod
 f = features(P)
 S = tiers(f, P["MK"], since=days[max(0, len(days) - 70)])  # 網站只需近期；指標仍用完整歷史算
 
+# ---- 大盤狀態：分析範圍內股票的等權指數是否在60日均線下（「逆勢」，探索性標示，見 research/results/README.md）----
+inb = (f["amt"] >= 10) & (f["n60"] >= 55)
+for k in ("v", "rg", "atr", "lu", "mx", "am", "bk"): inb &= f[k].notna()  # 與 radar_core 的分析範圍相同
+ewi = (1 + C.pct_change(fill_method=None).where(inb).mean(axis=1).fillna(0)).cumprod()  # 分析範圍內股票的等權指數
+weak = (ewi < ewi.rolling(60, min_periods=60).mean())
+S["weak"] = S.date.map(weak).fillna(False).astype(bool)
+
 # ---- 紀錄：只新增，不改舊的 ----
 os.makedirs("data", exist_ok=True)
 ds = lambda x: x.dt.strftime("%Y-%m-%d")
@@ -43,9 +50,9 @@ if len(want):
     new = new[["date", "ver", "kind", "tier", "code", "name", "mk", "close", "rc", "am", "ch"]]
     sig = new if sig is None else pd.concat([sig, new], ignore_index=True)
     sig.to_csv(SIG, index=False)
-    cnt = S[S.date.isin(want)].groupby("date").agg(universe=("base", "sum"), hot=("hot", "sum"), pick=("pk", "sum")).reindex(want, fill_value=0)
+    cnt = S[S.date.isin(want)].groupby("date").agg(universe=("base", "sum"), hot=("hot", "sum"), pick=("pk", "sum"), weak=("weak", "max")).reindex(want, fill_value=0)
     cnt = cnt.reset_index().rename(columns={"index": "date"})
-    cnt = cnt.assign(ver=RULE_VERSION, kind=kind(cnt.date), date=ds(cnt.date))[["date", "ver", "kind", "universe", "hot", "pick"]]
+    cnt = cnt.assign(ver=RULE_VERSION, kind=kind(cnt.date), date=ds(cnt.date), weak=cnt.weak.astype(int))[["date", "ver", "kind", "universe", "hot", "pick", "weak"]]
     dlog = cnt if dlog is None else pd.concat([dlog, cnt], ignore_index=True)
     dlog.to_csv(DAYS, index=False)
 
@@ -196,7 +203,7 @@ for code, r in d.iterrows():
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds}
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1])}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
 html = html.replace("/*DATA*/[]", J(data)).replace("/*META*/{}", J(meta)).replace("/*TRACK*/[]", J(track))
