@@ -135,6 +135,7 @@ details.old{margin:6px 0 12px}
 details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4px}
 .empty{text-align:center;color:var(--mu);padding:44px 16px}
 @media (min-width:720px){header{padding:14px 24px 12px}.bar{padding:14px 24px 0;max-width:760px;margin:0 auto}}
+#stat .kv{display:grid;gap:0;margin:4px 0 10px}#stat .kv div{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--ln)}#stat .kv span{color:var(--mu)}#stat .kv b{font-family:var(--num);font-weight:600}#stat .kv b.lag{color:var(--sig)}
 </style>
 </head><body>
 <header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div class="seg" id="rules"></div></header>
@@ -308,7 +309,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <div class="doc"><h2>事先定好的停止條件</h2>
 <p>在看到實際結果之前先寫下，避免邊看邊改：累積約26週（130個交易日）實際結果後，如果<b>今日發動的5日報酬中位數不高於「仍在動的其他股票」</b>，或<b>今日發動賠10%以上的比例超過35%</b>，就停用今日發動分級，只保留「仍在動」當觀察名單。在那之前不調整門檻。</p></div>
 <div id="tlist"></div></main></section>
-<section class="pg" id="p3"><main><div class="doc"><h2>加到手機主畫面</h2><ul><li>iPhone（Safari）：按下方分享鈕 → 加入主畫面。</li><li>Android（Chrome）：按右上角 ⋮ → 加到主畫面（或「安裝應用程式」）。</li></ul><p>之後從主畫面圖示打開，就像App一樣全螢幕顯示。自選股存在這支手機的瀏覽器裡，換手機或清除瀏覽資料會消失。</p></div>
+<section class="pg" id="p3"><main><div class="doc" id="stat"></div><div class="doc"><h2>加到手機主畫面</h2><ul><li>iPhone（Safari）：按下方分享鈕 → 加入主畫面。</li><li>Android（Chrome）：按右上角 ⋮ → 加到主畫面（或「安裝應用程式」）。</li></ul><p>之後從主畫面圖示打開，就像App一樣全螢幕顯示。自選股存在這支手機的瀏覽器裡，換手機或清除瀏覽資料會消失。</p></div>
 <div class="doc"><h2>資料與更新</h2>
 <p>行情來自證交所與櫃買中心每日收盤資料，雲端排程每個平日台北18:30自動抓取並重新計算。清單包含近20日平均成交額1,000萬元以上、已有60日行情的上市櫃普通股。</p>
 <h2>各欄位</h2>
@@ -382,4 +383,6 @@ const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));re
 const last=new Date(META.date.replaceAll("/","-")+"T00:00:00Z");let gap=0;for(let d=e;d>last;d=back(d))gap++;
 if(gap>=2){const s=$("stale");s.hidden=false;s.textContent="資料停在 "+META.date+"，已經 "+gap+" 個交易日沒更新（遇到連假可能是正常的）。如果持續，可能是自動更新出問題了。"}})();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+(()=>{const c=META.chip||{},f=x=>x?x.slice(5).replace(/-/g,"/"):"—",td=META.date.slice(5);const it=(k,v,ok)=>`<div><span>${k}</span><b class="${ok?"":"lag"}">${v}</b></div>`;
+$("stat").innerHTML=`<h2>資料狀態</h2><div class="kv n">${it("股價（收盤）",td,1)}${it("三大法人買賣超",c.inst?f(c.inst):"還沒公布",!!c.inst)}${it("融資融券餘額",c.md||"—",c.md===td)}</div><p>平日晚上 18:20 起，大約每1～2小時自動檢查一次到隔天早上，有缺的資料就補上。法人約下午公布、融資融券約晚上9點後公布，所以傍晚剛更新時，後兩項可能還是前一天的。</p>`})();
 </script></body></html>
