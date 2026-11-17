@@ -1,4 +1,4 @@
-"""抓籌碼資料：三大法人買賣超、融資融券餘額（上市＋上櫃，四碼個股），存到 data/chips/YYYY.csv.gz。
+"""抓籌碼資料：三大法人買賣超、融資融券餘額（上市＋上櫃，四碼個股），存到 data/chips/YYYY.csv.gz（往年）與 data/chips/YYYY.csv（今年）。
 
 欄位（張＝1,000股）：date, market, code, foreign（外資及陸資合計買賣超，含外資自營商）, trust（投信）,
 dealer（自營商合計）, inst（三大法人合計）, margin（融資餘額）, short（融券餘額）
@@ -110,13 +110,16 @@ def trading_days(a, b):
                 if r["market"] == "TWSE" and a.isoformat() <= r["date"] <= b.isoformat(): ds.add(r["date"])
     return sorted(dt.date.fromisoformat(x) for x in ds)
 
+def opener(fn, mode):
+    return gzip.open(fn, mode + "t", newline="" if mode == "w" else None, encoding="utf-8") if fn.endswith(".gz") else open(fn, mode, newline="" if mode == "w" else None, encoding="utf-8")
+
 def read(fn):
     if not os.path.exists(fn): return []
-    with gzip.open(fn, "rt", encoding="utf-8") as f: return [r for r in csv.reader(f)][1:]
+    with opener(fn, "r") as f: return [r for r in csv.reader(f)][1:]
 
 def write(fn, rows):
     os.makedirs(os.path.dirname(fn), exist_ok=True)
-    with gzip.open(fn, "wt", newline="", encoding="utf-8") as f:
+    with opener(fn, "w") as f:
         w = csv.writer(f); w.writerow(COLS); w.writerows(sorted(rows, key=lambda r: (r[0], r[1], r[2])))
 
 def main(start=None, end=None, out=None):
@@ -126,7 +129,11 @@ def main(start=None, end=None, out=None):
         fn = out or f"data/chips/{a.year}.csv.gz"; rows = read(fn); have = {r[0] for r in rows}
     else:
         a, b = dt.date(today.year, 1, 1), today
-        fn = f"data/chips/{today.year}.csv.gz"; rows = read(fn)
+        # 今年用純文字檔：每天只多幾列，git 只記差異；壓縮檔每次重寫會讓 repo 越來越大
+        fn = f"data/chips/{today.year}.csv"
+        if not os.path.exists(fn) and os.path.exists(fn + ".gz"):
+            write(fn, read(fn + ".gz")); os.remove(fn + ".gz")
+        rows = read(fn)
         # 最近3個交易日每次都重抓（融資融券通常晚上才公布，早一點跑可能還沒有）
         recent = trading_days(a, b)[-3:]
         have = {r[0] for r in rows} - {d.isoformat() for d in recent}

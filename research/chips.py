@@ -29,7 +29,7 @@ days = C.index; N = len(days)
 Cv, Ov, Hv, Lv = C.values, O.values, H.values, L.values
 pos = {d: i for i, d in enumerate(days)}; col = {c: j for j, c in enumerate(C.columns)}
 
-ch = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in sorted(glob.glob("data/chips/*.csv.gz"))], ignore_index=True)
+ch = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in sorted(glob.glob("data/chips/*.csv*"), key=lambda x: (os.path.basename(x)[:4], x.endswith(".csv")))], ignore_index=True)
 ch["date"] = pd.to_datetime(ch.date)
 ch = ch.drop_duplicates(["date", "code"], keep="last")
 piv = lambda c: ch.pivot(index="date", columns="code", values=c).reindex(index=days, columns=C.columns)

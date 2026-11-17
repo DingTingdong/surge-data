@@ -174,7 +174,7 @@ active_stop = {h["t"]: h["st"] for h in holds if h["s"] in ("持有中", "明天
 # ---- 籌碼：今天的法人買賣超；融資用最近有資料的一天（融資約晚上才公布）----
 import glob
 chip_info, chip_meta = {}, {}
-cfiles = sorted(glob.glob("data/chips/*.csv.gz"))[-2:]
+cfiles = sorted(glob.glob("data/chips/*.csv*"), key=lambda x: (os.path.basename(x)[:4], x.endswith(".csv")))[-2:]
 if cfiles:
     ch = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in cfiles], ignore_index=True)
     ch = ch[ch.date <= last.strftime("%Y-%m-%d")].drop_duplicates(["date", "code"], keep="last")
