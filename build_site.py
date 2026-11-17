@@ -16,6 +16,11 @@ LOCK = 0.095                 # 一價到底且漲跌幅達此比例 → 視為�
 SIG, DAYS = "data/signals.csv", "data/days.csv"
 
 p = load_prices(years_back=1)
+# 最新一天如果只抓到一個市場（例如太早手動執行、櫃買還沒公布），先不算這天，等下次執行再補
+cnt = p[p.date == p.date.max()].groupby("market").size()
+if cnt.get("TWSE", 0) < 300 or cnt.get("TPEX", 0) < 300:
+    print("latest day incomplete, skipped:", p.date.max().date(), cnt.to_dict())
+    p = p[p.date < p.date.max()]
 P = panels(p)                                       # 已做除權息／減資調整
 C, O, H, L = P["C"], P["O"], P["H"], P["L"]
 days = C.index; last = days[-1]
