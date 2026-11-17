@@ -1,0 +1,56 @@
+name: Codex public market data reader
+on:
+  workflow_run:
+    workflows: [update-prices]
+    branches: [main]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - cloud-reader-source/**
+      - .github/workflows/codex-source-reader.yml
+permissions:
+  contents: write
+concurrency:
+  group: codex-public-market-reader
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: >-
+      github.repository == 'DingTingdong/surge-data' &&
+      (github.event_name == 'push' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Stage isolated public data branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=codex-reader-data
+          dest="$RUNNER_TEMP/codex-reader-output"
+          remote=$(git ls-remote --heads origin "refs/heads/$branch")
+          if [[ -n "$remote" ]]; then
+            git fetch --depth=1 origin "refs/heads/$branch"
+            git worktree add --detach "$dest" FETCH_HEAD
+          else
+            git worktree add --detach --no-checkout "$dest" HEAD
+            git -C "$dest" switch --orphan "$branch"
+          fi
+      - name: Verify market data and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="$RUNNER_TEMP/codex-reader-output"
+          python3 cloud-reader-source/build.py --data-dir data --output "$dest" --source-commit "$(git rev-parse HEAD)"
+          git -C "$dest" add -- manifest.json objects evidence
+          if ! git -C "$dest" diff --cached --quiet; then
+            git -C "$dest" -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Record verified public market data"
+            git -C "$dest" push origin HEAD:refs/heads/codex-reader-data
+          fi
