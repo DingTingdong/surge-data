@@ -56,22 +56,33 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 </head><body>
 <header><h1>強勢股雷達</h1><div class="sub n" id="sub"></div><div class="chips" id="rules"></div></header>
 <section class="pg on" id="p1">
-<div class="bar"><input id="q" type="search" placeholder="搜尋代號或名稱" aria-label="搜尋"><select id="sort" aria-label="排序"><option value="am">量能比</option><option value="rc">活躍度</option><option value="v">波動</option><option value="r5">5日漲幅</option></select></div>
+<div class="bar"><input id="q" type="search" placeholder="搜尋代號或名稱" aria-label="搜尋"><select id="sort" aria-label="排序"><option value="am">量能比</option><option value="ru">剛起漲</option><option value="rc">活躍度</option><option value="v">波動</option><option value="r5">5日漲幅</option></select></div>
 <div style="padding:0 16px"><div class="chips" id="flt"></div></div>
 <main><div class="nt warn" id="stale" hidden></div><div class="nt" id="mkt"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
-<div class="doc"><h2>2020–2026 七年回測：精選沒有比較好</h2>
+<div class="doc"><h2>雷達多快發現發動的股票</h2>
+<p>2020–2026年共找到1,536波大漲（從近20日最低點起，20個交易日內漲50%以上；中位數漲56%、歷時19個交易日）。看雷達在這些漲勢中第幾天抓到、抓到後還剩多少：</p>
+<table class="tb n"><tr><th></th><th>今日發動</th><th>仍在動</th></tr>
+<tr><td>抓到的比例</td><td>37%</td><td><b>55%</b></td></tr>
+<tr><td>抓到是第幾天（中位數）</td><td>第13天</td><td><b>第10天</b></td></tr>
+<tr><td>抓到時已漲</td><td>+39%</td><td><b>+31%</b></td></tr>
+<tr><td>到頂點還剩（隔天開盤買）</td><td>+12%</td><td><b>+20%</b></td></tr>
+<tr><td>剩下的比例</td><td>35%</td><td><b>49%</b></td></tr></table>
+<p><b>「仍在動」比「今日發動」更早、抓得更多</b>：今日發動要等量能放大到2倍又收紅才算，所以比較晚。另有約20%的漲勢在發動前成交太少，雷達完全看不到。</p>
+<p>「還剩多少」是賣在最高點的理想值，實際上不知道哪天是頂點。每次新入選後10個交易日內：最高價中位數比進場高約5%，16%的機會曾漲20%以上，但也有約30%的機會曾跌10%以上。找到發動的股票之後，怎麼出場才是決定賺賠的關鍵。</p>
+<p>想看最早期的股票：在「仍在動」用「剛起漲」排序，今天上漲的股票中起漲幅度最小的排前面（今天下跌的排最後）。</p></div>
+<div class="doc"><h2>2020–2026 七年回測：今日發動沒有比較好</h2>
 <p>用2020年1月到2026年11月、約1,670個交易日的行情（已做除權息與減資調整），原封不動檢驗目前的門檻。報酬是隔天開盤買、第5個交易日收盤賣，扣1.1%。</p>
-<table class="tb n"><tr><th>5日報酬</th><th>精選</th><th>仍在動其他</th><th>全體</th></tr>
+<table class="tb n"><tr><th>5日報酬</th><th>今日發動</th><th>仍在動其他</th><th>全體</th></tr>
 <tr><td>每日檔數</td><td>8.6</td><td>68.2</td><td>993</td></tr>
 <tr><td>平均</td><td>−1.21%</td><td>−0.80%</td><td>−1.04%</td></tr>
 <tr><td>中位數</td><td>−2.80%</td><td>−2.03%</td><td>−1.40%</td></tr>
 <tr><td>賺10%以上</td><td>14%</td><td>13%</td><td>5%</td></tr>
 <tr><td>賠10%以上</td><td>18%</td><td>15%</td><td>6%</td></tr></table>
-<ul><li><b>七年每一年</b>，精選的報酬中位數都低於「仍在動的其他股票」，賠10%以上的比例也比較高。</li>
+<ul><li><b>七年每一年</b>，今日發動的報酬中位數都低於「仍在動的其他股票」，賠10%以上的比例也比較高。</li>
 <li>活躍度預測大漲和大跌的能力一樣（AUC 0.74 對 0.75），七年都是如此：這是<b>波動雷達</b>。</li>
-<li>精選股隔天平均<b>開高1.04%</b>，等開盤才買就把可能的優勢吃掉了。</li>
-<li>不重疊每週比較（331週）：精選比仍在動其他平均多0.34個百分點，但中位數−0.10、統計上不顯著。</li></ul>
+<li>今日發動股隔天平均<b>開高1.04%</b>，等開盤才買就把可能的優勢吃掉了。</li>
+<li>不重疊每週比較（331週）：今日發動比仍在動其他平均多0.34個百分點，但中位數−0.10、統計上不顯著。</li></ul>
 <p>結論：目前的價量條件<b>找得到會大幅波動的股票，但沒有證明能挑出會漲的</b>。名單請當觀察用，不要當買進訊號。</p></div>
 <div class="doc"><h2>覆核後最重要的修正：這是「波動雷達」</h2>
 <p>三份外部覆核都指出同一個問題，我用資料驗證後確認：<b>同一個活躍度指標，預測大跌的能力和預測大漲幾乎一樣強。</b></p>
@@ -82,12 +93,12 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <tr><td>每日 10/1–11/6（5日±15%）</td><td>0.75</td><td>0.74</td></tr></table>
 <p>意思是：雷達找得出「接下來會大幅波動」的股票，但<b>看不出方向</b>。前段大跌只有15次，0.67不可靠。</p>
 <p>再跟同樣高波動的股票比（每日，隔天開盤買、第5日收盤賣、扣1.1%）：</p>
-<table class="tb n"><tr><th></th><th>精選</th><th>仍在動其他</th><th>全體</th></tr>
+<table class="tb n"><tr><th></th><th>今日發動</th><th>仍在動其他</th><th>全體</th></tr>
 <tr><td>7/28–9/30 平均</td><td>+1.61%</td><td><b>+2.41%</b></td><td>+0.45%</td></tr>
 <tr><td>7/28–9/30 中位數</td><td>−0.22%</td><td><b>+0.69%</b></td><td>−0.73%</td></tr>
 <tr><td>10/1–11/6 平均</td><td><b>−2.84%</b></td><td>−3.60%</td><td>−3.58%</td></tr>
 <tr><td>10/1–11/6 中位數</td><td><b>−4.37%</b></td><td>−5.80%</td><td>−3.77%</td></tr></table>
-<p>精選加上的「當天上漲、量能比≥2」，前段讓結果變差、後段變好，<b>沒有一致的加分</b>。之前拿「全體」比較看起來比較好，主要是高波動股在不同行情的表現差異，不是選股能力。</p>
+<p>今日發動加上的「當天上漲、量能比≥2」，前段讓結果變差、後段變好，<b>沒有一致的加分</b>。之前拿「全體」比較看起來比較好，主要是高波動股在不同行情的表現差異，不是選股能力。</p>
 <p>所以：清單當作<b>值得盯的高波動股</b>，不是買進訊號。門檻先不再調，改用「追蹤」頁的實際結果和事先定好的停止條件來判斷。</p></div>
 
 <div class="doc"><h2>大漲股事前有什麼共同點</h2>
@@ -119,7 +130,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <tr><td>前10%</td><td><b>約8%</b></td><td>約2.5%</td><td>約+0.2%</td></tr>
 <tr><td>前10%到20%</td><td>4.5%</td><td>2.4%</td><td>−1.1%</td></tr></table>
 <p>所以「仍在動」是活躍度前10%、且今天或前10個交易日內有漲停；已降溫的另列。「新面孔」（近20日沒有任何5日漲20%以上）和「延續型」只是標籤：兩者大漲率約5.3%對6.4%，差距不大也不穩定，不能說哪個比較好。</p></div>
-<div class="doc"><h2>精選的門檻怎麼定的</h2>
+<div class="doc"><h2>今日發動的門檻怎麼定的</h2>
 <p>四個條件全部符合才入選：</p>
 <ul><li><b>活躍度前10%</b>：波動、振幅、平均真實波幅、漲停天數、近期最大5日漲幅的綜合排名（上市、上櫃分開排）。</li>
 <li><b>今天或前10個交易日內有漲停</b>（單日漲9%以上，近似值），排除早就熄火的。</li>
@@ -135,7 +146,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <tr><td>驗證期 <b>量能比≥2</b></td><td><b>6.5</b></td><td><b>−2.84%</b></td><td>30%</td></tr></table>
 <p>量能比≥2把檔數從每天約20多檔減到約6檔，兩段期間的平均報酬都比較好。量能比在1到2之間的放在「觀察」。</p>
 <p>我也試過加上波動、振幅、距高點、20日漲幅等門檻：在訓練期看起來最好的組合，到驗證期反而變差，所以沒有採用。也試過用「大盤站上20日均線的比例」決定要不要選股，兩段期間結果相反，同樣沒有採用。</p>
-<p><b>風險</b>：精選股在大盤下跌時一樣會跌，而且賠10%以上的比例明顯比全體高（驗證期30%對18%）。驗證期只有約5週，請看「追蹤」頁累積的實際結果。</p></div>
+<p><b>風險</b>：今日發動股在大盤下跌時一樣會跌，而且賠10%以上的比例明顯比全體高（驗證期30%對18%）。驗證期只有約5週，請看「追蹤」頁累積的實際結果。</p></div>
 <div class="doc"><h2>要看清楚的地方</h2>
 <ul><li>這個規則找出的是<b>大漲機率高約2.5到3倍</b>的股票，但它們<b>跌起來也更兇</b>。10月到11/2大盤走弱，入選股的平均報酬比全體更差，單週跌20%以上的比例是漲20%以上的三倍。</li>
 <li>方向主要看大盤。11/2當週個股報酬中位數約−12%，11/9當週約+6.5%。入選股只是把大盤的漲跌放大。</li>
@@ -143,25 +154,25 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></main></section>
 <section class="pg" id="p4"><main>
 <div class="doc"><h2>名單之後表現如何</h2>
-<p>每天收盤後，「仍在動」的完整名單（含精選、觀察）都會存檔，之後不再修改。報酬算法：隔天開盤買、第5個交易日收盤賣，扣約1.1%成本。開盤一價漲停視為買不到、不計入；出場日跌停鎖死順延；持有中停牌用最後收盤。</p>
-<p>比較三組：<b>精選</b>、<b>仍在動的其他股票</b>（同樣高波動，最公平的對照）、<b>全體</b>。精選要贏過「仍在動的其他股票」，加上去的條件才算有用。</p>
+<p>每天收盤後，「仍在動」的完整名單（含今日發動、觀察）都會存檔，之後不再修改。報酬算法：隔天開盤買、第5個交易日收盤賣，扣約1.1%成本。開盤一價漲停視為買不到、不計入；出場日跌停鎖死順延；持有中停牌用最後收盤。</p>
+<p>比較三組：<b>今日發動</b>、<b>仍在動的其他股票</b>（同樣高波動，最公平的對照）、<b>全體</b>。今日發動要贏過「仍在動的其他股票」，加上去的條件才算有用。</p>
 <div id="tsum"></div>
 <p>「實際」是 <span class="n" id="fwd"></span> 起的名單，才算真正的驗證；「回測」是規則制定期間的名單，只供參考。</p></div>
 <div class="doc"><h2>事先定好的停止條件</h2>
-<p>在看到實際結果之前先寫下，避免邊看邊改：累積約26週（130個交易日）實際結果後，如果<b>精選的5日報酬中位數不高於「仍在動的其他股票」</b>，或<b>精選賠10%以上的比例超過35%</b>，就停用精選分級，只保留「仍在動」當觀察名單。在那之前不調整門檻。</p></div>
+<p>在看到實際結果之前先寫下，避免邊看邊改：累積約26週（130個交易日）實際結果後，如果<b>今日發動的5日報酬中位數不高於「仍在動的其他股票」</b>，或<b>今日發動賠10%以上的比例超過35%</b>，就停用今日發動分級，只保留「仍在動」當觀察名單。在那之前不調整門檻。</p></div>
 <div id="tlist"></div></main></section>
 <section class="pg" id="p3"><main><div class="doc"><h2>加到手機主畫面</h2><ul><li>iPhone（Safari）：按下方分享鈕 → 加入主畫面。</li><li>Android（Chrome）：按右上角 ⋮ → 加到主畫面（或「安裝應用程式」）。</li></ul><p>之後從主畫面圖示打開，就像App一樣全螢幕顯示。自選股存在這支手機的瀏覽器裡，換手機或清除瀏覽資料會消失。</p></div>
 <div class="doc"><h2>資料與更新</h2>
 <p>行情來自證交所與櫃買中心每日收盤資料，雲端排程每個平日台北18:30自動抓取並重新計算。清單包含近20日平均成交額1,000萬元以上、已有60日行情的上市櫃普通股。</p>
 <h2>各欄位</h2>
-<ul><li>精選：活躍度前10%、今天或前10個交易日內有漲停、當天上漲、量能比至少2。</li><li>觀察：同上，但量能比在1到2之間。</li><li>新進：今天進入精選、昨天還不在。</li><li>處置：證交所或櫃買中心公布的處置股，期間改為分盤交易、部分需預收款券，買賣比較不容易成交。</li><li>卡片上的線：近30個交易日收盤走勢，紅色代表期間上漲。</li><li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li><li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li><li>漲停：近20日內單日漲9%以上的天數。</li></ul>
+<ul><li>今日發動（原名「精選」）：活躍度前10%、今天或前10個交易日內有漲停、當天上漲、量能比至少2，代表今天剛帶量發動，不代表比較值得買。</li><li>起漲：今天收盤比近20個交易日最低收盤高多少（已做除權息調整），數字越小代表越早期。</li><li>觀察：同上，但量能比在1到2之間。</li><li>新進：今天進入今日發動、昨天還不在。</li><li>處置：證交所或櫃買中心公布的處置股，期間改為分盤交易、部分需預收款券，買賣比較不容易成交。</li><li>卡片上的線：近30個交易日收盤走勢，紅色代表期間上漲。</li><li>活躍度：在同市場內的綜合排名，1.00是最活躍。</li><li>量能比：近5日均額除以近20日均額。</li><li>波動：近20日日報酬標準差。</li><li>漲停：近20日內單日漲9%以上的天數。</li></ul>
 <p>本頁是研究整理，不是買賣建議。</p></div></main></section>
 <nav><button data-p="p1" aria-current="page">雷達</button><button data-p="p4">追蹤</button><button data-p="p2">共同點</button><button data-p="p3">說明</button></nav>
 <script>
 const D=/*DATA*/[];const META=/*META*/{};const T=/*TRACK*/[];
 const st={rule:"P",mk:"",q:"",sort:"am"};const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
-const HOT=s=>s.rc>=.9&&s.sn<=10,PK=s=>HOT(s)&&s.ch>0&&s.am>=META.am,WT=s=>HOT(s)&&s.ch>0&&s.am>=1&&!PK(s);const RL={P:["精選",PK],W:["觀察",WT],A:["仍在動",HOT],F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
+const HOT=s=>s.rc>=.9&&s.sn<=10,PK=s=>HOT(s)&&s.ch>0&&s.am>=META.am,WT=s=>HOT(s)&&s.ch>0&&s.am>=1&&!PK(s);const RL={P:["今日發動",PK],W:["觀察",WT],A:["仍在動",HOT],F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
 let FAV=new Set();try{FAV=new Set(JSON.parse(localStorage.getItem("fav")||"[]"))}catch(e){}
 function saveFav(){try{localStorage.setItem("fav",JSON.stringify([...FAV]))}catch(e){}}
 const kurl=s=>"https://tw.stock.yahoo.com/quote/"+s.t+(s.mk==="櫃"?".TWO":".TW")+"/technical-analysis";
@@ -169,28 +180,28 @@ function base(){return D.filter(s=>!st.mk||s.mk===st.mk)}
 function chips(){const b=base();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip" data-r="${k}" aria-pressed="${st.rule===k}">${RL[k][0]}<small class="n">${b.filter(RL[k][1]).length}</small></button>`).join("");
 $("flt").innerHTML=[["","不分市場"],["櫃","上櫃"],["市","上市"]].map(x=>`<button class="chip" data-m="${x[0]}" aria-pressed="${st.mk===x[0]}">${x[1]}</button>`).join("")}
 function list(){const q=st.q.trim().toLowerCase();let a=base().filter(s=>RL[st.rule][1](s)&&(!q||(s.t+s.n).toLowerCase().includes(q)));
-a.sort((x,y)=>y[st.sort]-x[st.sort]||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔"+(a.length>100?"，顯示前100檔":"");
+const rk=s=>s.ch>0&&s.ru!=null?s.ru:1e9+(s.ru??0);a.sort((x,y)=>(st.sort==="ru"?rk(x)-rk(y):(y[st.sort]-x[st.sort]))||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔"+(a.length>100?"，顯示前100檔":"");
 const miss=st.rule==="F"?[...FAV].filter(c=>!D.some(s=>s.t===c)):[];
 $("list").innerHTML=(a.length?a.slice(0,100).map(row).join(""):'<div class="empty">'+(st.rule==="F"&&!FAV.size?"還沒有自選股。點開任一檔股票，按「加入自選」。":"沒有符合的股票。")+'</div>')
 +(miss.length?'<div class="cnt">今天不在分析範圍內（成交額太低或資料不足）：'+miss.join("、")+' <button class="chip" data-clr="1">移除這些</button></div>':"")}
 function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${FAV.has(s.t)?'<span class="star">★</span>':""}${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
-<div class="l2 n"><span>波動 <b>${s.v.toFixed(1)}%</b></span><span>10日振幅 <b>${s.rg.toFixed(0)}%</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>量能比 <b>${s.am.toFixed(2)}</b></span></div>
-${s.rc>=.8?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.nw?'<span class="tag nw">新進</span>':'')+(PK(s)?'<span class="tag">精選</span>':WT(s)?'<span class="tag">觀察</span>':'')+'<span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
+<div class="l2 n"><span>波動 <b>${s.v.toFixed(1)}%</b></span><span>起漲 <b class="${cl(s.ru||0)}">${s.ru==null?"—":sg(s.ru).replace(".00","")+"%"}</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>量能比 <b>${s.am.toFixed(2)}</b></span></div>
+${s.rc>=.8?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.nw?'<span class="tag nw">新進</span>':'')+(PK(s)?'<span class="tag">今日發動</span>':WT(s)?'<span class="tag">觀察</span>':'')+'<span class="tag">'+(s.sn<=10?'仍在動':'已降溫')+'</span><span class="tag">'+(s.bk>=20?'延續型':'新面孔')+'</span>'+(s.rv>=.8&&s.am>=1?'<span class="tag">量能增溫</span>':"")+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+s.rc*100+'%"></i></div>'}</button>
-<div class="dt n">${s.hs?`<p>近20日入選：${s.hs.map(h=>h[0]+" "+h[1]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${s.bk.toFixed(1)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
+<div class="dt n">${s.hs?`<p>近20日入選：${s.hs.map(h=>h[0]+" "+h[1]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${s.rc.toFixed(2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${s.bk.toFixed(1)}%</b></div><div><span>10日振幅</span><b>${s.rg.toFixed(1)}%</b></div><div><span>平均真實波幅</span><b>${s.atr.toFixed(1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
 function rs(v){return v==null?"—":`<b class="${cl(v)}">${sg(v)}%</b>`}
 function track(){$("fwd").textContent=META.fwd.replaceAll("-","/");
-const G=[["pk","精選"],["hot","仍在動其他"],["all","全體"]],M=[["n","筆數"],["avg","平均"],["med","中位數"],["win","勝率"],["up","賺≥10%"],["dn","賠≥10%"],["w5","最差5%平均"]];
+const G=[["pk","今日發動"],["hot","仍在動其他"],["all","全體"]],M=[["n","筆數"],["avg","平均"],["med","中位數"],["win","勝率"],["up","賺≥10%"],["dn","賠≥10%"],["w5","最差5%平均"]];
 const f=(m,v)=>v==null?"—":m==="n"?v:(m==="avg"||m==="med"||m==="w5")?`<b class="${cl(v)}">${sg(v)}%</b>`:v+"%";
 const tb=k=>{const s=META.sum[k];if(!s||!s.pk)return`<p class="cnt">${k==="實際"?"累積中：第一批5日結果約在名單後第6個交易日出爐。":"—"}</p>`;
 return`<table class="tb n"><tr><th></th>${G.map(g=>`<th>${g[1]}</th>`).join("")}</tr>${M.map(m=>`<tr><td>${m[1]}</td>${G.map(g=>`<td>${f(m[0],s[g[0]]&&s[g[0]][m[0]])}</td>`).join("")}</tr>`).join("")}</table><p class="cnt">${s.days} 個交易日；漲停買不到 ${s.blk} 筆（不計入）。</p>`};
 $("tsum").innerHTML="<h2>實際</h2>"+tb("實際")+"<h2>回測（規則制定期間）</h2>"+tb("回測");
-$("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm n">${x.d.slice(5).replace("-","/")}</span><span class="kd${x.k==="實際"?" real":""}">${x.k}</span><span class="kd">${x.s}</span></span><span class="n">精選 ${x.n} 檔</span></div>
-<div class="l2 n"><span>精選 ${rs(x.avg)}</span><span>仍在動其他 ${rs(x.hot)}</span><span>全體 ${rs(x.all)}</span></div></button>
-<div class="dt n">${x.it.length?x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}</div>`).join(""):"<p>這天沒有精選。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
+$("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm n">${x.d.slice(5).replace("-","/")}</span><span class="kd${x.k==="實際"?" real":""}">${x.k}</span><span class="kd">${x.s}</span></span><span class="n">今日發動 ${x.n} 檔</span></div>
+<div class="l2 n"><span>今日發動 ${rs(x.avg)}</span><span>仍在動其他 ${rs(x.hot)}</span><span>全體 ${rs(x.all)}</span></div></button>
+<div class="dt n">${x.it.length?x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}</div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
 if(t.dataset.r){st.rule=t.dataset.r;chips();list()}else if(t.dataset.m!==undefined){st.mk=t.dataset.m;chips();list()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
@@ -201,7 +212,7 @@ const nm=t.closest(".row").querySelector(".nm"),sv=nm.querySelector(".star");if(
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
 $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEventListener("change",e=>{st.sort=e.target.value;list()});
 $("sub").textContent=META.date+" 收盤，分析 "+D.length+" 檔";
-$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單是「接下來容易大漲也容易大跌」的股票，不是買進訊號。2020–2026回測中，精選並沒有比其他「仍在動」的股票好。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
+$("mkt").innerHTML="大盤狀態：近5日個股報酬中位數 <b class=\""+cl(META.m5)+"\">"+sg(META.m5)+"%</b>，"+META.above+"% 的股票在20日均線之上。清單是「接下來容易大漲也容易大跌」的股票，不是買進訊號。2020–2026回測中，今日發動並沒有比其他「仍在動」的股票好。今天活躍度前10%的股票，波動中位數約 "+META.hv+"%、10日振幅約 "+META.hrg+"%。";
 chips();list();track();
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));

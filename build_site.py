@@ -117,11 +117,13 @@ if os.path.exists("data/disposal.csv"):
 rs_days = set(days[-20:].strftime("%Y-%m-%d"))
 rh = sig[sig.date.isin(rs_days) & sig.tier.isin(["精選", "觀察"])].sort_values("date")
 recent_hist = {c: [[x.date[5:].replace("-", "/"), x.tier] for x in g.itertuples()] for c, g in rh.groupby("code")}
+ru = (C.iloc[-1] / C.iloc[-20:].min() - 1) * 100  # 從近20日最低收盤算起的漲幅（調整後價格）
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
     for k in cols: x[k] = r[k] if k in ("n", "mk") else round(float(r[k]), 2)
     x["lu"] = int(x["lu"]); x["amt"] = int(x["amt"]); x["sn"] = int(x["sn"]); x["nw"] = bool(r.nw)
+    x["ru"] = round(float(ru.get(code, np.nan)), 1) if ru.get(code, np.nan) == ru.get(code, np.nan) else None
     if code in recent_hist: x["hs"] = recent_hist[code]
     if code in disp: x["dp"] = disp[code]
     if r.rc >= 0.8:  # 只給可能顯示的股票附上走勢，控制檔案大小

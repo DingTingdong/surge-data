@@ -1,0 +1,413 @@
+{
+ "definition": {
+  "run": "起漲日為近20日最低收盤，20日內最高收盤 ≥ +50%"
+ },
+ "runs_total": 1536,
+ "runs_per_year": {
+  "2020": 329,
+  "2021": 235,
+  "2022": 105,
+  "2023": 103,
+  "2024": 182,
+  "2025": 215,
+  "2026": 367
+ },
+ "run_gain_med": 56.1,
+ "run_len_med": 19.0,
+ "detection": {
+  "今日發動": {
+   "全期": {
+    "runs": 1536,
+    "caught": 36.8,
+    "invisible": 19.5,
+    "day_med": 13.0,
+    "len_med": 19.0,
+    "done_med": 38.7,
+    "left_med": 14.5,
+    "left_open_med": 12.0,
+    "share_left_med": 34.7
+   },
+   "2020": {
+    "runs": 329,
+    "caught": 15.8,
+    "invisible": 36.2,
+    "day_med": 13.5,
+    "len_med": 19.0,
+    "done_med": 40.9,
+    "left_med": 10.0,
+    "left_open_med": 8.5,
+    "share_left_med": 26.1
+   },
+   "2021": {
+    "runs": 235,
+    "caught": 33.6,
+    "invisible": 19.6,
+    "day_med": 15.0,
+    "len_med": 19.0,
+    "done_med": 42.4,
+    "left_med": 12.8,
+    "left_open_med": 10.6,
+    "share_left_med": 29.8
+   },
+   "2022": {
+    "runs": 105,
+    "caught": 63.8,
+    "invisible": 13.3,
+    "day_med": 13.0,
+    "len_med": 19.0,
+    "done_med": 36.6,
+    "left_med": 16.4,
+    "left_open_med": 13.9,
+    "share_left_med": 40.6
+   },
+   "2023": {
+    "runs": 103,
+    "caught": 68.9,
+    "invisible": 12.6,
+    "day_med": 14.0,
+    "len_med": 19.0,
+    "done_med": 36.1,
+    "left_med": 18.0,
+    "left_open_med": 15.4,
+    "share_left_med": 39.6
+   },
+   "2024": {
+    "runs": 182,
+    "caught": 57.7,
+    "invisible": 13.2,
+    "day_med": 13.0,
+    "len_med": 19.0,
+    "done_med": 36.3,
+    "left_med": 17.4,
+    "left_open_med": 14.3,
+    "share_left_med": 40.0
+   },
+   "2025": {
+    "runs": 215,
+    "caught": 53.0,
+    "invisible": 19.5,
+    "day_med": 12.0,
+    "len_med": 19.0,
+    "done_med": 37.3,
+    "left_med": 13.3,
+    "left_open_med": 10.9,
+    "share_left_med": 33.5
+   },
+   "2026": {
+    "runs": 367,
+    "caught": 21.0,
+    "invisible": 11.4,
+    "day_med": 12.0,
+    "len_med": 19.0,
+    "done_med": 43.4,
+    "left_med": 12.2,
+    "left_open_med": 10.8,
+    "share_left_med": 30.7
+   }
+  },
+  "仍在動": {
+   "全期": {
+    "runs": 1536,
+    "caught": 54.8,
+    "invisible": 19.5,
+    "day_med": 10.0,
+    "len_med": 19.0,
+    "done_med": 31.4,
+    "left_med": 22.1,
+    "left_open_med": 19.6,
+    "share_left_med": 48.9
+   },
+   "2020": {
+    "runs": 329,
+    "caught": 37.1,
+    "invisible": 36.2,
+    "day_med": 12.0,
+    "len_med": 19.0,
+    "done_med": 40.2,
+    "left_med": 11.1,
+    "left_open_med": 9.9,
+    "share_left_med": 27.3
+   },
+   "2021": {
+    "runs": 235,
+    "caught": 51.9,
+    "invisible": 19.6,
+    "day_med": 9.0,
+    "len_med": 19.5,
+    "done_med": 26.6,
+    "left_med": 25.0,
+    "left_open_med": 24.3,
+    "share_left_med": 54.9
+   },
+   "2022": {
+    "runs": 105,
+    "caught": 79.0,
+    "invisible": 13.3,
+    "day_med": 10.0,
+    "len_med": 19.0,
+    "done_med": 26.6,
+    "left_med": 25.2,
+    "left_open_med": 22.2,
+    "share_left_med": 54.9
+   },
+   "2023": {
+    "runs": 103,
+    "caught": 79.6,
+    "invisible": 12.6,
+    "day_med": 14.0,
+    "len_med": 19.5,
+    "done_med": 33.4,
+    "left_med": 20.0,
+    "left_open_med": 17.4,
+    "share_left_med": 45.1
+   },
+   "2024": {
+    "runs": 182,
+    "caught": 69.8,
+    "invisible": 13.2,
+    "day_med": 11.0,
+    "len_med": 19.0,
+    "done_med": 31.3,
+    "left_med": 20.8,
+    "left_open_med": 19.0,
+    "share_left_med": 48.5
+   },
+   "2025": {
+    "runs": 215,
+    "caught": 67.4,
+    "invisible": 19.5,
+    "day_med": 10.0,
+    "len_med": 19.0,
+    "done_med": 28.3,
+    "left_med": 25.2,
+    "left_open_med": 20.6,
+    "share_left_med": 53.1
+   },
+   "2026": {
+    "runs": 367,
+    "caught": 43.9,
+    "invisible": 11.4,
+    "day_med": 6.0,
+    "len_med": 19.0,
+    "done_med": 26.1,
+    "left_med": 32.9,
+    "left_open_med": 30.1,
+    "share_left_med": 59.6
+   }
+  }
+ },
+ "after_new_flag": {
+  "今日發動": {
+   "全期": {
+    "n": 4777,
+    "per_year": 682.0,
+    "gap_med": 0.55,
+    "max10_med": 5.0,
+    "min10_med": -6.6,
+    "max10_ge20": 16.0,
+    "min10_le-10": 32.0,
+    "r5_med": -2.61,
+    "r5_avg": -0.97,
+    "r10_med": -2.63,
+    "r10_avg": 0.21
+   },
+   "2020": {
+    "n": 526,
+    "per_year": 526.0,
+    "gap_med": 0.6,
+    "max10_med": 5.9,
+    "min10_med": -5.9,
+    "max10_ge20": 20.3,
+    "min10_le-10": 28.3,
+    "r5_med": -1.51,
+    "r5_avg": 0.45,
+    "r10_med": -1.52,
+    "r10_avg": 2.1
+   },
+   "2021": {
+    "n": 688,
+    "per_year": 688.0,
+    "gap_med": 0.58,
+    "max10_med": 5.3,
+    "min10_med": -7.1,
+    "max10_ge20": 20.1,
+    "min10_le-10": 36.6,
+    "r5_med": -3.2,
+    "r5_avg": -1.04,
+    "r10_med": -2.47,
+    "r10_avg": 0.73
+   },
+   "2022": {
+    "n": 620,
+    "per_year": 620.0,
+    "gap_med": 0.0,
+    "max10_med": 4.1,
+    "min10_med": -6.6,
+    "max10_ge20": 10.8,
+    "min10_le-10": 30.2,
+    "r5_med": -2.63,
+    "r5_avg": -1.61,
+    "r10_med": -2.91,
+    "r10_avg": -1.36
+   },
+   "2023": {
+    "n": 794,
+    "per_year": 794.0,
+    "gap_med": 0.47,
+    "max10_med": 4.4,
+    "min10_med": -5.3,
+    "max10_ge20": 12.5,
+    "min10_le-10": 23.9,
+    "r5_med": -1.83,
+    "r5_avg": -0.45,
+    "r10_med": -1.9,
+    "r10_avg": 0.55
+   },
+   "2024": {
+    "n": 858,
+    "per_year": 858.0,
+    "gap_med": 0.79,
+    "max10_med": 4.4,
+    "min10_med": -7.4,
+    "max10_ge20": 15.9,
+    "min10_le-10": 35.1,
+    "r5_med": -3.19,
+    "r5_avg": -1.52,
+    "r10_med": -4.0,
+    "r10_avg": -0.67
+   },
+   "2025": {
+    "n": 799,
+    "per_year": 799.0,
+    "gap_med": 0.5,
+    "max10_med": 4.9,
+    "min10_med": -6.4,
+    "max10_ge20": 14.8,
+    "min10_le-10": 29.3,
+    "r5_med": -2.62,
+    "r5_avg": -0.93,
+    "r10_med": -2.57,
+    "r10_avg": -0.08
+   },
+   "2026": {
+    "n": 492,
+    "per_year": 492.0,
+    "gap_med": 0.83,
+    "max10_med": 6.8,
+    "min10_med": -8.6,
+    "max10_ge20": 20.1,
+    "min10_le-10": 44.1,
+    "r5_med": -2.95,
+    "r5_avg": -1.51,
+    "r10_med": -2.03,
+    "r10_avg": 0.85
+   }
+  },
+  "仍在動": {
+   "全期": {
+    "n": 6810,
+    "per_year": 973.0,
+    "gap_med": 0.53,
+    "max10_med": 4.8,
+    "min10_med": -6.1,
+    "max10_ge20": 13.6,
+    "min10_le-10": 29.5,
+    "r5_med": -2.33,
+    "r5_avg": -0.98,
+    "r10_med": -2.32,
+    "r10_avg": 0.02
+   },
+   "2020": {
+    "n": 786,
+    "per_year": 786.0,
+    "gap_med": 0.69,
+    "max10_med": 5.5,
+    "min10_med": -5.0,
+    "max10_ge20": 15.4,
+    "min10_le-10": 22.1,
+    "r5_med": -1.34,
+    "r5_avg": 0.32,
+    "r10_med": -0.63,
+    "r10_avg": 1.54
+   },
+   "2021": {
+    "n": 993,
+    "per_year": 993.0,
+    "gap_med": 0.69,
+    "max10_med": 4.5,
+    "min10_med": -6.8,
+    "max10_ge20": 15.5,
+    "min10_le-10": 34.7,
+    "r5_med": -2.76,
+    "r5_avg": -1.37,
+    "r10_med": -3.17,
+    "r10_avg": -0.54
+   },
+   "2022": {
+    "n": 915,
+    "per_year": 915.0,
+    "gap_med": 0.23,
+    "max10_med": 4.0,
+    "min10_med": -6.2,
+    "max10_ge20": 9.9,
+    "min10_le-10": 31.1,
+    "r5_med": -2.86,
+    "r5_avg": -1.72,
+    "r10_med": -2.84,
+    "r10_avg": -1.53
+   },
+   "2023": {
+    "n": 1051,
+    "per_year": 1051.0,
+    "gap_med": 0.58,
+    "max10_med": 4.1,
+    "min10_med": -5.2,
+    "max10_ge20": 10.2,
+    "min10_le-10": 22.4,
+    "r5_med": -1.89,
+    "r5_avg": -0.77,
+    "r10_med": -2.13,
+    "r10_avg": 0.03
+   },
+   "2024": {
+    "n": 1122,
+    "per_year": 1122.0,
+    "gap_med": 0.66,
+    "max10_med": 4.9,
+    "min10_med": -5.9,
+    "max10_ge20": 13.1,
+    "min10_le-10": 30.1,
+    "r5_med": -2.2,
+    "r5_avg": -1.04,
+    "r10_med": -2.98,
+    "r10_avg": -0.07
+   },
+   "2025": {
+    "n": 1121,
+    "per_year": 1121.0,
+    "gap_med": 0.46,
+    "max10_med": 4.7,
+    "min10_med": -5.8,
+    "max10_ge20": 13.1,
+    "min10_le-10": 26.0,
+    "r5_med": -2.57,
+    "r5_avg": -0.88,
+    "r10_med": -1.95,
+    "r10_avg": 0.47
+   },
+   "2026": {
+    "n": 822,
+    "per_year": 822.0,
+    "gap_med": 0.37,
+    "max10_med": 6.6,
+    "min10_med": -7.9,
+    "max10_ge20": 19.7,
+    "min10_le-10": 41.0,
+    "r5_med": -2.77,
+    "r5_avg": -1.2,
+    "r10_med": -2.49,
+    "r10_avg": 0.48
+   }
+  }
+ }
+}
