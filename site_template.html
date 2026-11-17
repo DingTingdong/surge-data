@@ -60,6 +60,17 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <div style="padding:0 16px"><div class="chips" id="flt"></div></div>
 <main><div class="nt warn" id="stale" hidden></div><div class="nt" id="mkt"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
+<div class="doc"><h2>籌碼有沒有幫助：大致沒有</h2>
+<p>用2020–2026年三大法人買賣超與融資餘額，事先寫好5個條件，看能不能讓「今日發動＋移動停損」更好。規則：保留至少30%的訊號、且2020–2023年平均提高至少1個百分點，才算有用。</p>
+<table class="tb n"><tr><th>移動停損平均</th><th>2020–2023</th><th>2024–2026</th><th>保留訊號</th></tr>
+<tr><td>全部今日發動</td><td>−0.50%</td><td>+0.90%</td><td>100%</td></tr>
+<tr><td>投信買超</td><td>−0.07%</td><td>+1.21%</td><td>14–16%</td></tr>
+<tr><td>外資買超</td><td>+0.02%</td><td>+0.78%</td><td>71–75%</td></tr>
+<tr><td>三大法人買超</td><td>−0.06%</td><td>+0.76%</td><td>74–78%</td></tr>
+<tr><td>融資5日沒增加</td><td>+0.48%</td><td><b>+2.76%</b></td><td>28–36%</td></tr>
+<tr><td>排除融資5日增加超過10%</td><td>−0.59%</td><td>+1.23%</td><td>45–60%</td></tr></table>
+<p><b>沒有條件達到事先設的門檻</b>，所以名單不改。最接近的是「融資5日沒增加」（散戶還沒追進來）：2020–2023提高0.98個百分點、保留28%，兩項都差一點；2024–2026則提高1.86個百分點，中位數−1.67%（全部是−4.47%）。所以只在今日發動上加「融資未增」標示，之後用實際資料檢驗。</p>
+<p>法人買超幾乎沒有幫助：外資、三大法人買超的股票，結果跟全部差不多。卡片點開可以看到今天的外資、投信買賣超和融資5日變化。融資約晚上9點後才公布，所以每天22:10會再更新一次。</p></div>
 <div class="doc"><h2>大盤偏弱時發動的，反而比較好（探索性發現）</h2>
 <p>原本想測「只在大盤偏多時才做」能不能避開空頭的虧損。事先寫好3種大盤濾網，結果<b>三種都讓績效變差</b>，所以沒有採用。</p>
 <p>反過來看：大盤偏弱（分析範圍內股票的等權指數在60日均線下）時出現的今日發動，用移動停損出場的結果明顯比較好：</p>
@@ -237,9 +248,9 @@ $("list").innerHTML=(a.length?a.slice(0,100).map(row).join(""):'<div class="empt
 +(miss.length?'<div class="cnt">今天不在分析範圍內（成交額太低或資料不足）：'+miss.join("、")+' <button class="chip" data-clr="1">移除這些</button></div>':"")}
 function row(s){return `<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm">${FAV.has(s.t)?'<span class="star">★</span>':""}${s.n}</span><span class="cd n">${s.t} ${s.mk}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}">${sg(s.ch)}%</span></span></div>
 <div class="l2 n"><span>波動 <b>${fx(s.v,1)}%</b></span><span>起漲 <b class="${cl(s.ru||0)}">${s.ru==null?"—":sg(s.ru).replace(".00","")+"%"}</b></span><span>距上次漲停 <b>${s.sn>=99?"—":s.sn+" 日"}</b></span><span>今日量比 <b>${s.vr==null?"—":fx(s.vr,1)+"倍"}</b></span></div>
-${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.stp?'<span class="tag">停損參考 '+s.stp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動'+(META.weak?'・逆勢':'')+'</span>':'')+(HOT(s)?'<span class="tag">仍在動・'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
+${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.stp?'<span class="tag">停損參考 '+s.stp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動'+(META.weak?'・逆勢':'')+'</span>'+(s.mg!=null&&s.mg<=0?'<span class="tag">融資未增</span>':''):'')+(HOT(s)?'<span class="tag">仍在動・'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+(s.rc||0)*100+'%"></i></div>'}</button>
-<div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
+<div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>外資／投信買賣超（今天）</span><b>${s.fi==null?"—":s.fi.toLocaleString()+" 張"}／${s.tr==null?"—":s.tr.toLocaleString()+" 張"}</b></div><div><span>融資餘額5日變化${META.chip&&META.chip.md?"（至"+META.chip.md+"）":""}</span><b>${s.mg==null?"—":sg(s.mg)+"%"}</b></div><div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}

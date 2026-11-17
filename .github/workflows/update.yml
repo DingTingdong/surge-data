@@ -2,6 +2,7 @@ name: update-prices
 on:
   schedule:
     - cron: "30 10 * * 1-5"   # 台北時間平日 18:30
+    - cron: "10 14 * * 1-5"   # 台北時間平日 22:10，補融資融券（晚上才公布）
   workflow_dispatch:
 permissions:
   contents: write
@@ -19,6 +20,7 @@ jobs:
       - run: python fetch_prices.py
       - run: python fetch_disposal.py || echo 'disposal fetch failed, continuing'
       - run: python fetch_adjust.py || echo 'adjust fetch failed, continuing'
+      - run: python fetch_chips.py || echo 'chips fetch failed, continuing'
       - run: python build_site.py
       - name: commit
         run: |
