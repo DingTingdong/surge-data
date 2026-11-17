@@ -1,0 +1,59 @@
+name: chips-history
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        default: "2020-01-01"
+      end:
+        default: "2026-11-17"
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: fetch year
+        run: |
+          S=$(python -c "print(max('${{ inputs.start }}', '${{ matrix.year }}-01-01'))")
+          E=$(python -c "print(min('${{ inputs.end }}', '${{ matrix.year }}-12-31'))")
+          mkdir -p out
+          if [[ "$S" > "$E" ]]; then echo "nothing"; exit 0; fi
+          python fetch_chips.py "$S" "$E" "out/${{ matrix.year }}.csv.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chips-${{ matrix.year }}
+          path: out/
+          if-no-files-found: ignore
+  merge:
+    needs: fetch
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - name: place files
+        run: |
+          mkdir -p data/chips
+          ls -la incoming
+          for f in incoming/*.csv.gz; do cp "$f" data/chips/; done
+          for f in incoming/*.failed.txt; do [ -f "$f" ] && cp "$f" data/chips/; done; true
+      - name: commit
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add data/chips
+          if ! git diff --cached --quiet; then git commit -q -m "chips history ${{ inputs.start }}..${{ inputs.end }}" && git pull --rebase -q && git push; fi
