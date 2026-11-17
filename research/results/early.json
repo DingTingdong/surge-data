@@ -1,0 +1,203 @@
+{
+ "pick": "E2",
+ "note": "沒有候選同時符合兩個門檻，改選 hit20 最高者",
+ "qualified": [],
+ "results": {
+  "E1": {
+   "2020-2023": {
+    "runs": 772,
+    "caught": 55.1,
+    "day_med": 11.0,
+    "done_med": 25.2,
+    "left_open_med": 23.5,
+    "share_left_med": 57.2,
+    "new_per_day": 10.9,
+    "hit20": 16.8,
+    "drop10": 20.5,
+    "r5_med": -2.86,
+    "r10_med": -2.85
+   },
+   "2024-2026": {
+    "runs": 764,
+    "caught": 73.2,
+    "day_med": 10.0,
+    "done_med": 24.8,
+    "left_open_med": 22.5,
+    "share_left_med": 57.8,
+    "new_per_day": 13.1,
+    "hit20": 19.0,
+    "drop10": 24.8,
+    "r5_med": -2.91,
+    "r10_med": -3.1
+   }
+  },
+  "E2": {
+   "2020-2023": {
+    "runs": 772,
+    "caught": 47.8,
+    "day_med": 12.0,
+    "done_med": 27.0,
+    "left_open_med": 20.7,
+    "share_left_med": 54.5,
+    "new_per_day": 6.3,
+    "hit20": 20.3,
+    "drop10": 29.7,
+    "r5_med": -3.47,
+    "r10_med": -3.88
+   },
+   "2024-2026": {
+    "runs": 764,
+    "caught": 64.5,
+    "day_med": 11.0,
+    "done_med": 27.2,
+    "left_open_med": 20.2,
+    "share_left_med": 52.4,
+    "new_per_day": 7.8,
+    "hit20": 23.0,
+    "drop10": 32.7,
+    "r5_med": -3.37,
+    "r10_med": -3.68
+   }
+  },
+  "E3": {
+   "2020-2023": {
+    "runs": 772,
+    "caught": 55.4,
+    "day_med": 12.0,
+    "done_med": 26.9,
+    "left_open_med": 20.7,
+    "share_left_med": 53.8,
+    "new_per_day": 7.1,
+    "hit20": 20.0,
+    "drop10": 30.2,
+    "r5_med": -3.6,
+    "r10_med": -3.91
+   },
+   "2024-2026": {
+    "runs": 764,
+    "caught": 74.7,
+    "day_med": 10.0,
+    "done_med": 25.9,
+    "left_open_med": 20.9,
+    "share_left_med": 54.7,
+    "new_per_day": 9.3,
+    "hit20": 23.4,
+    "drop10": 32.3,
+    "r5_med": -3.26,
+    "r10_med": -3.65
+   }
+  },
+  "E4": {
+   "2020-2023": {
+    "runs": 772,
+    "caught": 44.3,
+    "day_med": 10.0,
+    "done_med": 19.6,
+    "left_open_med": 28.6,
+    "share_left_med": 67.9,
+    "new_per_day": 7.5,
+    "hit20": 19.7,
+    "drop10": 28.4,
+    "r5_med": -3.15,
+    "r10_med": -3.41
+   },
+   "2024-2026": {
+    "runs": 764,
+    "caught": 68.6,
+    "day_med": 7.0,
+    "done_med": 16.0,
+    "left_open_med": 31.5,
+    "share_left_med": 73.6,
+    "new_per_day": 10.8,
+    "hit20": 25.8,
+    "drop10": 28.8,
+    "r5_med": -1.91,
+    "r10_med": -2.16
+   }
+  },
+  "E5": {
+   "2020-2023": {
+    "runs": 772,
+    "caught": 16.8,
+    "day_med": 7.0,
+    "done_med": 13.8,
+    "left_open_med": 38.5,
+    "share_left_med": 77.9,
+    "new_per_day": 7.4,
+    "hit20": 13.4,
+    "drop10": 16.7,
+    "r5_med": -2.85,
+    "r10_med": -2.97
+   },
+   "2024-2026": {
+    "runs": 764,
+    "caught": 21.1,
+    "day_med": 7.0,
+    "done_med": 12.5,
+    "left_open_med": 38.4,
+    "share_left_med": 79.2,
+    "new_per_day": 8.6,
+    "hit20": 15.5,
+    "drop10": 19.8,
+    "r5_med": -2.87,
+    "r10_med": -3.03
+   }
+  },
+  "仍在動": {
+   "2020-2023": {
+    "runs": 772,
+    "caught": 53.0,
+    "day_med": 12.0,
+    "done_med": 33.1,
+    "left_open_med": 17.0,
+    "share_left_med": 44.2,
+    "new_per_day": 3.8,
+    "hit20": 23.4,
+    "drop10": 27.7,
+    "r5_med": -2.2,
+    "r10_med": -2.29
+   },
+   "2024-2026": {
+    "runs": 764,
+    "caught": 56.7,
+    "day_med": 9.0,
+    "done_med": 29.3,
+    "left_open_med": 22.9,
+    "share_left_med": 53.2,
+    "new_per_day": 4.4,
+    "hit20": 26.9,
+    "drop10": 31.1,
+    "r5_med": -2.46,
+    "r10_med": -2.34
+   }
+  },
+  "舊版精選": {
+   "2020-2023": {
+    "runs": 772,
+    "caught": 34.8,
+    "day_med": 14.0,
+    "done_med": 38.7,
+    "left_open_med": 12.5,
+    "share_left_med": 34.7,
+    "new_per_day": 2.7,
+    "hit20": 25.3,
+    "drop10": 29.6,
+    "r5_med": -2.4,
+    "r10_med": -2.34
+   },
+   "2024-2026": {
+    "runs": 764,
+    "caught": 38.7,
+    "day_med": 12.0,
+    "done_med": 38.7,
+    "left_open_med": 11.8,
+    "share_left_med": 34.8,
+    "new_per_day": 3.1,
+    "hit20": 28.2,
+    "drop10": 34.7,
+    "r5_med": -2.92,
+    "r10_med": -3.05
+   }
+  }
+ }
+}

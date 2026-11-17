@@ -1,4 +1,5 @@
-"""長期回測：用 2020 年起的資料檢驗凍結的 v1.2 門檻。不調整任何門檻。
+"""（此檔評估的是 v1 的精選，欄位 pk_v1；v2.0 起「今日發動」改為 research/early.py 的 E4）
+長期回測：用 2020 年起的資料檢驗凍結的 v1.2 門檻。不調整任何門檻。
 
 事先定好的檢驗（2026/11/17 寫下，資料到齊前）：
 1. 每日訊號：隔天開盤買、第5個交易日收盤賣，扣 1.1%；開盤一價漲停視為買不到。
@@ -23,6 +24,7 @@ P = panels(p)
 C, O, H, L = P["C"], P["O"], P["H"], P["L"]
 f = features(P)
 S = tiers(f, P["MK"])
+S = S[S.base]  # v1 的分析範圍
 days = C.index
 
 # ---- 除權息調整檢查 ----
@@ -42,7 +44,7 @@ S = S.merge(blocked.stack(future_stack=True).rename("blk").reset_index().rename(
             on=["date", "code"], how="left")
 S = S[S.date <= days[-HOLD - 1]]  # 只用已有完整 5 日結果的訊號
 S["year"] = S.date.dt.year
-S["other"] = S.hot & ~S.pk
+S["other"] = S.hot & ~S.pk_v1
 S["top10"] = S.rc >= 0.9
 
 def desc(g):
@@ -52,7 +54,7 @@ def desc(g):
             "win": round((r > 0).mean() * 100, 1), "up10": round((r >= 10).mean() * 100, 1), "dn10": round((r <= -10).mean() * 100, 1),
             "blocked": int(g.blk.fillna(False).sum())}
 
-groups = {"精選": "pk", "仍在動其他": "other", "活躍度前10%": "top10", "全體": None}
+groups = {"精選": "pk_v1", "仍在動其他": "other", "活躍度前10%": "top10", "全體": None}
 daily = {}
 for y, g in list(S.groupby("year")) + [("全期", S)]:
     nd = g.date.nunique()
@@ -75,7 +77,7 @@ wk = pd.Series(days, index=days).groupby(days.to_period("W-SUN")).last()  # 每�
 W = S[S.date.isin(set(wk.values))]
 rows = []
 for d, g in W.groupby("date"):
-    pk, ot, al = g[g.pk].ret.dropna(), g[g.other].ret.dropna(), g.ret.dropna()
+    pk, ot, al = g[g.pk_v1].ret.dropna(), g[g.other].ret.dropna(), g.ret.dropna()
     rows.append({"date": d, "year": d.year, "n_pk": len(pk), "pk": pk.mean() if len(pk) else np.nan,
                  "other": ot.mean() if len(ot) else np.nan, "all": al.mean() if len(al) else np.nan})
 WK = pd.DataFrame(rows)

@@ -1,4 +1,5 @@
-"""「最快發現已經發動的股票」的評估：雷達在一波漲勢的第幾天抓到、抓到後還剩多少。
+"""（此檔評估的是 v1 的精選，欄位 pk_v1；v2.0 起「今日發動」改為 research/early.py 的 E4）
+「最快發現已經發動的股票」的評估：雷達在一波漲勢的第幾天抓到、抓到後還剩多少。
 
 定義（2026/11/17 跑之前寫下，不依結果修改）：
 - 一波大漲：某天收盤是近20個交易日最低（起漲日 L），之後20個交易日內最高收盤 ≥ L × 1.5。
@@ -25,9 +26,10 @@ P = panels(p)
 C, O = P["C"], P["O"]
 f = features(P)
 S = tiers(f, P["MK"])
+S = S[S.base]  # v1 的分析範圍
 days = C.index
 pos = {d: i for i, d in enumerate(days)}
-flags = {k: S[S[k]].groupby("code").date.apply(lambda s: np.array(sorted(pos[d] for d in s))) for k in ("pk", "hot")}
+flags = {k: S[S[k]].groupby("code").date.apply(lambda s: np.array(sorted(pos[d] for d in s))) for k in ("pk_v1", "hot")}
 seen = S.groupby("code").date.apply(lambda s: np.array(sorted(pos[d] for d in s)))
 
 # ---- 找出每一波大漲 ----
@@ -71,7 +73,7 @@ def summarize(D):
             "share_left_med": round(float(h.share_left.median() * 100), 1)}
 
 det = {}
-for tier, name in (("pk", "今日發動"), ("hot", "仍在動")):
+for tier, name in (("pk_v1", "今日發動"), ("hot", "仍在動")):
     D = detect(tier); D["year"] = R.year.values
     det[name] = {"全期": summarize(D), **{str(y): summarize(g) for y, g in D.groupby("year")}}
 
@@ -100,7 +102,7 @@ def after(tier):
 res = {"definition": {"run": f"起漲日為近{LOOK}日最低收盤，{WIN}日內最高收盤 ≥ +{int(RUN*100)}%"},
        "runs_total": int(len(R)), "runs_per_year": {str(k): int(v) for k, v in R.groupby("year").size().items()},
        "run_gain_med": round(float(R.gain.median() * 100), 1), "run_len_med": float(R.len.median()),
-       "detection": det, "after_new_flag": {"今日發動": after("pk"), "仍在動": after("hot")}}
+       "detection": det, "after_new_flag": {"今日發動": after("pk_v1"), "仍在動": after("hot")}}
 os.makedirs("research/results", exist_ok=True)
 json.dump(res, open("research/results/detection.json", "w"), ensure_ascii=False, indent=1)
 print(json.dumps({k: res[k] for k in ("runs_total", "runs_per_year", "run_gain_med", "run_len_med")}, ensure_ascii=False))
