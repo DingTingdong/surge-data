@@ -216,6 +216,17 @@ rs_days = set(days[-20:].strftime("%Y-%m-%d"))
 rh = sig[sig.date.isin(rs_days) & (sig.tier == "今日發動")].sort_values("date")
 recent_hist = {c: [[x.date[5:].replace("-", "/"), x.tier] for x in g.itertuples()] for c, g in rh.groupby("code")}
 ru = (C.iloc[-1] / C.iloc[-20:].min() - 1) * 100  # 從近20日最低收盤算起的漲幅（調整後價格）
+# 產業別與股本（只是標示，不影響分級）
+ind = pd.read_csv("data/industry.csv", dtype={"code": str, "ind": str}).set_index("code") if os.path.exists("data/industry.csv") else pd.DataFrame(columns=["ind_name", "cap"])
+grp = []
+if len(ind):
+    gi = d.assign(g=d.index.map(ind.ind_name)).dropna(subset=["g"])
+    base_rate = max(1e-9, float((gi.pk | gi.hot).mean()))
+    for g, x in gi.groupby("g"):
+        ne, nh = int(x.pk.sum()), int((x.hot & ~x.pk).sum())
+        lift = (ne + nh) / len(x) / base_rate  # 這個產業的活躍比例是整體的幾倍
+        if ne + nh >= 3 and lift >= 1.5: grp.append([g, ne, nh, int(len(x)), round(lift, 1)])
+    grp.sort(key=lambda r: (-r[4], -r[1], r[0]))
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
@@ -226,13 +237,16 @@ for code, r in d.iterrows():
     if code in disp: x["dp"] = disp[code]
     if code in active_stop: x["stp"] = active_stop[code]
     if code in chip_info: x.update(chip_info[code])
+    if code in ind.index:
+        x["g"] = ind.at[code, "ind_name"]
+        if ind.at[code, "cap"] == ind.at[code, "cap"]: x["cap"] = round(float(ind.at[code, "cap"]), 1)
     if r.pk or r.rc >= 0.8:  # 只給可能顯示的股票附上走勢，控制檔案大小
         x["sp"] = [round(float(v), 2) for v in C[code].iloc[-30:].tolist() if v == v]
     data.append(x)
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta}
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8]}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
 html = html.replace("/*DATA*/[]", J(data)).replace("/*META*/{}", J(meta)).replace("/*TRACK*/[]", J(track))
