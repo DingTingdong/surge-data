@@ -72,6 +72,28 @@ def outcome(i, code):
     if not c == c: return None, "缺資料"
     return round((c / o - 1) * 100 - COST, 2), "完成"
 
+TRAIL, CAP = 0.10, 20  # 移動停損：收盤比買進後最高收盤低10%就隔天開盤賣，最多持有20個交易日（research/exits.py 的 X6）
+def outcome_trail(i, code):
+    """隔日開盤進場，移動停損出場。回傳 (報酬%, 狀態, 持有天數)。"""
+    if i + 1 >= len(days): return None, "待進場", 0
+    k = C.columns.get_loc(code); e = i + 1
+    o = O.iat[e, k]
+    if not o == o or o <= 0: return None, "無法進場", 0
+    if locked(o, H.iat[e, k], L.iat[e, k], C.iat[i, k], True): return None, "漲停買不到", 0
+    end, peak = e + CAP - 1, o
+    for t in range(e, min(end, len(days) - 1) + 1):
+        c = C.iat[t, k]
+        if not c == c: continue
+        peak = max(peak, c)
+        if c <= peak * (1 - TRAIL) and t < end:
+            if t + 1 >= len(days): return round((c / o - 1) * 100 - COST, 2), "明天賣", t - e + 1
+            for s in range(t + 1, min(t + 6, len(days))):
+                if not locked(O.iat[s, k], H.iat[s, k], L.iat[s, k], Cf.iat[s - 1, k], False):
+                    return round((O.iat[s, k] / o - 1) * 100 - COST, 2), "完成", s - e + 1
+            return round((Cf.iat[-1, k] / o - 1) * 100 - COST, 2), "進行中", len(days) - e
+    if end < len(days): return round((Cf.iat[end, k] / o - 1) * 100 - COST, 2), "完成", CAP
+    return round((Cf.iat[-1, k] / o - 1) * 100 - COST, 2), "進行中", len(days) - e
+
 def stats(rs):
     a = np.array([r for r in rs if r is not None], float)
     if not len(a): return None
@@ -81,14 +103,16 @@ def stats(rs):
             "dn": round(float((a <= -10).mean() * 100)), "w5": round(float(a[a <= q].mean()), 1)}
 
 univ = S[S.base][["date", "code"]].assign(date=ds(S[S.base].date))
-track, pool = [], {k: {"pk": [], "hot": [], "all": [], "blk": 0} for k in ("實際", "回測")}
+track, pool = [], {k: {"pk": [], "hot": [], "all": [], "trail": [], "blk": 0} for k in ("實際", "回測")}
 for d, grp in sig.groupby("date", sort=False):
     if d not in dpos: continue
     i = dpos[d]; kd = grp.kind.iloc[0]
     pk = grp[grp.tier == "今日發動"]
     items = []
     for _, r in pk.iterrows():
-        ret, stt = outcome(i, r.code); items.append({"t": r.code, "n": r["name"], "r": ret, "s": stt})
+        ret, stt = outcome(i, r.code); tr, ts, td = outcome_trail(i, r.code)
+        items.append({"t": r.code, "n": r["name"], "r": ret, "s": stt, "x": tr, "xs": ts, "xd": td})
+        if i + CAP < len(days) and tr is not None: pool[kd]["trail"].append(tr)  # 只算20天期限已過的，避免只算到先停損出場的
         if stt == "漲停買不到": pool[kd]["blk"] += 1
     other = [outcome(i, c)[0] for c in grp[grp.tier == "仍在動"].code]
     allr = [outcome(i, c)[0] for c in univ[univ.date == d].code] if i + 1 < len(days) else []
@@ -103,7 +127,7 @@ for d in dlog[dlog.pick == 0].date:  # 零檔的日子也列出
     if d not in {t["d"] for t in track} and d in dpos:
         track.append({"d": d, "k": dlog.set_index("date").kind[d], "s": "無訊號", "n": 0, "avg": None, "hot": None, "all": None, "it": []})
 track.sort(key=lambda x: x["d"], reverse=True)
-summary = {k: {"pk": stats(v["pk"]), "hot": stats(v["hot"]), "all": stats(v["all"]), "blk": v["blk"],
+summary = {k: {"pk": stats(v["pk"]), "hot": stats(v["hot"]), "all": stats(v["all"]), "trail": stats(v["trail"]), "blk": v["blk"],
                "days": len({t["d"] for t in track if t["k"] == k and t["s"] in ("完成", "無訊號")})} for k, v in pool.items()}
 
 # ---- 今天的清單 ----

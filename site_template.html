@@ -60,6 +60,19 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <div style="padding:0 16px"><div class="chips" id="flt"></div></div>
 <main><div class="nt warn" id="stale" hidden></div><div class="nt" id="mkt"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
+<div class="doc"><h2>買了之後怎麼賣：移動停損最好</h2>
+<p>用2020–2026年所有「今日發動」訊號，隔天開盤買，比較7種賣法（事先寫好、2020–2023挑、2024–2026驗證，每筆扣1.1%）。驗證期結果：</p>
+<table class="tb n"><tr><th>2024–2026</th><th>平均</th><th>中位數</th><th>勝率</th><th>平均抱</th><th>最差5%</th></tr>
+<tr><td>抱5天</td><td>−0.84%</td><td>−2.39%</td><td>41%</td><td>5天</td><td>−19.0%</td></tr>
+<tr><td>抱10天</td><td>+0.03%</td><td>−2.31%</td><td>43%</td><td>10天</td><td>−24.3%</td></tr>
+<tr><td>抱20天</td><td>+1.51%</td><td>−2.60%</td><td>44%</td><td>20天</td><td>−31.5%</td></tr>
+<tr><td>跌破5日線賣</td><td>−0.17%</td><td>−2.97%</td><td>37%</td><td>5.7天</td><td>−15.7%</td></tr>
+<tr><td>跌破10日線賣</td><td>−0.01%</td><td>−3.81%</td><td>36%</td><td>8.2天</td><td>−17.8%</td></tr>
+<tr><td><b>移動停損10%</b></td><td><b>+0.89%</b></td><td>−4.47%</td><td>39%</td><td>12.7天</td><td>−17.9%</td></tr>
+<tr><td>停損8%／停利20%</td><td>+0.83%</td><td>−7.30%</td><td>38%</td><td>11.6天</td><td>−17.6%</td></tr></table>
+<p><b>移動停損</b>：收盤比買進後的最高收盤低10%，隔天開盤就賣；最多抱20天。挑選期它的平均排第二，第一名「抱20天」的最差5%比「抱5天」差8.7個百分點，超過事先設的上限，所以選它。</p>
+<p>逐年平均：2020 +0.54%、2021 +0.04%、2022 −2.92%、2023 −0.33%、2024 −0.38%、2025 +2.67%、2026 +0.40%。比「抱5天」好的有6年，<b>2022年空頭反而更差</b>。</p>
+<p>要看清楚：<b>中位數是負的</b>，大部分交易小賠，靠少數大賺撐起平均（約1成賺20%以上）。整體只在多頭年份打平或小賺，<b>不是穩賺的方法</b>。「追蹤」頁會用實際名單檢驗這個賣法。</p></div>
 <div class="doc"><h2>今日發動（v2）：抓第一根漲停</h2>
 <p>條件：<b>今天漲9%以上、前10個交易日都沒有漲9%以上</b>（第一根漲停），而且今天成交額至少2,000萬、前20日平均至少300萬。不需要先擠進活躍度前10%，所以比舊版早很多。</p>
 <p>我事先寫好5個候選條件和挑選規則，用2020–2023年挑、2024–2026年驗證。下表是驗證期（挑選時沒用到）：</p>
@@ -170,7 +183,7 @@ nav button[aria-current="page"]{color:var(--ac);font-weight:700;box-shadow:inset
 <section class="pg" id="p4"><main>
 <div class="doc"><h2>名單之後表現如何</h2>
 <p>每天收盤後，「今日發動」和「仍在動」的完整名單都會存檔，之後不再修改；規則改版就另開新紀錄（v1 的紀錄保留在 data/archive/）。報酬算法：隔天開盤買、第5個交易日收盤賣，扣約1.1%成本。開盤一價漲停視為買不到、不計入；出場日跌停鎖死順延；持有中停牌用最後收盤。</p>
-<p>比較三組：<b>今日發動</b>、<b>仍在動</b>（不含今日發動，同樣是在動的股票）、<b>全體</b>。</p>
+<p>比較三組：<b>今日發動</b>、<b>仍在動</b>（不含今日發動）、<b>全體</b>，都用「抱5天」算。今日發動另外用<b>移動停損</b>算：收盤比買進後的最高收盤低10%就隔天開盤賣，最多抱20天。</p>
 <div id="tsum"></div>
 <p>「實際」是 <span class="n" id="fwd"></span> 起的名單，才算真正的驗證；「回測」是規則制定期間的名單，只供參考。</p></div>
 <div class="doc"><h2>事先定好的停止條件</h2>
@@ -217,14 +230,14 @@ const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
 function rs(v){return v==null?"—":`<b class="${cl(v)}">${sg(v)}%</b>`}
 function track(){$("fwd").textContent=META.fwd.replaceAll("-","/");
-const G=[["pk","今日發動"],["hot","仍在動其他"],["all","全體"]],M=[["n","筆數"],["avg","平均"],["med","中位數"],["win","勝率"],["up","賺≥10%"],["dn","賠≥10%"],["w5","最差5%平均"]];
+const G=[["pk","今日發動 5日"],["trail","今日發動 移動停損"],["hot","仍在動 5日"],["all","全體 5日"]],M=[["n","筆數"],["avg","平均"],["med","中位數"],["win","勝率"],["up","賺≥10%"],["dn","賠≥10%"],["w5","最差5%平均"]];
 const f=(m,v)=>v==null?"—":m==="n"?v:(m==="avg"||m==="med"||m==="w5")?`<b class="${cl(v)}">${sg(v)}%</b>`:v+"%";
 const tb=k=>{const s=META.sum[k];if(!s||!s.pk)return`<p class="cnt">${k==="實際"?"累積中：第一批5日結果約在名單後第6個交易日出爐。":"—"}</p>`;
 return`<table class="tb n"><tr><th></th>${G.map(g=>`<th>${g[1]}</th>`).join("")}</tr>${M.map(m=>`<tr><td>${m[1]}</td>${G.map(g=>`<td>${f(m[0],s[g[0]]&&s[g[0]][m[0]])}</td>`).join("")}</tr>`).join("")}</table><p class="cnt">${s.days} 個交易日；漲停買不到 ${s.blk} 筆（不計入）。</p>`};
 $("tsum").innerHTML="<h2>實際</h2>"+tb("實際")+"<h2>回測（規則制定期間）</h2>"+tb("回測");
 $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><div class="l1"><span><span class="nm n">${x.d.slice(5).replace("-","/")}</span><span class="kd${x.k==="實際"?" real":""}">${x.k}</span><span class="kd">${x.s}</span></span><span class="n">今日發動 ${x.n} 檔</span></div>
 <div class="l2 n"><span>今日發動 ${rs(x.avg)}</span><span>仍在動其他 ${rs(x.hot)}</span><span>全體 ${rs(x.all)}</span></div></button>
-<div class="dt n">${x.it.length?x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}</div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
+<div class="dt n">${x.it.length?'<div class="ti"><small>股票</small><small>5日｜移動停損</small></div>'+x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span><span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}｜${i.x==null?`<small>${i.xs}</small>`:rs(i.x)+(i.xs!=="完成"?`<small>${i.xs}</small>`:`<small>${i.xd}天</small>`)}</span></div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
 if(t.dataset.r){st.rule=t.dataset.r;chips();list()}else if(t.dataset.m!==undefined){st.mk=t.dataset.m;chips();list()}else if(t.dataset.u!==undefined){st.u5=t.dataset.u;chips();list()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
