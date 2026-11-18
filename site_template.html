@@ -437,7 +437,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 const D=/*DATA*/[];const META=/*META*/{};const T=/*TRACK*/[];
 const st={rule:"P",q:"",lim:150};
 const MV=s=>s.cap!=null&&s.c!=null?s.cap*s.c/10:null; // 市值（億）＝股本×股價÷面額10元
-const PMAX=META.bear?Math.max(...META.bear.h.slice(-10)):0,PANIC=PMAX>=700,DEEPP=PMAX>=800; // 近10天上市空頭家數最高值：≥700 初步恐慌、≥800 深度恐慌const $=i=>document.getElementById(i);
+const PMAX=META.bear?Math.max(...META.bear.h.slice(-10)):0,PANIC=PMAX>=700,DEEPP=PMAX>=800; /* 近10天上市空頭家數最高值：≥700 初步恐慌、≥800 深度恐慌 */const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
 const HOT=s=>!!s.h,PK=s=>!!s.e,fx=(v,d)=>v==null?"—":v.toFixed(d);const DEEP=s=>s.d20!=null&&s.d20<=-20;
 const RL={P:["今日發動",PK],A:["仍在動",s=>HOT(s)&&!!s.s10],...(PANIC?{D:["撿跌深",s=>DEEP(s)&&!!s.ts]}:{}),F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
