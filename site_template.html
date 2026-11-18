@@ -156,6 +156,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .mkt .bn{display:none;font-size:13.5px;color:var(--mu)}.mkt .bn b{color:var(--ink);font-family:var(--num)}.mkt.mini{padding-top:10px;padding-bottom:10px}.mkt.mini>*:not(.hd){display:none}.mkt.mini .bn{display:inline}.mkt.mini .hd{gap:8px;flex-wrap:wrap}
 .more.full{display:block;width:100%;margin:10px 0;padding:12px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:10px;font-size:14px}
 .gp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.gp span{font-size:13px;border:1px solid var(--ln);border-radius:8px;padding:4px 8px;background:var(--sf);white-space:nowrap}.gp b{font-family:var(--num);font-weight:700}.gp i{font-style:normal;font-family:var(--num);font-size:12px}
+.bear .bs{font-size:12.5px;color:var(--mu);margin:4px 0 0;line-height:1.5}
 </style>
 </head><body>
 <header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div class="seg" id="rules"></div></header>
@@ -172,7 +173,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li><b>試過沒幫助的</b>：只在大盤偏多時做、法人買超、續強／回落、舊版精選（量能比放大）、營收、產業集中（族群性）、股本大小。</li>
 <li><b>大跌時，扛跌和反彈快是兩種不同的股票</b>：前段扛得住的，後面再跌也跌得少，但反彈也漲得少；跌最深的反彈最猛，再跌也跌最多。沒有找到大跌當下就能挑出「之後比較會漲」的條件。</li>
 <li><b>恐慌時撿跌深股有效</b>：空頭家數衝上800後，跌深20%以上的股票20天平均比大家多漲約2個百分點（5次都贏）；中小型題材股更強一點，但還沒確定。</li>
-<li><b>空頭家數 ≥ 800 很接近底部</b>：2020年以來5次（不含正在進行的這次），之後20天等權指數5次都上漲、平均+9.9%；但樣本很少，2025/4 關稅恐慌時訊號後又再跌14%。</li>
+<li><b>上市空頭家數 ≥ 800 很接近底部</b>（玩股網短均線算法）：2020年以來5次，之後20天平均+5.7%、4次中3次上漲；樣本很少，不保證當天就是底。</li>
 <li>扣掉成本後還<b>沒有證明能穩定賺錢</b>，名單請當觀察用。實際表現看「追蹤」頁，第一批5日結果在11/24。</li></ul></div>
 
 <div class="doc"><h2>籌碼有沒有幫助：大致沒有</h2>
@@ -226,6 +227,14 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <p><b>要說清楚的地方</b>：沒有任何候選條件達到我事先設的標準（命中率要跟「仍在動」一樣高），代表<b>越早抓、誤報越多</b>。照事先寫的退路應選「量比3倍＋漲停」；我改選「第一根漲停」，因為它在挑選期就比較早、剩下空間更大、命中率幾乎相同，驗證期也每一項都比較好。這是看過結果後的判斷，真正的檢驗是 2026/11/17 之後的「追蹤」頁。</p>
 <p>大約四檔裡只有一檔之後會再漲20%，也有近三成會先跌10%。名單是「剛發動、值得盯」的股票，不是買進訊號；進場後怎麼出場才是關鍵。</p></div>
 
+<div class="doc"><h2>空頭家數改用玩股網的算法（11/18）</h2>
+<p>你平常看的玩股網「短均線空頭排列」是 5日線＜10日線＜20日線，而且上市、上櫃可以分開看。照這個算法、沒成交的日子沿用前一天收盤，<b>上市</b>大約1,090檔，2020年以來第一次衝上800家只有5次：2021/5、2022/9、2024/8、2025/4、2026/11/04，都是大家記得的恐慌低點，和老師說的「很少到800」一致。</p>
+<table class="tb n"><tr><th>上市空頭家數</th><th>次數</th><th>之後20天</th><th>上漲比例</th></tr>
+<tr><td>≥ 700</td><td>13</td><td class="up">+4.8%</td><td>75%</td></tr>
+<tr><td>≥ 750</td><td>8</td><td class="up">+6.0%</td><td>71%</td></tr>
+<tr><td>≥ 800</td><td>5</td><td class="up">+5.7%</td><td>75%</td></tr></table>
+<p>（等權指數；所有交易日平均20天+1.9%。）2022/9 那次之後20天還跌了4%，所以一樣是「接近底部」，不是保證。用這個觸發點重算撿跌深：跌深股20天比大家多漲2.6個百分點（4次都贏），撿跌深名單多3.8個百分點（4次贏3次），和原本的結論一致。上櫃和上市櫃合計也列在大盤卡片上，但800家的門檻只用在上市。</p>
+<p>下面那段「空頭家數到800」是舊算法（收盤＜5＜10＜20＜60日線、上市櫃合計），留著當紀錄。</p></div>
 <div class="doc"><h2>空頭家數到800是不是底部：大致是，但樣本很少</h2>
 <p>空頭家數＝收盤 &lt; 5日線 &lt; 10日線 &lt; 20日線 &lt; 60日線的上市櫃股票數（約1,700檔中）。訊號＝第一次衝上800家（前20天都在800以下）。2020年以來：</p>
 <table class="tb n"><tr><th>訊號日</th><th>之後10天</th><th>之後20天</th><th>再跌最多</th><th>真正低點</th></tr>
@@ -430,7 +439,7 @@ const G=Object.entries(M).map(([g,x])=>[g,x.length,med(x)]).sort((p,q)=>q[1]-p[1
 $("grp").innerHTML=`<div class="gh"><span>產業分布</span><small>這頁 ${a.length.toLocaleString()} 檔全部分類，括號是今天漲跌中位數</small></div><div class="gp">${G.map(([g,n,m])=>`<span>${g} <b class="n">${n}</b> <i class="n ${cl(m)}">(${sg(m)}%)</i></span>`).join("")}</div>`}
 function chips(){grps();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip${k==="D"?" pd":""}" data-r="${k}" aria-pressed="${st.rule===k}"><span>${RL[k][0]}</span><small class="n">${D.filter(RL[k][1]).length}</small></button>`).join("");
 const nt={A:"成交量和波動在前10%，而且收盤還在10日線上、今天沒跌停。依今日量比排序。",
-D:"恐慌區（空頭家數近10天曾 ≥ 800）。市值100億以下、大跌前強而且漲停過的股票中，離自己20日高點跌超過20%的。跌最深的排前面只是方便看，歷史上跌越深略好一點但不穩定，不是推薦順序。歷史上這時候買跌深股，20天後平均比大家多漲約2個百分點，但買進後平均還會再跌約5%。",
+D:"恐慌區（上市空頭家數近10天曾 ≥ 800）。市值100億以下、大跌前強而且漲停過的股票中，離自己20日高點跌超過20%的。跌最深的排前面只是方便看，歷史上跌越深略好一點但不穩定，不是推薦順序。歷史上這時候買跌深股，20天後平均比大家多漲約2個百分點，但買進後平均還會再跌約5%。",
 F:"依今天漲跌排序。",ALL:"依今天漲跌排序。"}[st.rule];
 $("mkt").classList.toggle("mini",st.rule!=="P");$("tabnote").hidden=!nt;$("tabnote").textContent=nt||""}
 function list(){let a=cur();a.sort((x,y)=>SORT[st.rule](x,y)||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔";
@@ -443,10 +452,10 @@ ${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+(s.rc||0)*100+'%"></i></div>'}</button>
 <div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>外資／投信買賣超（今天）</span><b>${s.fi==null?"—":s.fi.toLocaleString()+" 張"}／${s.tr==null?"—":s.tr.toLocaleString()+" 張"}</b></div><div><span>融資餘額5日變化${META.chip&&META.chip.md?"（至"+META.chip.md+"）":""}</span><b>${s.mg==null?"—":sg(s.mg)+"%"}</b></div><div><span>股本／市值</span><b>${s.cap==null?"—":s.cap.toLocaleString()+" 億／"+Math.round(MV(s)).toLocaleString()+" 億"}</b></div>${META.drop?`<div><span>大盤${META.drop.pk.slice(5).replace("-","/")}高點以來</span><b>${s.dk==null?"—":sg(s.dk)+"%"}（大盤 ${sg(META.drop.idx)}%）</b></div>`:""}<div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
 function bearbox(b){const h=b.h,mx=Math.max(1000,...h)*1.05,w=100,ht=36,y=v=>(ht-v/mx*ht).toFixed(1),pts=h.map((v,i)=>(i*w/(h.length-1)).toFixed(1)+","+y(v)).join(" ");
-const st=b.n>=800?'<i class="hot">≥800 接近底部區</i>':"";const tip=PANIC?`<p class="bt">近10天曾 ≥ 800 家，是恐慌區，上方多了「撿跌深」分頁。</p>`:"";
-return `<div class="bear"><div class="bh"><span>空頭家數 <b class="n">${b.n}</b><small class="n">／${b.tot.toLocaleString()} 檔</small>${st}</span></div>
-<svg viewBox="0 -1 100 38" preserveAspectRatio="none" aria-label="近120日空頭家數"><line x1="0" x2="100" y1="${y(800)}" y2="${y(800)}" class="th"/><polyline points="${pts}"/></svg>
-<div class="gl n"><span>${b.d0.slice(5).replace("-","/")}</span><span>虛線＝800家</span><span>${META.date.slice(5)}</span></div>${tip}</div>`}
+const st=b.n>=800?'<i class="hot">≥800 接近底部區</i>':"";const tip=PANIC?`<p class="bt">上市空頭家數近10天曾 ≥ 800，是恐慌區，上方多了「撿跌深」分頁。</p>`:"";
+return `<div class="bear"><div class="bh"><span>上市空頭家數 <b class="n">${b.n}</b><small class="n">／${b.tot.toLocaleString()} 檔</small>${st}</span></div>${b.all_tot?`<p class="bs n">上櫃 ${b.otc}／${b.otc_tot}，上市櫃合計 ${b.all.toLocaleString()}／${b.all_tot.toLocaleString()}（${Math.round(b.all/b.all_tot*100)}%）。算法同玩股網「短均線空頭排列」：5日線＜10日線＜20日線。</p>`:""}
+<svg viewBox="0 -1 100 38" preserveAspectRatio="none" aria-label="近120日上市空頭家數"><line x1="0" x2="100" y1="${y(800)}" y2="${y(800)}" class="th"/><polyline points="${pts}"/></svg>
+<div class="gl n"><span>${b.d0.slice(5).replace("-","/")}</span><span>虛線＝上市800家</span><span>${META.date.slice(5)}</span></div>${tip}</div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
@@ -476,7 +485,7 @@ const nm=t.closest(".row").querySelector(".nm"),sv=nm.querySelector(".star");if(
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
 $("q").addEventListener("input",e=>{st.q=e.target.value;st.lim=150;grps();list()});
 $("sub").innerHTML="<b>"+META.date.slice(5)+"</b>收盤，"+D.length.toLocaleString()+" 檔";
-$("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span>${META.bear?`<span class="bn">空頭家數 <b class="n">${META.bear.n}</b></span>`:""}<span class="m5">近5日中位數 <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span></div>
+$("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span>${META.bear?`<span class="bn">上市空頭 <b class="n">${META.bear.n}</b></span>`:""}<span class="m5">近5日中位數 <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
 ${META.bear?bearbox(META.bear):""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
 chips();list();track();holds();

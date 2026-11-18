@@ -35,14 +35,23 @@ ewi = (1 + C.pct_change(fill_method=None).where(inb).mean(axis=1).fillna(0)).cum
 weak = (ewi < ewi.rolling(60, min_periods=60).mean())
 S["weak"] = S.date.map(weak).fillna(False).astype(bool)
 
-# ---- 空頭家數（research/bearcount.py 的 D1）：收盤 < 5日線 < 10日線 < 20日線 < 60日線 的上市櫃股票數 ----
-_m = {n: C.rolling(n, min_periods=n).mean() for n in (5, 10, 20, 60)}
-bear = ((C < _m[5]) & (_m[5] < _m[10]) & (_m[10] < _m[20]) & (_m[20] < _m[60])).sum(axis=1)
-bear_tot = (C.notna() & _m[60].notna()).sum(axis=1)
+# 空頭家數（看盤網站的「短均線空頭排列」：5日線 < 10日線 < 20日線）。沒成交的日子沿用前一天收盤，和看盤網站一樣把冷門股也算進去。
+# 主要看「上市」家數 ≥ 800（老師的理論；2020年以來 5 次，見 research/results/README.md），另外列上櫃與合計。
+_alive = (C.notna().cumsum() > 0) & (C.notna()[::-1].cumsum()[::-1] > 0)
+_Cf = C.ffill(limit=20).where(_alive)
+_m = {n: _Cf.rolling(n, min_periods=n).mean() for n in (5, 10, 20, 60)}
+_ok = _Cf.notna() & _m[60].notna()
+_sh = (_m[5] < _m[10]) & (_m[10] < _m[20]) & _ok
+_mk = P["MK"].ffill().iloc[-1]
+_tw = [c for c in C.columns if _mk.get(c) == "TWSE"]; _tp = [c for c in C.columns if _mk.get(c) == "TPEX"]
+bear = _sh[_tw].sum(axis=1)
+bear_tot = _ok[_tw].sum(axis=1)
 d20 = (C.iloc[-1] / C.iloc[-20:].max() - 1) * 100  # 離自己近20日最高收盤
 above10 = C.iloc[-1] >= C.iloc[-10:].mean()  # 收盤在10日線上（仍在動分頁只放這種、而且當天沒跌停）
 bear_meta = {"n": int(bear.iloc[-1]), "tot": int(bear_tot.iloc[-1]), "h": [int(x) for x in bear.iloc[-120:]],
-             "d0": days[-120].strftime("%Y-%m-%d"), "hi": int(bear.iloc[-120:].max())}
+             "d0": days[-120].strftime("%Y-%m-%d"), "hi": int(bear.iloc[-120:].max()),
+             "otc": int(_sh[_tp].iloc[-1].sum()), "otc_tot": int(_ok[_tp].iloc[-1].sum()),
+             "all": int(_sh.iloc[-1].sum()), "all_tot": int(_ok.iloc[-1].sum())}
 
 # ---- 大跌事件（定義同 research/drops.py）：等權指數比近20日最高收盤低 ≥ 6% 觸發，回到離高點不到 3% 才結束 ----
 ddi = (ewi / ewi.rolling(20, min_periods=1).max() - 1).values
