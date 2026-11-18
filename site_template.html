@@ -154,6 +154,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .grp .more{margin-top:8px;margin-right:6px;border:1px solid var(--ln);background:transparent;color:var(--ink);border-radius:8px;padding:6px 12px;font-size:13px}
 .bear .bt .go{margin-left:6px;border:1px solid var(--up);color:var(--up);background:transparent;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700}
 .mkt .bn{display:none;font-size:13.5px;color:var(--mu)}.mkt .bn b{color:var(--ink);font-family:var(--num)}.mkt.mini{padding-top:10px;padding-bottom:10px}.mkt.mini>*:not(.hd){display:none}.mkt.mini .bn{display:inline}.mkt.mini .hd{gap:8px;flex-wrap:wrap}
+.more.full{display:block;width:100%;margin:10px 0;padding:12px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:10px;font-size:14px}
 </style>
 </head><body>
 <header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div class="seg" id="rules"></div></header>
@@ -410,7 +411,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <nav><button data-p="p1" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/></svg>雷達</button><button data-p="p4"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M5 15l4-5 4 3 6-7"/></svg>追蹤</button><button data-p="p2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/></svg>研究</button><button data-p="p3"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/></svg>說明</button></nav>
 <script>
 const D=/*DATA*/[];const META=/*META*/{};const T=/*TRACK*/[];
-const st={rule:"P",q:""};
+const st={rule:"P",q:"",lim:150};
 const PANIC=!!META.bear&&Math.max(...META.bear.h.slice(-10))>=800;const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
 const HOT=s=>!!s.h,PK=s=>!!s.e,fx=(v,d)=>v==null?"—":v.toFixed(d);const DEEP=s=>s.d20!=null&&s.d20<=-20;
@@ -427,12 +428,12 @@ const G=Object.entries(M).map(([g,x])=>[g,x.length,med(x)]).filter(x=>x[1]>=2).s
 $("grp").innerHTML=G.length?`<div class="gh"><span>產業分布</span><small>${RL[st.rule][0]}的 ${a.length.toLocaleString()} 檔，數字是檔數、今天漲跌中位數</small></div><div class="gg">${G.map(([g,n,m])=>`<div class="gc"><span>${g}</span><b class="n">${n}<small> 檔</small></b><i class="n ${cl(m)}">${sg(m)}%</i></div>`).join("")}</div>`:""}
 function chips(){grps();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip${k==="D"?" pd":""}" data-r="${k}" aria-pressed="${st.rule===k}"><span>${RL[k][0]}</span><small class="n">${D.filter(RL[k][1]).length}</small></button>`).join("");
 const nt={A:"成交量和波動在前10%，而且收盤還在10日線上、今天沒跌停。依今日量比排序。",
-D:"恐慌區（空頭家數近10天曾 ≥ 800）。股本30億以下、大跌前強而且漲停過的股票中，離自己20日高點跌超過20%的，跌最深的排前面。歷史上這時候買跌深股，20天後平均比大家多漲約2個百分點，但買進後平均還會再跌約5%。",
+D:"恐慌區（空頭家數近10天曾 ≥ 800）。股本30億以下、大跌前強而且漲停過的股票中，離自己20日高點跌超過20%的。跌最深的排前面只是方便看，歷史上跌越深略好一點但不穩定，不是推薦順序。歷史上這時候買跌深股，20天後平均比大家多漲約2個百分點，但買進後平均還會再跌約5%。",
 F:"依今天漲跌排序。",ALL:"依今天漲跌排序。"}[st.rule];
 $("mkt").classList.toggle("mini",st.rule!=="P");$("tabnote").hidden=!nt;$("tabnote").textContent=nt||""}
-function list(){let a=cur();a.sort((x,y)=>SORT[st.rule](x,y)||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔"+(a.length>100?"，顯示前100檔":"");
+function list(){let a=cur();a.sort((x,y)=>SORT[st.rule](x,y)||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔";
 const miss=st.rule==="F"?[...FAV].filter(c=>!D.some(s=>s.t===c)):[];
-$("list").innerHTML=(a.length?a.slice(0,100).map(row).join(""):'<div class="empty">'+(st.rule==="F"&&!FAV.size?"還沒有自選股。點開任一檔股票，按「加入自選」。":"沒有符合的股票。")+'</div>')
+$("list").innerHTML=(a.length?a.slice(0,st.lim).map(row).join("")+(a.length>st.lim?`<button class="more full" data-more="1">再顯示 ${Math.min(150,a.length-st.lim)} 檔（還有 ${a.length-st.lim} 檔）</button>`:""):'<div class="empty">'+(st.rule==="F"&&!FAV.size?"還沒有自選股。點開任一檔股票，按「加入自選」。":"沒有符合的股票。")+'</div>')
 +(miss.length?'<div class="cnt">今天不在分析範圍內（成交額太低或資料不足）：'+miss.join("、")+' <button class="chip" data-clr="1">移除這些</button></div>':"")}
 function row(s){return `<div class="row${s.e?" r-e":HOT(s)?" r-h":""}"><button aria-expanded="false"><div class="l1"><span><span class="nm">${FAV.has(s.t)?'<span class="star">★</span>':""}${s.n}</span><span class="cd n">${s.t} ${s.mk}${s.g?" "+s.g:""}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}${Math.abs(s.ch)>=9.4?" lim":""}">${sg(s.ch)}%</span></span></div>
 <div class="l2 n"><span>量比<b>${s.vr==null?"—":fx(s.vr,1)+"倍"}</b></span><span>起漲<b class="${cl(s.ru||0)}">${s.ru==null?"—":(s.ru>0?"+":"")+s.ru.toFixed(1)+"%"}</b></span>${st.rule==="D"?`<span>離20日高<b class="${cl(s.d20||0)}">${s.d20==null?"—":(s.d20>0?"+":"")+s.d20.toFixed(1)+"%"}</b></span>`:`<span>波動<b>${fx(s.v,1)}%</b></span>`}<span>上次漲停<b>${s.sn>=99?"—":s.sn===0?"今天":s.sn+"日前"}</b></span></div>
@@ -464,14 +465,14 @@ $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><d
 <div class="l2 n"><span>今日發動 ${rs(x.avg)}</span><span>仍在動其他 ${rs(x.hot)}</span><span>全體 ${rs(x.all)}</span></div></button>
 <div class="dt n">${x.it.length?'<div class="ti"><small>股票</small><small>5日｜移動停損</small></div>'+x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span><span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}｜${i.x==null?`<small>${i.xs}</small>`:rs(i.x)+(i.xs!=="完成"?`<small>${i.xs}</small>`:`<small>${i.xd}天</small>`)}</span></div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
-if(t.dataset.r){st.rule=t.dataset.r;chips();list()}
+if(t.dataset.r){st.rule=t.dataset.r;st.lim=150;chips();list()}else if(t.dataset.more){st.lim+=150;list()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
 else if(t.dataset.clr){[...FAV].filter(c=>!D.some(s=>s.t===c)).forEach(c=>FAV.delete(c));saveFav();chips();list()}
 else if(t.dataset.fav){const c=t.dataset.fav;FAV.has(c)?FAV.delete(c):FAV.add(c);saveFav();
 if(st.rule==="F"){chips();list();return}const on=FAV.has(c);t.setAttribute("aria-pressed",on);t.textContent=on?"★ 已在自選":"☆ 加入自選";
 const nm=t.closest(".row").querySelector(".nm"),sv=nm.querySelector(".star");if(on&&!sv)nm.insertAdjacentHTML("afterbegin",'<span class="star">★</span>');if(!on&&sv)sv.remove();chips()}
 else if(t.getAttribute("aria-expanded")!==null){const r=t.closest(".row"),o=r.classList.toggle("o");t.setAttribute("aria-expanded",o)}});
-$("q").addEventListener("input",e=>{st.q=e.target.value;grps();list()});
+$("q").addEventListener("input",e=>{st.q=e.target.value;st.lim=150;grps();list()});
 $("sub").innerHTML="<b>"+META.date.slice(5)+"</b>收盤，"+D.length.toLocaleString()+" 檔";
 $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span>${META.bear?`<span class="bn">空頭家數 <b class="n">${META.bear.n}</b></span>`:""}<span class="m5">近5日中位數 <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>

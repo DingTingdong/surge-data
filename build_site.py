@@ -273,7 +273,7 @@ for code, r in d.iterrows():
     if code in ind.index:
         x["g"] = ind.at[code, "ind_name"]
         if ind.at[code, "cap"] == ind.at[code, "cap"]: x["cap"] = round(float(ind.at[code, "cap"]), 1)
-    if r.pk or r.rc >= 0.8:  # 只給可能顯示的股票附上走勢，控制檔案大小
+    if True:  # 每檔都附近30日走勢（所有分頁都會顯示）
         x["sp"] = [round(float(v), 2) for v in C[code].iloc[-30:].tolist() if v == v]
     data.append(x)
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
