@@ -35,6 +35,21 @@ ewi = (1 + C.pct_change(fill_method=None).where(inb).mean(axis=1).fillna(0)).cum
 weak = (ewi < ewi.rolling(60, min_periods=60).mean())
 S["weak"] = S.date.map(weak).fillna(False).astype(bool)
 
+# ---- 大跌事件（定義同 research/drops.py）：等權指數比近20日最高收盤低 ≥ 6% 觸發，回到離高點不到 3% 才結束 ----
+ddi = (ewi / ewi.rolling(20, min_periods=1).max() - 1).values
+drop_now = None; i = 0
+while i < len(ddi):
+    if ddi[i] <= -0.06:
+        j = i
+        while j < len(ddi) and ddi[j] <= -0.03: j += 1
+        if j >= len(ddi):  # 還沒結束
+            drop_now = (int(np.argmax(ewi.values[max(0, i - 19):i + 1])) + max(0, i - 19), i)
+        i = j
+    else: i += 1
+dk = (C.iloc[-1] / C.iloc[drop_now[0]] - 1) * 100 if drop_now else None
+drop_meta = {"pk": days[drop_now[0]].strftime("%Y-%m-%d"), "t": days[drop_now[1]].strftime("%Y-%m-%d"),
+             "idx": round(float((ewi.iloc[-1] / ewi.iloc[drop_now[0]] - 1) * 100), 1)} if drop_now else None
+
 # ---- 紀錄：只新增，不改舊的 ----
 os.makedirs("data", exist_ok=True)
 ds = lambda x: x.dt.strftime("%Y-%m-%d")
@@ -234,6 +249,7 @@ for code, r in d.iterrows():
     x["lu"] = int(x["lu"] or 0); x["amt"] = int(x["amt"] or 0); x["sn"] = int(x["sn"]); x["nw"] = bool(r.nw); x["e"] = bool(r.pk); x["u5"] = bool(r.up5 == 1); x["h"] = bool(r.hot)
     x["ru"] = round(float(ru.get(code, np.nan)), 1) if ru.get(code, np.nan) == ru.get(code, np.nan) else None
     if code in recent_hist: x["hs"] = recent_hist[code]
+    if dk is not None and dk.get(code) == dk.get(code): x["dk"] = round(float(dk[code]), 1)
     if code in disp: x["dp"] = disp[code]
     if code in active_stop: x["stp"] = active_stop[code]
     if code in chip_info: x.update(chip_info[code])
@@ -246,7 +262,7 @@ for code, r in d.iterrows():
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8]}
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
 html = html.replace("/*DATA*/[]", J(data)).replace("/*META*/{}", J(meta)).replace("/*TRACK*/[]", J(track))

@@ -139,6 +139,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .grp{margin-top:10px}.grp .gh{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px}.grp .gh span{font-weight:700;font-size:14px}.grp .gh small{color:var(--mu);font-size:12px}
 .grp .chips{padding-top:6px}.grp .chip small{font-family:var(--num);margin-left:6px;font-size:12.5px}.grp .chip em{font-style:normal;color:var(--sig);font-weight:700}
 .grp .chip[aria-pressed="true"]{border-color:var(--sig);color:var(--ink);background:color-mix(in srgb,var(--sig) 12%,transparent)}
+.mkt .dropl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}.mkt .dropl .chip{border:1px solid var(--ln);background:transparent;border-radius:8px;padding:4px 10px;font-size:13px;color:var(--ink);min-height:32px}
 </style>
 </head><body>
 <header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div class="seg" id="rules"></div></header>
@@ -153,6 +154,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li><b>買了用移動停損賣</b>：收盤比買進後最高收盤低10%就隔天開盤賣、最多抱20天。2024–2026平均每筆+0.89%，但中位數−4.47%，空頭年（2022）會賠。</li>
 <li><b>兩個待驗證的標示</b>：「逆勢」（大盤偏弱時發動）和「融資未增」，2024–2026表現明顯較好，但都是看過結果才發現的，要等之後的實際資料確認。</li>
 <li><b>試過沒幫助的</b>：只在大盤偏多時做、法人買超、續強／回落、舊版精選（量能比放大）、營收、產業集中（族群性）、股本大小。</li>
+<li><b>大跌時，扛跌和反彈快是兩種不同的股票</b>：前段扛得住的，後面再跌也跌得少，但反彈也漲得少；跌最深的反彈最猛，再跌也跌最多。沒有找到大跌當下就能挑出「之後比較會漲」的條件。</li>
 <li>扣掉成本後還<b>沒有證明能穩定賺錢</b>，名單請當觀察用。實際表現看「追蹤」頁，第一批5日結果在11/24。</li></ul></div>
 
 <div class="doc"><h2>籌碼有沒有幫助：大致沒有</h2>
@@ -206,6 +208,17 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <p><b>要說清楚的地方</b>：沒有任何候選條件達到我事先設的標準（命中率要跟「仍在動」一樣高），代表<b>越早抓、誤報越多</b>。照事先寫的退路應選「量比3倍＋漲停」；我改選「第一根漲停」，因為它在挑選期就比較早、剩下空間更大、命中率幾乎相同，驗證期也每一項都比較好。這是看過結果後的判斷，真正的檢驗是 2026/11/17 之後的「追蹤」頁。</p>
 <p>大約四檔裡只有一檔之後會再漲20%，也有近三成會先跌10%。名單是「剛發動、值得盯」的股票，不是買進訊號；進場後怎麼出場才是關鍵。</p></div>
 
+<div class="doc"><h2>大跌時哪些股票扛跌、哪些反彈快</h2>
+<p>2020年以來，等權指數比近20日高點低6%以上的大跌共21次。三個發現：</p>
+<p><b>1. 扛跌會延續，但反彈會落後。</b>每次大跌，把前段跌最少的10%股票，和跌最多的10%比較，看之後20個交易日：</p>
+<table class="tb n"><tr><th></th><th>大盤下跌的日子</th><th>大盤上漲的日子</th><th>合計</th></tr>
+<tr><td>前段最扛跌</td><td class="dn">−10.8%</td><td class="up">+13.0%</td><td>+2.1%</td></tr>
+<tr><td>前段跌最多</td><td class="dn">−16.6%</td><td class="up">+20.5%</td><td>+4.0%</td></tr></table>
+<p>20次裡有19次「扛跌的之後再跌也跌得少」，20次全部「扛跌的反彈也漲得少」。所以扛跌和反彈快其實是同一件事的兩面：股票本身動得大或小。想要穩就挑扛跌的，想要彈就挑跌深的，很難兩個都要。（這一項是看過下面的結果後才做的，屬於探索。）</p>
+<p><b>2. 跌最深的反彈最猛，但只在真正的低點才成立。</b>如果知道哪天是低點，跌幅最大的那一成股票，之後10天平均比大家多漲3.7個百分點（20次有15次）。問題是低點只有事後才知道。</p>
+<p><b>3. 大跌當下，沒有條件能挑出之後會漲比較多的股票。</b>事先寫好7個條件（扛跌、大跌前強、法人買超、投信買超、大股本、高波動、仍在動），在跌破6%隔天買、看10天超額報酬，沒有一個在兩段期間都穩定有用。「仍在動」兩段都略好（約+1個百分點），但不夠穩。</p>
+<p><b>這次（10月起）：</b>10/28到11/06等權指數跌16.1%，11/06到11/13反彈8.5%，11/13到11/17又跌7.9%。兩段下跌的表現高度一致（相關係數0.73），扛跌的大多是食品、建材營造、航運、金融、電信和部分資訊服務股（如大世科、全景軟體、華經）；半導體、電子零組件、光電跌最深，反彈最大，第二段又跌最多。</p>
+<p>大跌期間，雷達頁大盤卡片會出現「看最抗跌」「看跌最多」，可以直接看從高點以來每檔的漲跌。</p></div>
 <div class="doc"><h2>產業集中、股本大小有沒有幫助：沒有</h2>
 <p>事先寫好7個條件，看能不能讓「今日發動＋移動停損」更好（2020–2023挑選、2024–2026驗證，每筆平均報酬）：</p>
 <table class="tb n"><tr><th>條件</th><th>2020–23</th><th>2024–26</th></tr>
@@ -350,15 +363,15 @@ function chips(){grps();const b=base();$("rules").innerHTML=Object.keys(RL).map(
 $("flt").innerHTML=[["","不分市場"],["櫃","上櫃"],["市","上市"]].map(x=>`<button class="chip" data-m="${x[0]}" aria-pressed="${st.mk===x[0]}">${x[1]}</button>`).join("")
 +(st.rule==="A"?[["","續強＋回落"],["y","續強"],["n","回落"]].map(x=>`<button class="chip" data-u="${x[0]}" aria-pressed="${st.u5===x[0]}">${x[1]}</button>`).join(""):"")}
 function list(){const q=st.q.trim().toLowerCase();let a=base().filter(s=>RL[st.rule][1](s)&&(!q||(s.t+s.n+(s.g||"")).toLowerCase().includes(q)));
-const rk=s=>s.ch>0&&s.ru!=null?s.ru:1e9+(s.ru??0);a.sort((x,y)=>(st.sort==="ru"?rk(x)-rk(y):((y[st.sort]??-1e9)-(x[st.sort]??-1e9)))||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔"+(a.length>100?"，顯示前100檔":"");
+const rk=s=>s.ch>0&&s.ru!=null?s.ru:1e9+(s.ru??0);a.sort((x,y)=>(st.sort==="ru"?rk(x)-rk(y):st.sort==="dkl"?(x.dk??1e9)-(y.dk??1e9):((y[st.sort]??-1e9)-(x[st.sort]??-1e9)))||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔"+(a.length>100?"，顯示前100檔":"");
 const miss=st.rule==="F"?[...FAV].filter(c=>!D.some(s=>s.t===c)):[];
 $("list").innerHTML=(a.length?a.slice(0,100).map(row).join(""):'<div class="empty">'+(st.rule==="F"&&!FAV.size?"還沒有自選股。點開任一檔股票，按「加入自選」。":"沒有符合的股票。")+'</div>')
 +(miss.length?'<div class="cnt">今天不在分析範圍內（成交額太低或資料不足）：'+miss.join("、")+' <button class="chip" data-clr="1">移除這些</button></div>':"")}
 function row(s){return `<div class="row${s.e?" r-e":HOT(s)?" r-h":""}"><button aria-expanded="false"><div class="l1"><span><span class="nm">${FAV.has(s.t)?'<span class="star">★</span>':""}${s.n}</span><span class="cd n">${s.t} ${s.mk}${s.g?" "+s.g:""}</span></span><span><span class="px n">${s.c}</span><span class="pc n ${cl(s.ch)}${Math.abs(s.ch)>=9.4?" lim":""}">${sg(s.ch)}%</span></span></div>
-<div class="l2 n"><span>量比<b>${s.vr==null?"—":fx(s.vr,1)+"倍"}</b></span><span>起漲<b class="${cl(s.ru||0)}">${s.ru==null?"—":(s.ru>0?"+":"")+s.ru.toFixed(1)+"%"}</b></span><span>波動<b>${fx(s.v,1)}%</b></span><span>上次漲停<b>${s.sn>=99?"—":s.sn===0?"今天":s.sn+"日前"}</b></span></div>
+<div class="l2 n"><span>量比<b>${s.vr==null?"—":fx(s.vr,1)+"倍"}</b></span><span>起漲<b class="${cl(s.ru||0)}">${s.ru==null?"—":(s.ru>0?"+":"")+s.ru.toFixed(1)+"%"}</b></span>${META.drop&&st.sort.startsWith("dk")?`<span>高點以來<b class="${cl(s.dk||0)}">${s.dk==null?"—":(s.dk>0?"+":"")+s.dk.toFixed(1)+"%"}</b></span>`:`<span>波動<b>${fx(s.v,1)}%</b></span>`}<span>上次漲停<b>${s.sn>=99?"—":s.sn===0?"今天":s.sn+"日前"}</b></span></div>
 ${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.stp?'<span class="tag">停損參考 '+s.stp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動</span>'+(META.weak?'<span class="tag nw">逆勢</span>':'')+(s.mg!=null&&s.mg<=0?'<span class="tag">融資未增</span>':''):'')+(HOT(s)?'<span class="tag">仍在動</span><span class="tag">'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+(s.rc||0)*100+'%"></i></div>'}</button>
-<div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>外資／投信買賣超（今天）</span><b>${s.fi==null?"—":s.fi.toLocaleString()+" 張"}／${s.tr==null?"—":s.tr.toLocaleString()+" 張"}</b></div><div><span>融資餘額5日變化${META.chip&&META.chip.md?"（至"+META.chip.md+"）":""}</span><b>${s.mg==null?"—":sg(s.mg)+"%"}</b></div><div><span>股本</span><b>${s.cap==null?"—":s.cap.toLocaleString()+" 億"}</b></div><div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
+<div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>外資／投信買賣超（今天）</span><b>${s.fi==null?"—":s.fi.toLocaleString()+" 張"}／${s.tr==null?"—":s.tr.toLocaleString()+" 張"}</b></div><div><span>融資餘額5日變化${META.chip&&META.chip.md?"（至"+META.chip.md+"）":""}</span><b>${s.mg==null?"—":sg(s.mg)+"%"}</b></div><div><span>股本</span><b>${s.cap==null?"—":s.cap.toLocaleString()+" 億"}</b></div>${META.drop?`<div><span>大盤${META.drop.pk.slice(5).replace("-","/")}高點以來</span><b>${s.dk==null?"—":sg(s.dk)+"%"}（大盤 ${sg(META.drop.idx)}%）</b></div>`:""}<div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
@@ -379,7 +392,7 @@ $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><d
 <div class="l2 n"><span>今日發動 ${rs(x.avg)}</span><span>仍在動其他 ${rs(x.hot)}</span><span>全體 ${rs(x.all)}</span></div></button>
 <div class="dt n">${x.it.length?'<div class="ti"><small>股票</small><small>5日｜移動停損</small></div>'+x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span><span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}｜${i.x==null?`<small>${i.xs}</small>`:rs(i.x)+(i.xs!=="完成"?`<small>${i.xs}</small>`:`<small>${i.xd}天</small>`)}</span></div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
-if(t.dataset.r){st.rule=t.dataset.r;chips();list()}else if(t.dataset.m!==undefined){st.mk=t.dataset.m;chips();list()}else if(t.dataset.u!==undefined){st.u5=t.dataset.u;chips();list()}else if(t.dataset.g!==undefined){st.g=st.g===t.dataset.g?"":t.dataset.g;chips();list()}
+if(t.dataset.r){st.rule=t.dataset.r;chips();list()}else if(t.dataset.m!==undefined){st.mk=t.dataset.m;chips();list()}else if(t.dataset.u!==undefined){st.u5=t.dataset.u;chips();list()}else if(t.dataset.dk){st.rule="ALL";st.sort=t.dataset.dk;$("sort").value=st.sort;chips();list();scrollTo({top:$("cnt").getBoundingClientRect().top+scrollY-130,behavior:"smooth"})}else if(t.dataset.g!==undefined){st.g=st.g===t.dataset.g?"":t.dataset.g;chips();list()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
 else if(t.dataset.clr){[...FAV].filter(c=>!D.some(s=>s.t===c)).forEach(c=>FAV.delete(c));saveFav();chips();list()}
 else if(t.dataset.fav){const c=t.dataset.fav;FAV.has(c)?FAV.delete(c):FAV.add(c);saveFav();
@@ -390,7 +403,8 @@ $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEv
 $("sub").innerHTML="<b>"+META.date.slice(5)+"</b>收盤，"+D.length.toLocaleString()+" 檔";
 $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span><span class="m5">近5日中位數 <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
-<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
+${META.drop?`<p class="dropl">大跌中：等權指數從 ${META.drop.pk.slice(5).replace("-","/")} 高點跌了 <b class="n dn">${Math.abs(META.drop.idx).toFixed(1)}%</b>。<button class="chip" data-dk="dk">看最抗跌</button><button class="chip" data-dk="dkl">看跌最多</button></p>`:""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
+if(META.drop)$("sort").insertAdjacentHTML("beforeend",'<option value="dk">大跌以來最抗跌</option><option value="dkl">大跌以來跌最多</option>');
 chips();list();track();holds();
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));
