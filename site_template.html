@@ -155,16 +155,12 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .bear .bt .go{margin-left:6px;border:1px solid var(--up);color:var(--up);background:transparent;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700}
 .mkt .bn{display:none;font-size:13.5px;color:var(--mu)}.mkt .bn b{color:var(--ink);font-family:var(--num)}.mkt.mini{padding-top:10px;padding-bottom:10px}.mkt.mini>*:not(.hd){display:none}.mkt.mini .bn{display:inline}.mkt.mini .hd{gap:8px;flex-wrap:wrap}
 .more.full{display:block;width:100%;margin:10px 0;padding:12px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:10px;font-size:14px}
-.mvrow{display:flex;align-items:center;gap:6px;padding:8px 16px 0}.mvrow span{font-size:13px;color:var(--mu);margin-right:2px}
-.mvrow button{border:1px solid var(--ln);background:transparent;color:var(--mu);border-radius:8px;padding:5px 10px;font-size:13px;min-height:32px}
-.mvrow button[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);font-weight:700}
-@media (min-width:720px){.mvrow{max-width:760px;margin:0 auto;padding:8px 24px 0}}
 .gp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.gp span{font-size:13px;border:1px solid var(--ln);border-radius:8px;padding:4px 8px;background:var(--sf);white-space:nowrap}.gp b{font-family:var(--num);font-weight:700}.gp i{font-style:normal;font-family:var(--num);font-size:12px}
 </style>
 </head><body>
 <header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div class="seg" id="rules"></div></header>
 <section class="pg on" id="p1">
-<div class="bar"><input id="q" type="search" placeholder="搜尋代號、名稱或產業" aria-label="搜尋"></div><div class="mvrow" id="mvrow" role="group" aria-label="市值"></div>
+<div class="bar"><input id="q" type="search" placeholder="搜尋代號、名稱或產業" aria-label="搜尋"></div>
 <div style="padding:0 16px"><p class="tabnote" id="tabnote" hidden></p></div>
 <main><div class="nt warn" id="stale" hidden></div><div class="mkt" id="mkt"></div><div class="grp" id="grp"></div><div class="cnt n" id="cnt"></div><div id="list"></div></main></section>
 <section class="pg" id="p2"><main>
@@ -261,7 +257,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li>「好公司」只能用手上的資料定義（股價趨勢、股本、法人），沒有用財報。股本是現在的資料。</li></ul>
 <p>近10天空頭家數曾 ≥ 800 時，雷達頁會多一個紅色的「撿跌深」分頁，依離20日高的跌幅排序。</p></div>
 <div class="doc"><h2>恐慌時的中小型題材股：有比較強的傾向，但還不夠確定</h2>
-<p>同樣在空頭家數第一次衝上800的隔天買跌深20%以上的股票，再加條件（中小型＝股本30億以下；題材＝大跌前市場已經認同）：</p>
+<p>同樣在空頭家數第一次衝上800的隔天買跌深20%以上的股票，再加條件（中小型＝股本30億以下，網站現在改用市值100億以下，結果差不多；題材＝大跌前市場已經認同）：</p>
 <table class="tb n"><tr><th>買什麼</th><th>20天平均</th><th>飆進前10%</th><th>買後最低</th></tr>
 <tr><td>只看跌深</td><td class="up">+11.3%</td><td>14%</td><td class="dn">−4.4%</td></tr>
 <tr><td>＋中小型</td><td class="up">+11.4%</td><td>15%</td><td class="dn">−4.6%</td></tr>
@@ -416,7 +412,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <nav><button data-p="p1" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/></svg>雷達</button><button data-p="p4"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M5 15l4-5 4 3 6-7"/></svg>追蹤</button><button data-p="p2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/></svg>研究</button><button data-p="p3"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/></svg>說明</button></nav>
 <script>
 const D=/*DATA*/[];const META=/*META*/{};const T=/*TRACK*/[];
-const st={rule:"P",q:"",lim:150,mv:0};try{st.mv=+localStorage.getItem("mv")>0?300:0}catch(e){}
+const st={rule:"P",q:"",lim:150};
 const MV=s=>s.cap!=null&&s.c!=null?s.cap*s.c/10:null; // 市值（億）＝股本×股價÷面額10元
 const PANIC=!!META.bear&&Math.max(...META.bear.h.slice(-10))>=800;const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
@@ -427,14 +423,14 @@ function saveFav(){try{localStorage.setItem("fav",JSON.stringify([...FAV]))}catc
 const kurl=s=>"https://tw.stock.yahoo.com/quote/"+s.t+(s.mk==="櫃"?".TWO":".TW")+"/technical-analysis";
 // 每個分頁固定一種排序，不用選
 const SORT={P:(x,y)=>(y.vr??-1e9)-(x.vr??-1e9),A:(x,y)=>(y.vr??-1e9)-(x.vr??-1e9),D:(x,y)=>(x.d20??1e9)-(y.d20??1e9),F:(x,y)=>y.ch-x.ch,ALL:(x,y)=>y.ch-x.ch};
-function cur(){const q=st.q.trim().toLowerCase();return D.filter(s=>RL[st.rule][1](s)&&(!st.mv||(MV(s)!=null&&MV(s)<=st.mv))&&(!q||(s.t+s.n+(s.g||"")).toLowerCase().includes(q)))}
+function cur(){const q=st.q.trim().toLowerCase();return D.filter(s=>RL[st.rule][1](s)&&(!q||(s.t+s.n+(s.g||"")).toLowerCase().includes(q)))}
 function grps(){const a=cur();if(!a.length){$("grp").innerHTML="";return}
 const M={};a.forEach(s=>{const g=s.g||"未分類";(M[g]=M[g]||[]).push(s.ch)});const med=x=>{x=[...x].sort((p,q)=>p-q);const n=x.length;return n%2?x[(n-1)/2]:(x[n/2-1]+x[n/2])/2};
 const G=Object.entries(M).map(([g,x])=>[g,x.length,med(x)]).sort((p,q)=>q[1]-p[1]||q[2]-p[2]);
 $("grp").innerHTML=`<div class="gh"><span>產業分布</span><small>這頁 ${a.length.toLocaleString()} 檔全部分類，括號是今天漲跌中位數</small></div><div class="gp">${G.map(([g,n,m])=>`<span>${g} <b class="n">${n}</b> <i class="n ${cl(m)}">(${sg(m)}%)</i></span>`).join("")}</div>`}
-function chips(){grps();$("mvrow").innerHTML=`<button data-mv="${st.mv?0:300}" aria-pressed="${!!st.mv}">${st.mv?"✓ ":""}只看市值300億以下</button>`;$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip${k==="D"?" pd":""}" data-r="${k}" aria-pressed="${st.rule===k}"><span>${RL[k][0]}</span><small class="n">${D.filter(s=>RL[k][1](s)&&(!st.mv||(MV(s)!=null&&MV(s)<=st.mv))).length}</small></button>`).join("");
+function chips(){grps();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip${k==="D"?" pd":""}" data-r="${k}" aria-pressed="${st.rule===k}"><span>${RL[k][0]}</span><small class="n">${D.filter(RL[k][1]).length}</small></button>`).join("");
 const nt={A:"成交量和波動在前10%，而且收盤還在10日線上、今天沒跌停。依今日量比排序。",
-D:"恐慌區（空頭家數近10天曾 ≥ 800）。股本30億以下、大跌前強而且漲停過的股票中，離自己20日高點跌超過20%的。跌最深的排前面只是方便看，歷史上跌越深略好一點但不穩定，不是推薦順序。歷史上這時候買跌深股，20天後平均比大家多漲約2個百分點，但買進後平均還會再跌約5%。",
+D:"恐慌區（空頭家數近10天曾 ≥ 800）。市值100億以下、大跌前強而且漲停過的股票中，離自己20日高點跌超過20%的。跌最深的排前面只是方便看，歷史上跌越深略好一點但不穩定，不是推薦順序。歷史上這時候買跌深股，20天後平均比大家多漲約2個百分點，但買進後平均還會再跌約5%。",
 F:"依今天漲跌排序。",ALL:"依今天漲跌排序。"}[st.rule];
 $("mkt").classList.toggle("mini",st.rule!=="P");$("tabnote").hidden=!nt;$("tabnote").textContent=nt||""}
 function list(){let a=cur();a.sort((x,y)=>SORT[st.rule](x,y)||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔";
@@ -471,7 +467,7 @@ $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><d
 <div class="l2 n"><span>今日發動 ${rs(x.avg)}</span><span>仍在動其他 ${rs(x.hot)}</span><span>全體 ${rs(x.all)}</span></div></button>
 <div class="dt n">${x.it.length?'<div class="ti"><small>股票</small><small>5日｜移動停損</small></div>'+x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span><span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}｜${i.x==null?`<small>${i.xs}</small>`:rs(i.x)+(i.xs!=="完成"?`<small>${i.xs}</small>`:`<small>${i.xd}天</small>`)}</span></div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
-if(t.dataset.r){st.rule=t.dataset.r;st.lim=150;chips();list()}else if(t.dataset.mv!==undefined){st.mv=+t.dataset.mv;st.lim=150;try{localStorage.setItem("mv",st.mv)}catch(e){}chips();list()}else if(t.dataset.more){st.lim+=150;list()}
+if(t.dataset.r){st.rule=t.dataset.r;st.lim=150;chips();list()}else if(t.dataset.more){st.lim+=150;list()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
 else if(t.dataset.clr){[...FAV].filter(c=>!D.some(s=>s.t===c)).forEach(c=>FAV.delete(c));saveFav();chips();list()}
 else if(t.dataset.fav){const c=t.dataset.fav;FAV.has(c)?FAV.delete(c):FAV.add(c);saveFav();
