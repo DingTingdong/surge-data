@@ -140,6 +140,9 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .grp .chips{padding-top:6px}.grp .chip small{font-family:var(--num);margin-left:6px;font-size:12.5px}.grp .chip em{font-style:normal;color:var(--sig);font-weight:700}
 .grp .chip[aria-pressed="true"]{border-color:var(--sig);color:var(--ink);background:color-mix(in srgb,var(--sig) 12%,transparent)}
 .mkt .dropl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}.mkt .dropl .chip{border:1px solid var(--ln);background:transparent;border-radius:8px;padding:4px 10px;font-size:13px;color:var(--ink);min-height:32px}
+.bear{margin-top:12px;padding-top:10px;border-top:1px solid var(--ln)}.bear .bh{font-size:14px}.bear .bh b{font-family:var(--num);font-size:17px;margin-left:4px}.bear .bh small{color:var(--mu);font-family:var(--num);margin-left:2px}
+.bear .bh i{font-style:normal;font-size:12px;font-weight:700;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:1px}.bear .bh i.hot{background:color-mix(in srgb,var(--sig) 18%,transparent);color:var(--sig)}.bear .bh i.mid{color:var(--mu);border:1px solid var(--ln)}
+.bear svg{width:100%;height:46px;display:block;margin-top:6px}.bear polyline{fill:none;stroke:var(--sig);stroke-width:1.6;vector-effect:non-scaling-stroke}.bear .th{stroke:var(--mu);stroke-dasharray:3 3;stroke-width:1;vector-effect:non-scaling-stroke}
 </style>
 </head><body>
 <header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div class="seg" id="rules"></div></header>
@@ -155,6 +158,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li><b>兩個待驗證的標示</b>：「逆勢」（大盤偏弱時發動）和「融資未增」，2024–2026表現明顯較好，但都是看過結果才發現的，要等之後的實際資料確認。</li>
 <li><b>試過沒幫助的</b>：只在大盤偏多時做、法人買超、續強／回落、舊版精選（量能比放大）、營收、產業集中（族群性）、股本大小。</li>
 <li><b>大跌時，扛跌和反彈快是兩種不同的股票</b>：前段扛得住的，後面再跌也跌得少，但反彈也漲得少；跌最深的反彈最猛，再跌也跌最多。沒有找到大跌當下就能挑出「之後比較會漲」的條件。</li>
+<li><b>空頭家數 ≥ 800 很接近底部</b>：2020年以來5次（不含正在進行的這次），之後20天等權指數5次都上漲、平均+9.9%；但樣本很少，2025/4 關稅恐慌時訊號後又再跌14%。</li>
 <li>扣掉成本後還<b>沒有證明能穩定賺錢</b>，名單請當觀察用。實際表現看「追蹤」頁，第一批5日結果在11/24。</li></ul></div>
 
 <div class="doc"><h2>籌碼有沒有幫助：大致沒有</h2>
@@ -208,6 +212,21 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <p><b>要說清楚的地方</b>：沒有任何候選條件達到我事先設的標準（命中率要跟「仍在動」一樣高），代表<b>越早抓、誤報越多</b>。照事先寫的退路應選「量比3倍＋漲停」；我改選「第一根漲停」，因為它在挑選期就比較早、剩下空間更大、命中率幾乎相同，驗證期也每一項都比較好。這是看過結果後的判斷，真正的檢驗是 2026/11/17 之後的「追蹤」頁。</p>
 <p>大約四檔裡只有一檔之後會再漲20%，也有近三成會先跌10%。名單是「剛發動、值得盯」的股票，不是買進訊號；進場後怎麼出場才是關鍵。</p></div>
 
+<div class="doc"><h2>空頭家數到800是不是底部：大致是，但樣本很少</h2>
+<p>空頭家數＝收盤 &lt; 5日線 &lt; 10日線 &lt; 20日線 &lt; 60日線的上市櫃股票數（約1,700檔中）。訊號＝第一次衝上800家（前20天都在800以下）。2020年以來：</p>
+<table class="tb n"><tr><th>訊號日</th><th>之後10天</th><th>之後20天</th><th>再跌最多</th><th>真正低點</th></tr>
+<tr><td>2022/05/12</td><td class="up">+4.5%</td><td class="up">+9.1%</td><td>0%</td><td>38天後</td></tr>
+<tr><td>2022/07/04</td><td class="up">+5.0%</td><td class="up">+9.0%</td><td>−1.2%</td><td>2天後</td></tr>
+<tr><td>2022/10/13</td><td class="up">+2.3%</td><td class="up">+8.8%</td><td>−0.3%</td><td>9天後</td></tr>
+<tr><td>2025/04/07</td><td class="dn">−3.8%</td><td class="up">+4.0%</td><td>−14.2%</td><td>2天後</td></tr>
+<tr><td>2026/07/30</td><td class="up">+16.2%</td><td class="up">+18.3%</td><td>0%</td><td>當天</td></tr>
+<tr><td>2026/11/04</td><td colspan="4">進行中：11/06 衝到986家，反彈後 11/17 又回到827家</td></tr></table>
+<p>（等權指數；所有交易日平均10天+1.0%、20天+2.0%。）衝上800之後20天，5次全部上漲，比平常好很多，符合事先寫好的「底部訊號」標準。但要注意：</p>
+<ul><li>只有5次，而且資料從2020年開始，<b>不含2020/3疫情崩盤</b>。</li>
+<li>黑天鵝時會衝過800：2025/4 關稅恐慌最高到1,183家，訊號後兩天又跌了14%。800家比較像「接近底部」，不是「當天就是底」。</li>
+<li>定義很重要：如果不看60日線（收盤 &lt; 5 &lt; 10 &lt; 20日線），訊號多出很多次而且沒有用。700家的版本也還可以（10次，10天後8成上漲），600家就太早。</li></ul>
+<p><b>那時候抓哪種反彈股？</b>訊號隔天買「近20日跌最深的一成」，持有10天平均比大家多賺2.7個百分點、5次有4次贏，形式上符合事先標準；但主要靠 2026/7 那一次（+13.4），其他幾次只多0～1個百分點，2025/4還輸。比較穩的是「整體一起反彈」：訊號後10天平均每檔漲 +3.3、+2.9、−0.5、+4.2、+10.9%。</p>
+<p>雷達頁大盤卡片有每天的空頭家數和近120天走勢（虛線是800家）。</p></div>
 <div class="doc"><h2>大跌時哪些股票扛跌、哪些反彈快</h2>
 <p>2020年以來，等權指數比近20日高點低6%以上的大跌共21次。三個發現：</p>
 <p><b>1. 扛跌會延續，但反彈會落後。</b>每次大跌，把前段跌最少的10%股票，和跌最多的10%比較，看之後20個交易日：</p>
@@ -372,6 +391,11 @@ function row(s){return `<div class="row${s.e?" r-e":HOT(s)?" r-h":""}"><button a
 ${(s.e||s.stp||s.rc>=.8)?'<div class="tg">'+(s.dp?'<span class="tag dp">'+s.dp+'</span>':'')+(s.stp?'<span class="tag">停損參考 '+s.stp+'</span>':'')+(PK(s)?'<span class="tag nw">今日發動</span>'+(META.weak?'<span class="tag nw">逆勢</span>':'')+(s.mg!=null&&s.mg<=0?'<span class="tag">融資未增</span>':''):'')+(HOT(s)?'<span class="tag">仍在動</span><span class="tag">'+(s.u5?'續強':'回落')+'</span>':(s.rc>=.8&&s.sn>10?'<span class="tag">已降溫</span>':''))+"</div>":""}
 ${s.sp?spark(s.sp):'<div class="vb"><i style="width:'+(s.rc||0)*100+'%"></i></div>'}</button>
 <div class="dt n">${s.hs?`<p>近20日進過今日發動：${s.hs.map(h=>h[0]).join("、")}</p>`:""}<div><span>活躍度（同市場排名）</span><b>${fx(s.rc,2)}</b></div><div><span>外資／投信買賣超（今天）</span><b>${s.fi==null?"—":s.fi.toLocaleString()+" 張"}／${s.tr==null?"—":s.tr.toLocaleString()+" 張"}</b></div><div><span>融資餘額5日變化${META.chip&&META.chip.md?"（至"+META.chip.md+"）":""}</span><b>${s.mg==null?"—":sg(s.mg)+"%"}</b></div><div><span>股本</span><b>${s.cap==null?"—":s.cap.toLocaleString()+" 億"}</b></div>${META.drop?`<div><span>大盤${META.drop.pk.slice(5).replace("-","/")}高點以來</span><b>${s.dk==null?"—":sg(s.dk)+"%"}（大盤 ${sg(META.drop.idx)}%）</b></div>`:""}<div><span>今天成交額</span><b>${s.a1==null?"—":Math.round(s.a1)+" 百萬"}</b></div><div><span>量能比（5日÷20日均額）</span><b>${fx(s.am,2)}</b></div><div><span>5日／20日漲幅</span><b>${sg(s.r5)}%／${sg(s.r20)}%</b></div><div><span>距60日高點</span><b>${sg(s.dh)}%</b></div><div><span>近20日漲停天數</span><b>${s.lu}</b></div><div><span>近4個5日最大漲幅</span><b>${fx(s.bk,1)}%</b></div><div><span>10日振幅</span><b>${fx(s.rg,1)}%</b></div><div><span>平均真實波幅</span><b>${fx(s.atr,1)}%</b></div><div><span>20日均額</span><b>${s.amt} 百萬</b></div><div class="act"><button data-fav="${s.t}" aria-pressed="${FAV.has(s.t)}">${FAV.has(s.t)?"★ 已在自選":"☆ 加入自選"}</button><a href="${kurl(s)}" target="_blank" rel="noopener">看K線 ↗</a></div></div></div>`}
+function bearbox(b){const h=b.h,mx=Math.max(1000,...h)*1.05,w=100,ht=36,y=v=>(ht-v/mx*ht).toFixed(1),pts=h.map((v,i)=>(i*w/(h.length-1)).toFixed(1)+","+y(v)).join(" ");
+const st=b.n>=800?'<i class="hot">≥800 接近底部區</i>':"";
+return `<div class="bear"><div class="bh"><span>空頭家數 <b class="n">${b.n}</b><small class="n">／${b.tot.toLocaleString()} 檔</small>${st}</span></div>
+<svg viewBox="0 -1 100 38" preserveAspectRatio="none" aria-label="近120日空頭家數"><line x1="0" x2="100" y1="${y(800)}" y2="${y(800)}" class="th"/><polyline points="${pts}"/></svg>
+<div class="gl n"><span>${b.d0.slice(5).replace("-","/")}</span><span>虛線＝800家</span><span>${META.date.slice(5)}</span></div></div>`}
 function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...a),w=100,h=30,k=hi>lo?h/(hi-lo):0;
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
@@ -403,7 +427,7 @@ $("q").addEventListener("input",e=>{st.q=e.target.value;list()});$("sort").addEv
 $("sub").innerHTML="<b>"+META.date.slice(5)+"</b>收盤，"+D.length.toLocaleString()+" 檔";
 $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span><span class="m5">近5日中位數 <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
-${META.drop?`<p class="dropl">大跌中：等權指數從 ${META.drop.pk.slice(5).replace("-","/")} 高點跌了 <b class="n dn">${Math.abs(META.drop.idx).toFixed(1)}%</b>。<button class="chip" data-dk="dk">看最抗跌</button><button class="chip" data-dk="dkl">看跌最多</button></p>`:""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
+${META.bear?bearbox(META.bear):""}${META.drop?`<p class="dropl">大跌中：等權指數從 ${META.drop.pk.slice(5).replace("-","/")} 高點跌了 <b class="n dn">${Math.abs(META.drop.idx).toFixed(1)}%</b>。<button class="chip" data-dk="dk">看最抗跌</button><button class="chip" data-dk="dkl">看跌最多</button></p>`:""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
 if(META.drop)$("sort").insertAdjacentHTML("beforeend",'<option value="dk">大跌以來最抗跌</option><option value="dkl">大跌以來跌最多</option>');
 chips();list();track();holds();
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));

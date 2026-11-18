@@ -35,6 +35,13 @@ ewi = (1 + C.pct_change(fill_method=None).where(inb).mean(axis=1).fillna(0)).cum
 weak = (ewi < ewi.rolling(60, min_periods=60).mean())
 S["weak"] = S.date.map(weak).fillna(False).astype(bool)
 
+# ---- 空頭家數（research/bearcount.py 的 D1）：收盤 < 5日線 < 10日線 < 20日線 < 60日線 的上市櫃股票數 ----
+_m = {n: C.rolling(n, min_periods=n).mean() for n in (5, 10, 20, 60)}
+bear = ((C < _m[5]) & (_m[5] < _m[10]) & (_m[10] < _m[20]) & (_m[20] < _m[60])).sum(axis=1)
+bear_tot = (C.notna() & _m[60].notna()).sum(axis=1)
+bear_meta = {"n": int(bear.iloc[-1]), "tot": int(bear_tot.iloc[-1]), "h": [int(x) for x in bear.iloc[-120:]],
+             "d0": days[-120].strftime("%Y-%m-%d"), "hi": int(bear.iloc[-120:].max())}
+
 # ---- 大跌事件（定義同 research/drops.py）：等權指數比近20日最高收盤低 ≥ 6% 觸發，回到離高點不到 3% 才結束 ----
 ddi = (ewi / ewi.rolling(20, min_periods=1).max() - 1).values
 drop_now = None; i = 0
@@ -262,7 +269,7 @@ for code, r in d.iterrows():
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta}
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
 html = html.replace("/*DATA*/[]", J(data)).replace("/*META*/{}", J(meta)).replace("/*TRACK*/[]", J(track))
