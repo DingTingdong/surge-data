@@ -40,6 +40,7 @@ _m = {n: C.rolling(n, min_periods=n).mean() for n in (5, 10, 20, 60)}
 bear = ((C < _m[5]) & (_m[5] < _m[10]) & (_m[10] < _m[20]) & (_m[20] < _m[60])).sum(axis=1)
 bear_tot = (C.notna() & _m[60].notna()).sum(axis=1)
 d20 = (C.iloc[-1] / C.iloc[-20:].max() - 1) * 100  # 離自己近20日最高收盤
+above10 = C.iloc[-1] >= C.iloc[-10:].mean()  # 收盤在10日線上（仍在動分頁只放這種、而且當天沒跌停）
 bear_meta = {"n": int(bear.iloc[-1]), "tot": int(bear_tot.iloc[-1]), "h": [int(x) for x in bear.iloc[-120:]],
              "d0": days[-120].strftime("%Y-%m-%d"), "hi": int(bear.iloc[-120:].max())}
 
@@ -264,6 +265,7 @@ for code, r in d.iterrows():
     if code in recent_hist: x["hs"] = recent_hist[code]
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in theme: x["ts"] = 1
+    if bool(above10.get(code, False)) and x["ch"] > -9.4: x["s10"] = 1
     if dk is not None and dk.get(code) == dk.get(code): x["dk"] = round(float(dk[code]), 1)
     if code in disp: x["dp"] = disp[code]
     if code in active_stop: x["stp"] = active_stop[code]
