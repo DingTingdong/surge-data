@@ -250,6 +250,11 @@ if len(ind):
         lift = (ne + nh) / len(x) / base_rate  # 這個產業的活躍比例是整體的幾倍
         if ne + nh >= 3 and lift >= 1.5: grp.append([g, ne, nh, int(len(x)), round(lift, 1)])
     grp.sort(key=lambda r: (-r[4], -r[1], r[0]))
+# 中小型題材（research/panic_small.py 的 S5，只是標示）：股本 ≤ 30 億、大跌前（前80→20日）漲幅前30%、那段期間曾漲停
+_pre = (C.iloc[-20] / C.iloc[-80] - 1).reindex(d.index).rank(pct=True)
+_lim = (f["ch"].iloc[-80:-19] >= 9.5).any()
+_cap = ind["cap"] if len(ind) else pd.Series(dtype=float)
+theme = {c for c in d.index if _pre.get(c, 0) > 0.7 and bool(_lim.get(c, False)) and _cap.get(c, np.nan) <= 30}
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
@@ -258,6 +263,7 @@ for code, r in d.iterrows():
     x["ru"] = round(float(ru.get(code, np.nan)), 1) if ru.get(code, np.nan) == ru.get(code, np.nan) else None
     if code in recent_hist: x["hs"] = recent_hist[code]
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
+    if code in theme: x["ts"] = 1
     if dk is not None and dk.get(code) == dk.get(code): x["dk"] = round(float(dk[code]), 1)
     if code in disp: x["dp"] = disp[code]
     if code in active_stop: x["stp"] = active_stop[code]
