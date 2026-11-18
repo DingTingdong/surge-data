@@ -39,6 +39,7 @@ S["weak"] = S.date.map(weak).fillna(False).astype(bool)
 _m = {n: C.rolling(n, min_periods=n).mean() for n in (5, 10, 20, 60)}
 bear = ((C < _m[5]) & (_m[5] < _m[10]) & (_m[10] < _m[20]) & (_m[20] < _m[60])).sum(axis=1)
 bear_tot = (C.notna() & _m[60].notna()).sum(axis=1)
+d20 = (C.iloc[-1] / C.iloc[-20:].max() - 1) * 100  # 離自己近20日最高收盤
 bear_meta = {"n": int(bear.iloc[-1]), "tot": int(bear_tot.iloc[-1]), "h": [int(x) for x in bear.iloc[-120:]],
              "d0": days[-120].strftime("%Y-%m-%d"), "hi": int(bear.iloc[-120:].max())}
 
@@ -256,6 +257,7 @@ for code, r in d.iterrows():
     x["lu"] = int(x["lu"] or 0); x["amt"] = int(x["amt"] or 0); x["sn"] = int(x["sn"]); x["nw"] = bool(r.nw); x["e"] = bool(r.pk); x["u5"] = bool(r.up5 == 1); x["h"] = bool(r.hot)
     x["ru"] = round(float(ru.get(code, np.nan)), 1) if ru.get(code, np.nan) == ru.get(code, np.nan) else None
     if code in recent_hist: x["hs"] = recent_hist[code]
+    if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if dk is not None and dk.get(code) == dk.get(code): x["dk"] = round(float(dk[code]), 1)
     if code in disp: x["dp"] = disp[code]
     if code in active_stop: x["stp"] = active_stop[code]
