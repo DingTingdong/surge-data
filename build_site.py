@@ -262,7 +262,8 @@ if len(ind):
         if ne + nh >= 3 and lift >= 1.5: grp.append([g, ne, nh, int(len(x)), round(lift, 1)])
     grp.sort(key=lambda r: (-r[4], -r[1], r[0]))
 # 中小型題材（research/panic_small.py 的 S5，只是標示）：市值 ≤ 100 億（2026/11/18 使用者指定，原為股本 ≤ 30 億）、大跌前（前80→20日）漲幅前30%、那段期間曾漲停
-_pre = (C.iloc[-20] / C.iloc[-80] - 1).reindex(d.index).rank(pct=True)
+_pre_ret = (C.iloc[-20] / C.iloc[-80] - 1).reindex(d.index) * 100  # 大跌前漲幅（前80→20個交易日）
+_pre = _pre_ret.rank(pct=True)
 _lim = (f["ch"].iloc[-80:-19] >= 9.5).any()
 _mv = (ind["cap"] * P["rawC"].iloc[-1].reindex(ind.index) / 10) if len(ind) else pd.Series(dtype=float)  # 市值（億）＝股本×股價÷面額10元
 theme = {c for c in d.index if _pre.get(c, 0) > 0.7 and bool(_lim.get(c, False)) and _mv.get(c, np.nan) <= 100}
@@ -296,6 +297,7 @@ for code, r in d.iterrows():
     if code in recent_hist: x["hs"] = recent_hist[code]
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in theme: x["ts"] = 1
+    if _pre_ret.get(code) == _pre_ret.get(code): x["pr"] = round(float(_pre_ret[code]), 1)
     if code in rev_last.index:
         x["ry"] = round(float(rev_last.at[code, "yoy"]), 1); x["rm"] = int(rev_last.at[code, "ym"][5:])
         if code in rev_3.index: x["ry3"] = round(float(rev_3[code]), 1)
