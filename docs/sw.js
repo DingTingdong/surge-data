@@ -1,5 +1,5 @@
 // 先拿最新的網頁；沒網路時才用上次存下的版本
-const CACHE = "radar-v21";
+const CACHE = "radar-v22";
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", e => {

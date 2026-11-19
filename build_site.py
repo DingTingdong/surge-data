@@ -261,9 +261,15 @@ if len(ind):
         lift = (ne + nh) / len(x) / base_rate  # 這個產業的活躍比例是整體的幾倍
         if ne + nh >= 3 and lift >= 1.5: grp.append([g, ne, nh, int(len(x)), round(lift, 1)])
     grp.sort(key=lambda r: (-r[4], -r[1], r[0]))
-# 中小型題材（research/panic_small.py 的 S5，只是標示）：市值 ≤ 100 億（2026/11/18 使用者指定，原為股本 ≤ 30 億）、大跌前（前80→20日）漲幅前30%、那段期間曾漲停
-_pre_ret = (C.iloc[-20] / C.iloc[-80] - 1).reindex(d.index) * 100  # 大跌前漲幅（前80→20個交易日）
+# 撿跌深名單（2026/11/20 使用者定義，research/panic_wave.py）：以「這一波」為準，找被打下來的前波強勢股，不限市值。
+#   這一波的起點：近60個交易日等權指數最高的那天
+#   前波強勢：起點之前60個交易日的漲幅在分析範圍前30%，而且那段期間漲停過
+#   誤殺：從起點前5天起算的自己最高收盤，到今天跌了 ≥ 20%
+_ewv0 = ewi.values; _wpk = int(np.argmax(_ewv0[-61:])) + len(_ewv0) - 61
+wave_start = days[_wpk].strftime("%Y-%m-%d")
+_pre_ret = (C.iloc[_wpk] / C.iloc[_wpk - 60] - 1).reindex(d.index) * 100  # 這一波之前60日的漲幅
 _pre = _pre_ret.rank(pct=True)
+_dw = (C.iloc[-1] / C.iloc[max(_wpk - 5, 0):].max() - 1).reindex(d.index) * 100  # 這一波自己的跌幅
 # 大跌期間的小反彈（research/panic_rebound_strength.py）：近30日指數最高點之後，指數漲最多的連續3個交易日，每檔在那3天漲多少
 _ewv = ewi.values; _pk = int(np.argmax(_ewv[-31:])) + len(_ewv) - 31; _lo = min(_pk + 5, len(_ewv) - 2)
 _w3 = (ewi / ewi.shift(3) - 1).iloc[_lo:len(_ewv) - 1]
@@ -273,9 +279,9 @@ if len(_w3) and _w3.max() > 0:
     bounce_meta = {"s": days[_s].strftime("%m/%d"), "e": days[_e].strftime("%m/%d"), "idx": round(float(_w3.max() * 100), 1)}
 else:
     bounce, bounce_meta = pd.Series(dtype=float), None
-_lim = (f["ch"].iloc[-80:-19] >= 9.5).any()
+_lim = (f["ch"].iloc[_wpk - 60:_wpk + 1] >= 9.5).any()
 _mv = (ind["cap"] * P["rawC"].iloc[-1].reindex(ind.index) / 10) if len(ind) else pd.Series(dtype=float)  # 市值（億）＝股本×股價÷面額10元
-theme = {c for c in d.index if _pre.get(c, 0) > 0.7 and bool(_lim.get(c, False)) and _mv.get(c, np.nan) <= 100}
+theme = {c for c in d.index if _pre.get(c, 0) > 0.7 and bool(_lim.get(c, False)) and _dw.get(c, 0) <= -20}
 # ---- 撿跌深名單紀錄（只增不改）：上市空頭家數近10天最高 ≥ 750 的每一天，記下全部跌深股（離20日高 ≥ 20%），ts=1 是網站名單 ----
 # 研究只有 4～7 次歷史樣本，所以從 2026/11/19 起每天記下來，之後用真實結果檢驗。
 PANIC_LOG = "data/panic_log.csv"
@@ -284,7 +290,7 @@ _plog = pd.read_csv(PANIC_LOG, dtype={"code": str}) if os.path.exists(PANIC_LOG)
 if _pmax >= 750 and (_plog is None or _today not in set(_plog.date)):
     _rows = [{"date": _today, "code": c, "close": round(float(P["rawC"].iloc[-1][c]), 2), "d20": round(float(d20[c]), 1),
               "mv": None if _mv.get(c, np.nan) != _mv.get(c, np.nan) else round(float(_mv[c]), 1), "ts": int(c in theme),
-              "bear": int(bear.iloc[-1]), "pmax": _pmax} for c in d.index if d20.get(c, 0) <= -20]
+              "bear": int(bear.iloc[-1]), "pmax": _pmax} for c in d.index if d20.get(c, 0) <= -20 or c in theme]
     _new = pd.DataFrame(_rows, columns=["date", "code", "close", "d20", "mv", "ts", "bear", "pmax"])
     pd.concat([_plog, _new], ignore_index=True).to_csv(PANIC_LOG, index=False) if _plog is not None else _new.to_csv(PANIC_LOG, index=False)
 
@@ -307,6 +313,7 @@ for code, r in d.iterrows():
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in theme: x["ts"] = 1
     if _pre_ret.get(code) == _pre_ret.get(code): x["pr"] = round(float(_pre_ret[code]), 1)
+    if _dw.get(code) == _dw.get(code): x["dw"] = round(float(_dw[code]), 1)
     if bounce.get(code) == bounce.get(code): x["bo"] = round(float(bounce[code]), 1)
     if code in rev_last.index:
         x["ry"] = round(float(rev_last.at[code, "yoy"]), 1); x["rm"] = int(rev_last.at[code, "ym"][5:])
@@ -325,7 +332,7 @@ for code, r in d.iterrows():
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "bounce": bounce_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "bounce": bounce_meta, "wave": wave_start,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
