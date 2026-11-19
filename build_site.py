@@ -2,6 +2,7 @@
 
 紀錄（只新增，不改舊資料）：
 - data/signals.csv：每天「今日發動」與「仍在動」全部名單，含分級與規則版本
+- data/panic_log.csv：上市空頭家數近10天最高 ≥ 750 的每一天，全部跌深股（ts=1 為撿跌深名單），只增不改
 - data/days.csv：每天一列，含各級檔數（零檔的日子也記），用來區分「沒有訊號」與「沒有跑」
 規則改版時，舊紀錄移到 data/archive/，新版本重新開始記錄（v1 的紀錄在 data/archive/*_v1.csv）。
 """
@@ -265,6 +266,18 @@ _pre = (C.iloc[-20] / C.iloc[-80] - 1).reindex(d.index).rank(pct=True)
 _lim = (f["ch"].iloc[-80:-19] >= 9.5).any()
 _mv = (ind["cap"] * P["rawC"].iloc[-1].reindex(ind.index) / 10) if len(ind) else pd.Series(dtype=float)  # 市值（億）＝股本×股價÷面額10元
 theme = {c for c in d.index if _pre.get(c, 0) > 0.7 and bool(_lim.get(c, False)) and _mv.get(c, np.nan) <= 100}
+# ---- 撿跌深名單紀錄（只增不改）：上市空頭家數近10天最高 ≥ 750 的每一天，記下全部跌深股（離20日高 ≥ 20%），ts=1 是網站名單 ----
+# 研究只有 4～7 次歷史樣本，所以從 2026/11/19 起每天記下來，之後用真實結果檢驗。
+PANIC_LOG = "data/panic_log.csv"
+_pmax = int(bear.iloc[-10:].max()); _today = days[-1].strftime("%Y-%m-%d")
+_plog = pd.read_csv(PANIC_LOG, dtype={"code": str}) if os.path.exists(PANIC_LOG) else None
+if _pmax >= 750 and (_plog is None or _today not in set(_plog.date)):
+    _rows = [{"date": _today, "code": c, "close": round(float(P["rawC"].iloc[-1][c]), 2), "d20": round(float(d20[c]), 1),
+              "mv": None if _mv.get(c, np.nan) != _mv.get(c, np.nan) else round(float(_mv[c]), 1), "ts": int(c in theme),
+              "bear": int(bear.iloc[-1]), "pmax": _pmax} for c in d.index if d20.get(c, 0) <= -20]
+    _new = pd.DataFrame(_rows, columns=["date", "code", "close", "d20", "mv", "ts", "bear", "pmax"])
+    pd.concat([_plog, _new], ignore_index=True).to_csv(PANIC_LOG, index=False) if _plog is not None else _new.to_csv(PANIC_LOG, index=False)
+
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
