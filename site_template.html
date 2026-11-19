@@ -153,9 +153,9 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .gc[aria-pressed="true"]{border-color:var(--sig);background:color-mix(in srgb,var(--sig) 12%,var(--sf))}.gc[aria-pressed="true"] span{color:var(--ink);font-weight:700}
 .grp .more{margin-top:8px;margin-right:6px;border:1px solid var(--ln);background:transparent;color:var(--ink);border-radius:8px;padding:6px 12px;font-size:13px}
 .bear .bt .go{margin-left:6px;border:1px solid var(--up);color:var(--up);background:transparent;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700}
-.mkt .bn{display:none;font-size:13.5px;color:var(--mu)}.mkt .bn b{color:var(--ink);font-family:var(--num)}.mkt.mini{padding-top:10px;padding-bottom:10px}.mkt.mini>*:not(.hd){display:none}.mkt.mini .bn{display:inline}.mkt.mini .hd{gap:8px;flex-wrap:wrap}
+.mkt .bn{display:none;font-size:13.5px;color:var(--mu)}.mkt .bn b{color:var(--ink);font-family:var(--num)}.mkt.mini{padding-top:10px;padding-bottom:10px}.mkt.mini>*:not(.hd){display:none}.mkt.mini .bn{display:inline}.mkt.mini .hd{gap:8px;flex-wrap:wrap}.mkt.mini.wb>.bear{display:block}.mkt.mini.wb .bn{display:none}.mkt.wb .bear .bt{display:none}
 .more.full{display:block;width:100%;margin:10px 0;padding:12px;border:1px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:10px;font-size:14px}
-.gp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.gp span{font-size:13px;border:1px solid var(--ln);border-radius:8px;padding:4px 8px;background:var(--sf);white-space:nowrap}.gp b{font-family:var(--num);font-weight:700}.gp i{font-style:normal;font-family:var(--num);font-size:12px}
+.gp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.gp span{font-size:13px;border:1px solid var(--ln);border-radius:8px;padding:4px 8px;background:var(--sf);white-space:nowrap}.gp b{font-family:var(--num);font-weight:700}.gp .gx{font-size:13px;border:1px dashed var(--ln);border-radius:8px;padding:4px 10px;background:transparent;color:var(--mu)}.gp i{font-style:normal;font-family:var(--num);font-size:12px}
 .bear .bs{font-size:12.5px;color:var(--mu);margin:4px 0 0;line-height:1.5}
 .bear .th.t7{opacity:.45}
 </style>
@@ -419,7 +419,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <div class="doc"><h2>事先定好的停止條件</h2>
 <p>在看到實際結果之前先寫下，避免邊看邊改：累積約26週（130個交易日）實際結果後，如果<b>今日發動的5日報酬中位數不高於「仍在動的其他股票」</b>，或<b>今日發動賠10%以上的比例超過35%</b>，就停用今日發動分級，只保留「仍在動」當觀察名單。在那之前不調整門檻。</p></div>
 <div id="tlist"></div></main></section>
-<section class="pg" id="p3"><main><div class="doc" id="stat"></div><div class="doc"><h2>產業分布</h2><p>雷達頁大盤下方，把目前分頁裡的股票按產業分組：每格是產業名稱、檔數、這些股票今天漲跌的中位數。切到「全部」就是全市場各產業今天的強弱。</p><p>產業用證交所／櫃買中心的官方分類，比較粗，例如「半導體」「電子零組件」裡包含很多不同題材。我用2020–2026的資料檢驗過，同產業有沒有一起動，對今日發動之後的表現沒有穩定差別，所以這只是看資金在哪裡，不是選股條件。</p></div><div class="doc"><h2>加到手機主畫面</h2><ul><li>iPhone（Safari）：按下方分享鈕 → 加入主畫面。</li><li>Android（Chrome）：按右上角 ⋮ → 加到主畫面（或「安裝應用程式」）。</li></ul><p>之後從主畫面圖示打開，就像App一樣全螢幕顯示。自選股存在這支手機的瀏覽器裡，換手機或清除瀏覽資料會消失。</p></div>
+<section class="pg" id="p3"><main><div class="doc" id="stat"></div><div class="doc"><h2>產業分布</h2><p>雷達頁大盤下方，把目前分頁裡的股票按產業分組：每格是產業名稱、檔數、這些股票今天漲跌的中位數。預設只列檔數最多的6類，按「其他 N 類」展開。切到「全部」就是全市場各產業今天的強弱。</p><p>產業用證交所／櫃買中心的官方分類，比較粗，例如「半導體」「電子零組件」裡包含很多不同題材。我用2020–2026的資料檢驗過，同產業有沒有一起動，對今日發動之後的表現沒有穩定差別，所以這只是看資金在哪裡，不是選股條件。</p></div><div class="doc"><h2>加到手機主畫面</h2><ul><li>iPhone（Safari）：按下方分享鈕 → 加入主畫面。</li><li>Android（Chrome）：按右上角 ⋮ → 加到主畫面（或「安裝應用程式」）。</li></ul><p>之後從主畫面圖示打開，就像App一樣全螢幕顯示。自選股存在這支手機的瀏覽器裡，換手機或清除瀏覽資料會消失。</p></div>
 <div class="doc"><h2>資料與更新</h2>
 <p>行情來自證交所與櫃買中心每日收盤資料，雲端排程每個平日台北18:30自動抓取並重新計算。清單包含近20日平均成交額1,000萬元以上、已有60日行情的上市櫃普通股。</p>
 <h2>各欄位</h2>
@@ -449,13 +449,13 @@ const SORT={P:(x,y)=>(y.vr??-1e9)-(x.vr??-1e9),A:(x,y)=>(y.vr??-1e9)-(x.vr??-1e9
 function cur(){const q=st.q.trim().toLowerCase();return D.filter(s=>RL[st.rule][1](s)&&(!q||(s.t+s.n+(s.g||"")).toLowerCase().includes(q)))}
 function grps(){const a=cur();if(!a.length){$("grp").innerHTML="";return}
 const M={};a.forEach(s=>{const g=s.g||"未分類";(M[g]=M[g]||[]).push(s.ch)});const med=x=>{x=[...x].sort((p,q)=>p-q);const n=x.length;return n%2?x[(n-1)/2]:(x[n/2-1]+x[n/2])/2};
-const G=Object.entries(M).map(([g,x])=>[g,x.length,med(x)]).sort((p,q)=>q[1]-p[1]||q[2]-p[2]);
-$("grp").innerHTML=`<div class="gh"><span>產業分布</span><small>這頁 ${a.length.toLocaleString()} 檔全部分類，括號是今天漲跌中位數</small></div><div class="gp">${G.map(([g,n,m])=>`<span>${g} <b class="n">${n}</b> <i class="n ${cl(m)}">(${sg(m)}%)</i></span>`).join("")}</div>`}
+const G=Object.entries(M).map(([g,x])=>[g,x.length,med(x)]).sort((p,q)=>q[1]-p[1]||q[2]-p[2]);const K=6,show=st.gx?G:G.slice(0,K);
+$("grp").innerHTML=`<div class="gh"><span>產業分布</span><small>括號＝今日漲跌中位數</small></div><div class="gp">${show.map(([g,n,m])=>`<span>${g} <b class="n">${n}</b> <i class="n ${cl(m)}">(${sg(m)}%)</i></span>`).join("")}${G.length>K?`<button class="gx" data-gx="1">${st.gx?"收起 ▴":"其他 "+(G.length-K)+" 類 ▾"}</button>`:""}</div>`}
 function chips(){grps();$("rules").innerHTML=Object.keys(RL).map(k=>`<button class="chip${k==="D"?" pd":""}" data-r="${k}" aria-pressed="${st.rule===k}"><span>${RL[k][0]}</span><small class="n">${D.filter(RL[k][1]).length}</small></button>`).join("");
 const nt={A:"成交量和波動在前10%，而且收盤還在10日線上、今天沒跌停。依今日量比排序。",
 D:(DEEPP?"深度恐慌（上市空頭家數近10天最高 "+PMAX+"，≥ 800）。歷史上第一次到800隔天買，這份名單20天後平均 +13%，買進後平均還會再跌約4%（4次）。":"初步恐慌（上市空頭家數近10天最高 "+PMAX+"，750～799）。歷史上第一次到750隔天買，這份名單20天後平均 +9%，7次中6次賺錢；買進後平均還會再跌約5%，其中4次後來跌到800，那幾次平均先多跌約9%。")+"名單：市值100億以下、大跌前強而且漲停過，離自己20日高點跌超過20%的股票，跌最深的排前面（只是方便看，不是推薦順序）。",
 F:"依今天漲跌排序。",ALL:"依今天漲跌排序。"}[st.rule];
-$("mkt").classList.toggle("mini",st.rule!=="P");$("tabnote").hidden=!nt;$("tabnote").textContent=nt||""}
+$("mkt").classList.toggle("mini",st.rule!=="P");$("mkt").classList.toggle("wb",st.rule==="D");$("tabnote").hidden=!nt;$("tabnote").textContent=nt||""}
 function list(){let a=cur();a.sort((x,y)=>SORT[st.rule](x,y)||x.t.localeCompare(y.t));$("cnt").textContent="共 "+a.length+" 檔";
 const miss=st.rule==="F"?[...FAV].filter(c=>!D.some(s=>s.t===c)):[];
 $("list").innerHTML=(a.length?a.slice(0,st.lim).map(row).join("")+(a.length>st.lim?`<button class="more full" data-more="1">再顯示 ${Math.min(150,a.length-st.lim)} 檔（還有 ${a.length-st.lim} 檔）</button>`:""):'<div class="empty">'+(st.rule==="F"&&!FAV.size?"還沒有自選股。點開任一檔股票，按「加入自選」。":"沒有符合的股票。")+'</div>')
@@ -490,7 +490,7 @@ $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><d
 <div class="l2 n"><span>今日發動 ${rs(x.avg)}</span><span>仍在動其他 ${rs(x.hot)}</span><span>全體 ${rs(x.all)}</span></div></button>
 <div class="dt n">${x.it.length?'<div class="ti"><small>股票</small><small>5日｜移動停損</small></div>'+x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span><span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}｜${i.x==null?`<small>${i.xs}</small>`:rs(i.x)+(i.xs!=="完成"?`<small>${i.xs}</small>`:`<small>${i.xd}天</small>`)}</span></div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
-if(t.dataset.r){st.rule=t.dataset.r;st.lim=150;chips();list()}else if(t.dataset.more){st.lim+=150;list()}
+if(t.dataset.r){st.rule=t.dataset.r;st.lim=150;chips();list()}else if(t.dataset.more){st.lim+=150;list()}else if(t.dataset.gx){st.gx=!st.gx;grps()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
 else if(t.dataset.clr){[...FAV].filter(c=>!D.some(s=>s.t===c)).forEach(c=>FAV.delete(c));saveFav();chips();list()}
 else if(t.dataset.fav){const c=t.dataset.fav;FAV.has(c)?FAV.delete(c):FAV.add(c);saveFav();
