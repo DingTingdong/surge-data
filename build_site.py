@@ -278,6 +278,15 @@ if _pmax >= 750 and (_plog is None or _today not in set(_plog.date)):
     _new = pd.DataFrame(_rows, columns=["date", "code", "close", "d20", "mv", "ts", "bear", "pmax"])
     pd.concat([_plog, _new], ignore_index=True).to_csv(PANIC_LOG, index=False) if _plog is not None else _new.to_csv(PANIC_LOG, index=False)
 
+# ---- 月營收年增率（只是標示；research/panic_revenue.py 驗證過，加進撿跌深條件沒有明顯幫助）----
+import glob as _glob
+_rf = sorted(_glob.glob("data/revenue/*.csv*"))[-2:]
+_rv = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in _rf], ignore_index=True) if _rf else pd.DataFrame(columns=["ym", "code", "yoy"])
+_rv = _rv.dropna(subset=["yoy"]).sort_values("ym")
+rev_last = _rv.groupby("code").tail(1).set_index("code")  # 每檔最近一個已公布月份
+rev_3 = _rv.groupby("code").tail(3).groupby("code").yoy.mean()
+rev_ym = _rv.ym.max() if len(_rv) else None
+
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
@@ -287,6 +296,9 @@ for code, r in d.iterrows():
     if code in recent_hist: x["hs"] = recent_hist[code]
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in theme: x["ts"] = 1
+    if code in rev_last.index:
+        x["ry"] = round(float(rev_last.at[code, "yoy"]), 1); x["rm"] = int(rev_last.at[code, "ym"][5:])
+        if code in rev_3.index: x["ry3"] = round(float(rev_3[code]), 1)
     if bool(above10.get(code, False)) and x["ch"] > -9.4: x["s10"] = 1
     if dk is not None and dk.get(code) == dk.get(code): x["dk"] = round(float(dk[code]), 1)
     if code in disp: x["dp"] = disp[code]
@@ -301,7 +313,7 @@ for code, r in d.iterrows():
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))

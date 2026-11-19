@@ -47,7 +47,7 @@ def rev_at(d):
     known = pub[pub <= d].index
     if len(known) == 0: return pd.Series(dtype=float), pd.Series(dtype=float)
     y1 = yoy.loc[known[-1]].reindex(C0.columns)
-    y3 = yoy.loc[known[-3:]].mean(min_count=2).reindex(C0.columns)
+    w = yoy.loc[known[-3:]]; y3 = w.mean().where(w.count() >= 2).reindex(C0.columns)  # 至少兩個月有資料
     return y1, y3
 
 def signals(th): return [i for i in range(start, N) if bear.iloc[i] >= th and (bear.iloc[i - 20:i] < th).all() and i + 20 < N]
