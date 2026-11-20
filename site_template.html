@@ -159,6 +159,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .gp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.gp span{font-size:13px;border:1px solid var(--ln);border-radius:8px;padding:4px 8px;background:var(--sf);white-space:nowrap}.gp b{font-family:var(--num);font-weight:700}.gp .gx{font-size:13px;border:1px dashed var(--ln);border-radius:8px;padding:4px 10px;background:transparent;color:var(--mu)}.gp i{font-style:normal;font-family:var(--num);font-size:12px}
 .bear .bs{font-size:12.5px;color:var(--mu);margin:4px 0 0;line-height:1.5}
 .bear .th.t7{opacity:.45}
+#ptrack .tb{width:100%;table-layout:fixed}#ptrack .tb td,#ptrack .tb th{padding-left:2px;padding-right:2px}#ptrack .tb th:first-child,#ptrack .tb td:first-child{width:22%}
 </style>
 </head><body>
 <header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div class="seg" id="rules"></div></header>
@@ -459,6 +460,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></details>
 </main></section>
 <section class="pg" id="p4"><main>
+<div class="doc" id="ptrack" hidden></div>
 <div class="doc"><h2>持有追蹤（近20個交易日的今日發動）</h2>
 <p>假設每檔都在訊號隔天開盤買進，照移動停損規則：收盤比買進後最高收盤低10%就隔天開盤賣，最多抱20個交易日。價格已依除權息調整。</p>
 <div id="holds"></div></div>
@@ -524,6 +526,14 @@ function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
 function rs(v){return v==null?"—":`<b class="${cl(v)}">${sg(v)}%</b>`}
+function ptrackbox(){const P=META.ptrack||[];if(!P.length)return;const f=v=>v==null?"—":`<span class="${cl(v)}">${sg(v)}%</span>`;
+const done=k=>P.filter(r=>r[k]!=null&&r["e"+k.slice(1)]!=null);const avg=(a,k)=>a.length?a.reduce((s,r)=>s+r[k],0)/a.length:null;
+const D5=done("d5"),D20=done("d20");
+const sum=[["5天",D5,"d5","e5"],["20天",D20,"d20","e20"]].map(([l,a,k,e])=>a.length?`${l}：撿跌深 ${f(avg(a,k))}，正2 ${f(avg(a,e))}，${a.filter(r=>r[k]>r[e]).length}/${a.length} 次贏`:`${l}：還沒有結果`).join("<br>");
+$("ptrack").hidden=false;$("ptrack").innerHTML=`<h2>撿跌深真實紀錄（和正2比）</h2><p>每天撿跌深名單上的前20名，假設隔天開盤各買一樣的金額；正2是同一天開盤買元大台灣50正2（00631L）。從 11/19 開始記錄，只增不改。</p>
+<p class="n">${sum}</p><table class="tb n"><tr><th>名單日</th><th>至今</th><th>5天</th><th>20天</th></tr>
+${P.slice().reverse().map(r=>{const c=(a,b)=>a==null?"—":f(a)+"<br><small>正2 "+f(b)+"</small>";return `<tr><td>${r.d.slice(5).replace("-","/")}${r.old?"*":""}<br><small>${r.n}檔</small></td><td>${r.held?c(r.now,r.e_now):"明天開盤買"}</td><td>${c(r.d5,r.e5)}</td><td>${c(r.d20,r.e20)}</td></tr>`}).join("")}</table>
+${P.some(r=>r.old)?'<p><small>* 11/19 是舊定義（市值100億以下）的全部名單，還沒縮成前20名。</small></p>':""}`}
 function holds(){const H=META.holds||[];const act=H.filter(h=>["明天開盤賣","持有中","明天開盤買"].includes(h.s));
 const cnt=s=>H.filter(h=>h.s===s).length;const line=h=>`<div class="ti"><span>${h.n} <small>${h.t}・${h.d}發動</small></span><span>${h.r==null?"":rs(h.r)} <small>${h.s==="已賣出"?"已賣出 "+h.sd:h.s}${h.s==="持有中"?"・停損 "+h.st+"・剩"+h.left+"天":""}${h.s==="明天開盤賣"?"・收盤 "+h.c+" 跌破 "+h.st:""}</small></span></div>`;
 const grp=(title,arr,open)=>arr.length?`<div class="row${open?" o":""}"><button aria-expanded="${open}"><div class="l1"><span class="nm">${title}</span><span class="n">${arr.length} 檔</span></div></button><div class="dt n">${arr.map(line).join("")}</div></div>`:"";
@@ -553,7 +563,7 @@ $("sub").innerHTML="<b>"+td+"</b>收盤，"+D.length.toLocaleString()+" 檔"+(ME
 $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span>${META.bear?`<span class="bn">上市空頭 <b class="n">${META.bear.n}</b></span>`:""}<span class="m5">近5日<span class="xl">中位數</span> <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span><button class="mxb" data-mx="1" aria-label="展開大盤">▾</button></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
 ${META.bear?bearbox(META.bear):""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
-chips();list();track();holds();
+chips();list();track();holds();ptrackbox();
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));
 const last=new Date(META.date.replaceAll("/","-")+"T00:00:00Z");let gap=0;for(let d=e;d>last;d=back(d))gap++;

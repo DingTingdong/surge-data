@@ -38,6 +38,7 @@ jobs:
       - run: python fetch_chips.py || echo 'chips fetch failed, continuing'
       - run: python fetch_industry.py || echo 'industry fetch failed, continuing'
       - run: python fetch_revenue.py || echo 'revenue fetch failed, continuing'
+      - run: python fetch_etf.py || echo 'etf fetch failed, continuing'
       - run: python build_site.py
       - name: commit
         run: |

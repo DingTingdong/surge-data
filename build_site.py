@@ -338,9 +338,43 @@ for code, r in d.iterrows():
         x["sp"] = [round(float(v), 2) for v in C[code].iloc[-30:].tolist() if v == v]
     data.append(x)
 allc = pd.DataFrame({"r5": f["r5"].loc[last], "a": (C.loc[last] > f["ma20"].loc[last])}).dropna()
+# ---- 撿跌深真實紀錄（data/panic_log.csv）vs 正2：每個名單日，隔天開盤等權買進前20名（top=1；11/19 只有舊定義全名單 ts=1），看至今／5日／20日 ----
+def _etf(code):
+    if not os.path.exists("data/etf.csv"): return None, None
+    e = pd.read_csv("data/etf.csv"); e = e[e.code == code].copy(); e["date"] = pd.to_datetime(e.date)
+    e = e.set_index("date").reindex(days)[["open", "close"]].ffill(limit=10)
+    r = e.close.pct_change(); fac = pd.Series(1.0, index=days)
+    for dd_ in r.index[r.abs() > 0.35]:  # 分割（例：00631L 2026/3/31）
+        fac[days < dd_] *= e.close[dd_] / e.close.shift(1)[dd_]
+    return e.open * fac, e.close * fac
+_o2, _c2 = _etf("00631L")
+ptrack = []
+if os.path.exists(PANIC_LOG):
+    _pl = pd.read_csv(PANIC_LOG, dtype={"code": str})
+    for _d, _g in _pl.groupby("date"):
+        _t = pd.Timestamp(_d)
+        if _t not in days: continue
+        _i = days.get_loc(_t)
+        _sel = _g[_g.top == 1].code.tolist() if "top" in _g and (_g.top == 1).any() else _g[_g.ts == 1].code.tolist()
+        _row = {"d": _d, "n": len(_sel), "old": not ("top" in _g and (_g.top == 1).any()), "held": max(0, len(days) - 1 - _i)}
+        if _i + 1 < len(days) and _sel:
+            _o = O.iloc[_i + 1].reindex(_sel)
+            def _ret(k):  # 買進後第 k 個交易日收盤；k=None → 最新
+                j = len(days) - 1 if k is None else _i + k
+                if j >= len(days): return None
+                v = (C.iloc[j].reindex(_sel) / _o - 1).dropna()
+                return round(float(v.mean() * 100), 2) if len(v) else None
+            def _ret2(k):
+                if _o2 is None: return None
+                j = len(days) - 1 if k is None else _i + k
+                if j >= len(days) or _o2.iloc[_i + 1] != _o2.iloc[_i + 1]: return None
+                return round(float((_c2.iloc[j] / _o2.iloc[_i + 1] - 1) * 100), 2)
+            _row.update({"now": _ret(None), "d5": _ret(5), "d20": _ret(20), "e_now": _ret2(None), "e5": _ret2(5), "e20": _ret2(20)})
+        ptrack.append(_row)
+
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "bounce": bounce_meta, "wave": wave_start,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
