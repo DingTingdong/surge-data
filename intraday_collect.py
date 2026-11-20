@@ -8,7 +8,7 @@ import csv, os, time, datetime as dt, requests
 TZ = dt.timezone(dt.timedelta(hours=8))
 H = {"User-Agent": "Mozilla/5.0", "Referer": "https://mis.twse.com.tw/stock/index.jsp"}
 LEVELS = [("5", 0.05), ("7", 0.07)]
-COLS = ["date", "code", "name", "market", "prev", "open", "level", "time", "price", "vol"]
+COLS = ["date", "code", "name", "market", "prev", "open", "level", "time", "price", "vol"]  # time＝掃描到的時間（誤差 3 分鐘內），price＝那時最新成交價
 
 def now(): return dt.datetime.now(TZ)
 def num(x):
@@ -49,15 +49,16 @@ def main():
         t0 = time.time()
         for i in range(0, len(all_codes), 150):
             for a in fetch(s, all_codes[i:i + 150]):
-                c, y, z, u, o, v = a.get("c"), num(a.get("y")), num(a.get("z")), num(a.get("u")), num(a.get("o")), num(a.get("v"))
+                c, y, z, u, o, v, h = (a.get("c"), num(a.get("y")), num(a.get("z")), num(a.get("u")), num(a.get("o")), num(a.get("v")), num(a.get("h")))
                 if not c or not y: continue
                 if o and c not in opens: opens[c] = o
-                if z is None: continue
-                hits = [k for k, th in LEVELS if z >= y * (1 + th)] + (["limit"] if u and z >= u else [])
+                hi = max([x for x in (z, h) if x is not None], default=None)  # 用當日最高價判斷「碰到」（兩次掃描之間碰到也算）
+                if hi is None: continue
+                hits = [k for k, th in LEVELS if hi >= y * (1 + th)] + (["limit"] if u and hi >= u else [])
                 for k in hits:
                     if (c, k) in seen: continue
                     seen.add((c, k))
-                    rows[(c, k)] = [day, c, a.get("n", ""), a.get("ex", ""), y, opens.get(c, ""), k, a.get("t", ""), z, v]
+                    rows[(c, k)] = [day, c, a.get("n", ""), a.get("ex", ""), y, opens.get(c, ""), k, now().strftime("%H:%M"), z if z is not None else "", v]
             time.sleep(0.5)
         if time.time() - last_save > 1800: save(day, rows); last_save = time.time()
         time.sleep(max(5, 180 - (time.time() - t0)))
