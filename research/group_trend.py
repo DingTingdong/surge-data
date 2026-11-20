@@ -84,3 +84,9 @@ for pn, lab in ((False, "平常"), (True, "恐慌期間")):
     print(lab, "筆數", len(g), "抱20日：賠錢 %.0f%%、賠10%%以上 %.0f%%、賺20%%以上 %.0f%%；移動停損：賠錢 %.0f%%" % ((g.h20 < 0).mean() * 100, (g.h20 < -10).mean() * 100, (g.h20 > 20).mean() * 100, (g.x6 < 0).mean() * 100))
 import json
 json.dump({f"{a}|{b}": v.reset_index().to_dict("records") for (a, b), v in out.items()} | {"useful": useful, "group_exit_ok": gb_ok}, open("research/results/group_trend.json", "w"), ensure_ascii=False, indent=1)
+# 探索：恐慌期間 G1（族群已轉強）vs G2（族群仍弱）分波段
+wave_id = (panic != panic.shift()).cumsum()
+P2 = T[T.panic].copy(); P2["wave"] = P2.date.map(wave_id)
+w = P2.groupby("wave").apply(lambda g: pd.Series({"起": g.date.min().strftime("%Y-%m"), "族群仍弱n": int(g.G2.sum()), "族群仍弱": g[g.G2].h20.mean(),
+                                                    "族群已轉強n": int(g.G1.sum()), "族群已轉強": g[g.G1].h20.mean()}), include_groups=False)
+print(w.round(1).to_string())

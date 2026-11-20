@@ -325,6 +325,20 @@ rev_last = _rv.groupby("code").tail(1).set_index("code")  # 每檔最近一個�
 rev_3 = _rv.groupby("code").tail(3).groupby("code").yoy.mean()
 rev_ym = _rv.ym.max() if len(_rv) else None
 
+# ---- 族群（官方產業）走勢（research/group_trend.py）：同產業其他股票等權指數，近5日漲且站上10日線＝已反彈；在10日線下＝仍弱 ----
+# 恐慌期間，族群仍弱時的今日發動（7次恐慌全部較好）比族群已反彈的好很多，所以恐慌期間標示出來。
+_inb = S[S.base & S.date.isin(days[-16:])].assign(v=True).pivot(index="date", columns="code", values="v").reindex(index=days[-16:], columns=C.columns).fillna(False).astype(bool)
+_r1 = (C.iloc[-17:].pct_change(fill_method=None).iloc[1:]).where(_inb)
+_g = pd.Series(ind["ind_name"]).reindex(C.columns) if len(ind) else pd.Series(dtype=object)
+gstate = {}
+for _gn, _cs in _g.dropna().groupby(_g.dropna()).groups.items():
+    _s, _n = _r1[_cs].sum(axis=1, min_count=1), _r1[_cs].notna().sum(axis=1)
+    for c in _cs:
+        if c not in d.index: continue
+        _m = ((_s - _r1[c].fillna(0)) / (_n - _r1[c].notna().astype(int)).replace(0, np.nan)).fillna(0)
+        _ix = (1 + _m).cumprod(); _ma = _ix.rolling(10).mean()
+        gstate[c] = 2 if (_ix.iloc[-1] > _ix.iloc[-6] and _ix.iloc[-1] > _ma.iloc[-1]) else (1 if _ix.iloc[-1] < _ma.iloc[-1] else 0)
+
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
@@ -335,6 +349,7 @@ for code, r in d.iterrows():
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in top20: x["ts"] = 1
     if code in relaunch: x["rl"] = 1
+    if gstate.get(code): x["gw"] = gstate[code]
     if _run.get(code) == _run.get(code): x["pr"] = round(float(_run[code]), 1)
     if _dw.get(code) == _dw.get(code): x["dw"] = round(float(_dw[code]), 1)
     if bounce.get(code) == bounce.get(code): x["bo"] = round(float(bounce[code]), 1)
