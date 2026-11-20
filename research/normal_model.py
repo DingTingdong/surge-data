@@ -123,3 +123,9 @@ imp = pd.Series(pi.importances_mean, index=FEATS).sort_values(ascending=False).h
 print("2023 最有影響的特徵：", imp.to_dict())
 json.dump({"best": cands[0][1], "val": [(n, round(v, 2)) for v, n, _ in cands], "test_all": round(allm, 2), "test_top": round(topm, 2), "test_top_win": round(topw, 1),
            "test_n_top": int(sel.sum()), "useful": bool(ok), "importance": imp.to_dict()}, open("research/results/normal_model.json", "w"), ensure_ascii=False, indent=1)
+# 解讀：檢驗期分數最高 10% vs 最低 10% 的特徵中位數
+lab = {"mk_ew_m60": "大盤等權指數離60日線", "lprice": "股價(元)", "a1": "當天成交額(百萬)", "mk_ew20": "大盤近20日", "lmv": "市值(億)", "yoy1": "最近月營收年增%",
+       "d_hi120": "離120日高", "m60": "離60日線", "r20": "近20日漲幅", "g_m10": "族群離10日線", "g_5": "族群近5日", "a20p": "前20日均額(百萬)", "nlim60": "近60日漲停次數", "inst5": "法人5日買超/均額"}
+hi, lo_ = te[te.dec == 10], te[te.dec == 1]
+tf = lambda k, v: np.exp(v) if k in ("lprice", "a1", "a20p") else (np.exp(v) if k == "lmv" else v)
+print(pd.DataFrame({lab[k]: {"分數最高10%": tf(k, hi[k].median()), "分數最低10%": tf(k, lo_[k].median()), "全部": tf(k, te[k].median())} for k in lab}).T.round(3).to_string())

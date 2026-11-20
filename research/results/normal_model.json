@@ -1,0 +1,68 @@
+{
+ "best": "GBT d3 lr0.1 leaf50",
+ "val": [
+  [
+   "GBT d3 lr0.1 leaf50",
+   2.36
+  ],
+  [
+   "GBT d5 lr0.1 leaf50",
+   2.23
+  ],
+  [
+   "Logit C0.1",
+   2.12
+  ],
+  [
+   "Logit C1.0",
+   2.09
+  ],
+  [
+   "GBT d5 lr0.03 leaf200",
+   2.09
+  ],
+  [
+   "GBT d3 lr0.03 leaf200",
+   2.02
+  ],
+  [
+   "GBT d5 lr0.03 leaf50",
+   1.9
+  ],
+  [
+   "Logit C0.01",
+   1.85
+  ],
+  [
+   "GBT d5 lr0.1 leaf200",
+   1.58
+  ],
+  [
+   "GBT d3 lr0.03 leaf50",
+   1.54
+  ],
+  [
+   "GBT d3 lr0.1 leaf200",
+   1.31
+  ]
+ ],
+ "test_all": 0.11,
+ "test_top": 3.22,
+ "test_top_win": 46.8,
+ "test_n_top": 1370,
+ "useful": false,
+ "importance": {
+  "mk_ew_m60": 0.0366,
+  "lprice": 0.0297,
+  "a1": 0.019,
+  "mk_ew20": 0.0137,
+  "lmv": 0.0136,
+  "yoy1": 0.0114,
+  "d_hi120": 0.007,
+  "m60": 0.0068,
+  "r20": 0.006,
+  "g_m10": 0.0053,
+  "g_5": 0.0048,
+  "a20p": 0.0045
+ }
+}
