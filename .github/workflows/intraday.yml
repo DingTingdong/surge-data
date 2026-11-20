@@ -1,0 +1,28 @@
+name: intraday-collect
+# 盤中背景收集（不發提醒）。主要由 Claude 排程任務每個交易日 08:50 觸發；GitHub 排程只是備援（常延遲）。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "50 0 * * 1-5"   # 台北 08:50（備援）
+permissions:
+  contents: write
+concurrency:
+  group: intraday
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests
+      - run: python intraday_collect.py
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"; git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/intraday || true
+          git diff --cached --quiet && exit 0
+          git commit -m "intraday events $(date -u +%F)"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && break; sleep 10; done
