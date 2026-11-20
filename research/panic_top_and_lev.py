@@ -52,13 +52,17 @@ for th in (750, 800, 700):
             e = days.get_loc(w3.idxmax()); bo = (C0.iloc[e] / C0.iloc[e - 3] - 1)
         else: bo = pd.Series(0.0, index=C0.columns)
         rank = bo[W].sort_values(ascending=False)
+        # 11/20 新定義（research/panic_own_high.py）：每檔自己的漲勢與高點，依自己漲勢取前20
+        hi20 = C0.iloc[i - 19:i + 1].max(); run = (hi20 / C0.iloc[i - 100:i - 19].min() - 1).where(m)
+        W2 = (run.rank(pct=True) > 0.7) & lim.iloc[i - 59:i + 1].any() & (C0.iloc[i] / hi20 - 1 <= -0.2) & m & okb
+        newtop = pd.Series(C0.columns.isin(run[W2].sort_values(ascending=False).index[:20]), index=C0.columns)
         def stock_stats(sel, h):
             r = (C0.iloc[i + h] / o - 1)[sel] * 100
             path = (C0.iloc[i + 1:i + h + 1].div(o)[sel.index[sel]] - 1).mean(axis=1) * 100  # 等權組合每天的報酬
             return r.mean(), path.min()
         res = {"th": th, "date": str(days[i].date()), "n_list": int(W.sum())}
         for h in (20, 60):
-            for nm, sel in [("全部股票", m & okb), ("名單全部", W)] + [(f"名單前{k}", pd.Series(C0.columns.isin(rank.index[:k]), index=C0.columns)) for k in (10, 20, 30, 50)]:
+            for nm, sel in [("全部股票", m & okb), ("名單全部", W)] + [(f"名單前{k}", pd.Series(C0.columns.isin(rank.index[:k]), index=C0.columns)) for k in (10, 20, 30, 50)] + [("新前20", newtop)]:
                 a, b = stock_stats(sel, h); res[f"{nm}_{h}"] = a; res[f"{nm}_{h}_low"] = b
             p1 = lev_path(i, h, 1.0); p2 = lev_path(i, h, 2.0)
             res[f"0050_{h}"] = (p1[-1] - 1) * 100; res[f"0050_{h}_low"] = (p1.min() - 1) * 100
@@ -68,11 +72,11 @@ for th in (750, 800, 700):
                 res[f"正2實際_{h}"] = (pr[-1] - 1) * 100 if pr[-1] == pr[-1] else np.nan; res[f"正2實際_{h}_low"] = (np.nanmin(pr) - 1) * 100
         rows.append(res)
 T = pd.DataFrame(rows)
-cols = ["全部股票", "名單全部", "名單前50", "名單前30", "名單前20", "名單前10", "0050", "正2"] + (["正2實際"] if REAL else [])
+cols = ["全部股票", "新前20", "名單前20", "0050", "正2"] + (["正2實際"] if REAL else [])
 for th in (750, 800, 700):
     g = T[T.th == th]
     print(f"== 門檻 {th}（{len(g)} 次），名單平均 {g.n_list.mean():.0f} 檔")
     out = pd.DataFrame({h: {c: f"{g[f'{c}_{h}'].mean():+.1f}%（最低 {g[f'{c}_{h}_low'].mean():+.1f}%，賺錢 {(g[f'{c}_{h}'] > 0).sum()}/{len(g)}）" for c in cols} for h in (20, 60)})
     print(out.to_string())
-    if th == 750: print(g[["date"] + [f"{c}_20" for c in ("名單前20", "名單全部", "正2", "0050") + (("正2實際",) if REAL else ())]].round(1).to_string(index=False))
+    if th == 750: print(g[["date"] + [f"{c}_20" for c in ("新前20", "正2實際", "0050")]].round(1).to_string(index=False))
 T.round(2).to_json("research/results/panic_top_and_lev.json", orient="records", force_ascii=False, indent=1)
