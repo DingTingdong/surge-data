@@ -49,8 +49,8 @@ bear = _sh[_tw].sum(axis=1)
 bear_tot = _ok[_tw].sum(axis=1)
 d20 = (C.iloc[-1] / C.iloc[-20:].max() - 1) * 100  # 離自己近20日最高收盤
 above10 = C.iloc[-1] >= C.iloc[-10:].mean()  # 收盤在10日線上（仍在動分頁只放這種、而且當天沒跌停）
-bear_meta = {"n": int(bear.iloc[-1]), "tot": int(bear_tot.iloc[-1]), "h": [int(x) for x in bear.iloc[-120:]],
-             "d0": days[-120].strftime("%Y-%m-%d"), "hi": int(bear.iloc[-120:].max()),
+bear_meta = {"n": int(bear.iloc[-1]), "tot": int(bear_tot.iloc[-1]), "h": [int(x) for x in bear.iloc[-40:]], "dd": [x.strftime("%m/%d") for x in days[-40:]],
+             "d0": days[-40].strftime("%Y-%m-%d"), "hi": int(bear.iloc[-40:].max()),
              "otc": int(_sh[_tp].iloc[-1].sum()), "otc_tot": int(_ok[_tp].iloc[-1].sum()),
              "all": int(_sh.iloc[-1].sum()), "all_tot": int(_ok.iloc[-1].sum())}
 
