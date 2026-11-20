@@ -281,9 +281,15 @@ else:
     bounce, bounce_meta = pd.Series(dtype=float), None
 _lim = (f["ch"].iloc[_wpk - 60:_wpk + 1] >= 9.5).any()
 _mv = (ind["cap"] * P["rawC"].iloc[-1].reindex(ind.index) / 10) if len(ind) else pd.Series(dtype=float)  # 市值（億）＝股本×股價÷面額10元
-theme = {c for c in d.index if _pre.get(c, 0) > 0.7 and bool(_lim.get(c, False)) and _dw.get(c, 0) <= -20}
-# 網站只放小反彈前 20 名（research/panic_top_and_lev.py：前20名 20日平均比整份名單多約 2～3 個百分點）
-top20 = set(bounce.reindex(sorted(theme)).dropna().sort_values(ascending=False).index[:20]) if len(bounce) else set(sorted(theme)[:20])
+# 11/20 改用每檔自己的漲勢與高點（research/panic_own_high.py；使用者指出安碁資訊這類恐慌中逆勢大漲的股票被漏掉）：
+#   自己這段漲勢＝近20日最高收盤 ÷ 前100～20日最低收盤 − 1，排分析範圍前30%，且近60日漲停過；從自己近20日最高收盤跌 ≥ 20%
+_hi20 = C.iloc[-20:].max()
+_run = (_hi20 / C.iloc[-100:-19].min() - 1).reindex(d.index) * 100
+_runr = _run.rank(pct=True)
+_lim60 = (f["ch"].iloc[-60:] >= 9.5).any()
+_dw = ((C.iloc[-1] / _hi20 - 1) * 100).reindex(d.index)
+theme = {c for c in d.index if _runr.get(c, 0) > 0.7 and bool(_lim60.get(c, False)) and _dw.get(c, 0) <= -20}
+top20 = set(_run.reindex(sorted(theme)).dropna().sort_values(ascending=False).index[:20])  # 依自己這段漲勢排序取前20（research/panic_own_high.py）
 # ---- 撿跌深名單紀錄（只增不改）：上市空頭家數近10天最高 ≥ 750 的每一天，記下全部跌深股（離20日高 ≥ 20%），ts=1 是網站名單 ----
 # 研究只有 4～7 次歷史樣本，所以從 2026/11/19 起每天記下來，之後用真實結果檢驗。
 PANIC_LOG = "data/panic_log.csv"
@@ -314,7 +320,7 @@ for code, r in d.iterrows():
     if code in recent_hist: x["hs"] = recent_hist[code]
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in top20: x["ts"] = 1
-    if _pre_ret.get(code) == _pre_ret.get(code): x["pr"] = round(float(_pre_ret[code]), 1)
+    if _run.get(code) == _run.get(code): x["pr"] = round(float(_run[code]), 1)
     if _dw.get(code) == _dw.get(code): x["dw"] = round(float(_dw[code]), 1)
     if bounce.get(code) == bounce.get(code): x["bo"] = round(float(bounce[code]), 1)
     if code in rev_last.index:
