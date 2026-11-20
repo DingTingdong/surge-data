@@ -65,7 +65,7 @@ for r in B.itertuples():
     if x == "blocked": rows.append({"date": r.date, "grp": r.grp, "blocked": True}); continue
     o = Ov[t + 1, j]
     rows.append({"date": r.date, "grp": r.grp, "blocked": False, "x6": x, "r5": (Cv[min(t + 5, N - 1), j] / o - 1) * 100 - COST,
-                 "hit20": np.nanmax(Cv[t + 1:t + 21, j]) / o - 1 >= 0.2})
+                 "hit20": float(np.nanmax(Cv[t + 1:t + 21, j]) / o - 1 >= 0.2)})
 T = pd.DataFrame(rows); T["train"] = T.date <= "2023-12-31"
 res = {}
 for tr, per in ((True, "2020-2023"), (False, "2024-2026")):
@@ -75,10 +75,36 @@ for tr, per in ((True, "2020-2023"), (False, "2024-2026")):
         ok = g[~g.blocked]
         res[per][k] = {"n": int(len(ok)), "每天平均檔數": round(len(g) / max(1, ndays), 2), "買不到%": round(g.blocked.mean() * 100, 1),
                        "X6平均": round(ok.x6.mean(), 2), "X6中位數": round(ok.x6.median(), 2), "5日平均": round(ok.r5.mean(), 2),
-                       "20日內漲20%以上%": round(ok.hit20.mean() * 100, 1)}
+                       "20日內漲20%以上%": round(ok.hit20.astype(float).mean() * 100, 1)}
 add = all(res[p]["R 再發動"]["X6平均"] >= res[p]["F 今日發動"]["X6平均"] - 0.5 for p in res)
 yearly = T[~T.blocked].groupby([T.date.dt.year, "grp"]).x6.mean().unstack().round(2)
 import json
 json.dump({"results": res, "add_relaunch": add, "yearly": yearly.to_dict()}, open("research/results/relaunch.json", "w"), ensure_ascii=False, indent=1, default=str)
 for per in res: print("==", per); print(pd.DataFrame(res[per]).T.to_string())
 print(yearly.to_string()); print("加進雷達：", add)
+
+# ---- 探索（看過上面結果後才加）：恐慌期間（上市空頭家數近10日最高 ≥ 750）發生的漲停，表現是否不同 ----
+alive = (C.notna().cumsum() > 0) & (C.notna()[::-1].cumsum()[::-1] > 0)
+Cf = C.ffill(limit=20).where(alive)
+mm = {n: Cf.rolling(n, min_periods=n).mean() for n in (5, 10, 20, 60)}
+okm = Cf.notna() & mm[60].notna()
+mk = P["MK"].ffill().iloc[-1]; tw = [c for c in C.columns if mk.get(c) == "TWSE"]
+bear = ((mm[5] < mm[10]) & (mm[10] < mm[20]) & okm)[tw].sum(axis=1)
+panic = bear.rolling(10, min_periods=1).max() >= 750
+T["panic"] = T.date.map(panic)
+q = T[~T.blocked].groupby(["grp", "panic"]).agg(n=("x6", "size"), X6平均=("x6", "mean"), X6中位數=("x6", "median"), 漲20比例=("hit20", "mean")).round(2)
+print("恐慌期間（True）vs 平常（False）："); print(q.to_string())
+# 穩健性：分期間、分「恐慌波段」
+g = T[~T.blocked & T.panic].copy()
+wave_id = (panic != panic.shift()).cumsum()
+g["wave"] = g.date.map(wave_id)
+w = g.groupby(["wave"]).agg(起=("date", "min"), 迄=("date", "max")).reset_index()
+pw = g.pivot_table(index="wave", columns="grp", values="x6", aggfunc="mean").round(1)
+pn = g.pivot_table(index="wave", columns="grp", values="x6", aggfunc="size")
+W = w.set_index("wave").join(pw).join(pn, rsuffix="_n")
+W["起"] = W["起"].dt.strftime("%Y-%m-%d"); W["迄"] = W["迄"].dt.strftime("%Y-%m-%d")
+print(W.to_string())
+print("F 今日發動 恐慌波段數", int(W["F 今日發動"].notna().sum()), "為正", int((W["F 今日發動"] > 0).sum()))
+for tr, per in ((True, "2020-2023"), (False, "2024-2026")):
+    z = T[~T.blocked & (T.train == tr)]
+    print(per, z.groupby(["grp", "panic"]).x6.agg(["size", "mean", "median"]).round(2).loc["F 今日發動"].to_dict())

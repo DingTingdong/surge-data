@@ -292,6 +292,20 @@ theme = {c for c in d.index if _runr.get(c, 0) > 0.7 and bool(_lim60.get(c, Fals
 top20 = set(_run.reindex(sorted(theme)).dropna().sort_values(ascending=False).index[:20])  # 依自己這段漲勢排序取前20（research/panic_own_high.py）
 # ---- 撿跌深名單紀錄（只增不改）：上市空頭家數近10天最高 ≥ 750 的每一天，記下全部跌深股（離20日高 ≥ 20%），ts=1 是網站名單 ----
 # 研究只有 4～7 次歷史樣本，所以從 2026/11/19 起每天記下來，之後用真實結果檢驗。
+# ---- 再發動（research/relaunch.py）：前10日內漲停過、今天前曾從近20日最高拉回 ≥15%、今天又漲 ≥9%、成交額 ≥2,000萬 ----
+# 整體不比今日發動好（事先標準未過），但恐慌期間（上市空頭家數近10日最高 ≥750）歷史上7次恐慌全為正（探索），所以只在恐慌期間顯示。
+_hi20s = C.iloc[-21:-1].max(); _lo5s = C.iloc[-6:-1].min()
+_last = S[S.date == days[-1]].set_index("code")
+relaunch = {c for c, r in _last.iterrows() if r.base and r.ch >= 9 and r.a1 >= 20 and r.snp <= 10 and _lo5s.get(c, np.nan) <= _hi20s.get(c, np.nan) * 0.85}
+RL_LOG = "data/relaunch_log.csv"  # 每天全部記下（不論恐慌與否），之後驗證；只增不改
+_rl = pd.read_csv(RL_LOG, dtype={"code": str}) if os.path.exists(RL_LOG) else None
+_rlpmax = int(bear.iloc[-10:].max())
+if _rl is None or days[-1].strftime("%Y-%m-%d") not in set(_rl.date):
+    _new = pd.DataFrame([{"date": days[-1].strftime("%Y-%m-%d"), "code": c, "name": name.get(c, ""), "close": round(float(P["rawC"].iloc[-1][c]), 2),
+                          "ch": round(float(_last.at[c, "ch"]), 2), "panic": int(_rlpmax >= 750), "pmax": _rlpmax} for c in sorted(relaunch)],
+                        columns=["date", "code", "name", "close", "ch", "panic", "pmax"])
+    pd.concat([_rl, _new], ignore_index=True).to_csv(RL_LOG, index=False) if _rl is not None else _new.to_csv(RL_LOG, index=False)
+
 PANIC_LOG = "data/panic_log.csv"
 _pmax = int(bear.iloc[-10:].max()); _today = days[-1].strftime("%Y-%m-%d")
 _plog = pd.read_csv(PANIC_LOG, dtype={"code": str}) if os.path.exists(PANIC_LOG) else None
@@ -320,6 +334,7 @@ for code, r in d.iterrows():
     if code in recent_hist: x["hs"] = recent_hist[code]
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in top20: x["ts"] = 1
+    if code in relaunch: x["rl"] = 1
     if _run.get(code) == _run.get(code): x["pr"] = round(float(_run[code]), 1)
     if _dw.get(code) == _dw.get(code): x["dw"] = round(float(_dw[code]), 1)
     if bounce.get(code) == bounce.get(code): x["bo"] = round(float(bounce[code]), 1)
