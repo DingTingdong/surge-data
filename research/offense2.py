@@ -36,7 +36,7 @@ def fin_quarterly():
     """data/fin 長格式 → 每家公司每季：單季淨利（母公司）、單季營業毛利、季末權益（母公司）、季末資產總額、可用日。"""
     fs = sorted(glob.glob(f"{REPO}/data/fin/*.csv.gz"))
     if not fs: return None
-    pick = {"ni": ["歸屬於母公司業主之淨利（淨損）", "歸屬於母公司業主之淨利(淨損)", "本期淨利（淨損）", "本期稅後淨利（淨損）", "本期淨利(淨損)"],
+    pick = {"ni": ["淨利（淨損）歸屬於母公司業主", "淨利（損）歸屬於母公司業主", "本期淨利（淨損）", "本期稅後淨利（淨損）", "本期淨利(淨損)"],
             "gp": ["營業毛利（毛損）淨額", "營業毛利（毛損）", "營業毛利(毛損)"],
             "eq": ["歸屬於母公司業主之權益合計", "歸屬於母公司業主權益合計", "權益總額", "權益總計", "權益合計"],
             "ta": ["資產總額", "資產總計", "資產合計"]}
@@ -81,10 +81,12 @@ def build2():
     Q = fin_quarterly()
     if Q is not None:
         Q = Q.copy()
-        for k in ("ni", "gp"):  # 年初累計 → 單季
-            prev = Q.groupby(["code", "y"])[k].shift(1)
-            Q[k + "_q"] = np.where(Q.s == 1, Q[k], Q[k] - prev)
-        Q["eq_l"] = Q.groupby("code").eq.shift(1); Q["ta_l"] = Q.groupby("code").ta.shift(1)
+        # 損益表是年初累計（已用台積電 2024 核對）→ 單季＝本季累計 − 同年上一季累計；資產負債用「上一季」季末（精確對應，缺季就缺值）
+        Q["qi"] = Q.y * 4 + Q.s - 1
+        prevq = Q[["code", "qi", "ni", "gp", "eq", "ta", "y"]].rename(columns={"ni": "ni_p", "gp": "gp_p", "eq": "eq_l", "ta": "ta_l", "y": "y_p"}); prevq["qi"] += 1
+        Q = Q.merge(prevq, on=["code", "qi"], how="left")
+        for k in ("ni", "gp"):
+            Q[k + "_q"] = np.where(Q.s == 1, Q[k], np.where(Q.y_p == Q.y, Q[k] - Q[k + "_p"], np.nan))
         Q["roeq"] = Q.ni_q / Q.eq_l.where(Q.eq_l > 0); Q["gpla"] = Q.gp_q / Q.ta_l.where(Q.ta_l > 0)
         Q["avail"] = [pd.Timestamp(y + (s == 4), *DEADLINE[s]) for y, s in zip(Q.y, Q.s)]
         Q = Q.sort_values("avail")
