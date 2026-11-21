@@ -164,6 +164,13 @@ def analyze(R, E, a, b):
     st = lambda y: {"n": int(len(y)), "平均": round(float(y.mean()), 2), "賺錢%": round(float((y > 0).mean() * 100), 1)}
     out["O4 恐慌今日發動"] = st(Kp.yn); out["O4 平常今日發動"] = st(Kn.yn); out["O4 族群仍弱"] = st(weak.yn); out["O4 族群已反彈"] = st(reb.yn)
     out["O4 恐慌成立"] = bool(Kp.yn.mean() > 0 and Kp.yn.mean() - Kn.yn.mean() >= 3); out["O4 族群成立"] = bool(weak.yn.mean() > reb.yn.mean())
+    # 補充（11/21 外部檢查後加，不影響事先登錄的判斷）：每天先平均、波內日期等權、波等權；平常用每月等權
+    _pd = sorted(R[R.panic & (R.date >= a) & (R.date <= b)].date.unique())
+    if _pd:
+        _ds = pd.Series(_pd); _all = pd.Series(sorted(R.date.unique())); _pos = {x: i for i, x in enumerate(_all)}
+        _w = dict(zip(_ds, (_ds.map(_pos).diff().fillna(99) > 10).cumsum()))
+        bal = lambda z: round(float(z.assign(w=z.date.map(_w)).groupby(["w", "date"]).yn.mean().groupby("w").mean().mean()), 2) if len(z) else None
+        out["補充 平衡加權"] = {"恐慌今日發動": bal(Kp), "平常今日發動(每月等權)": round(float(Kn.groupby("m").yn.mean().mean()), 2), "族群仍弱": bal(weak), "族群已反彈": bal(reb)}
     pdays = sorted(R[R.panic & (R.date >= a) & (R.date <= b)].date.unique())
     if pdays:
         ds = pd.Series(pdays); dd = pd.Series(sorted(R.date.unique())); pos_ = {x: i for i, x in enumerate(dd)}
