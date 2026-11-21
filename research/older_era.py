@@ -28,6 +28,11 @@ def make_root(kind):
     r = f"/tmp/root_{kind}"; d = r + "/data"
     if os.path.exists(r): shutil.rmtree(r)
     for sub in ("history", "chips", "revenue"): os.makedirs(f"{d}/{sub}")
+    if kind == "new":  # 2020–2026（網站用的資料）
+        for sub in ("history", "chips", "revenue"):
+            for fn in glob.glob(f"{REPO}/data/{sub}/*.csv*"): os.symlink(fn, f"{d}/{sub}/{os.path.basename(fn)}")
+        for name in ("adjust.csv", "disposal.csv", "industry.csv", "prices.csv"): os.symlink(f"{REPO}/data/{name}", f"{d}/{name}")
+        return r
     srcs = (["older"] if kind == "older" else []) + ["old"]
     hist = {}; chips = {}; rev = {}
     for s in srcs:
