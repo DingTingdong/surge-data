@@ -1,0 +1,52 @@
+name: old-era
+# 補抓 2015-06～2019-12 舊資料到 data/old/（研究用的全新檢驗期；網站不讀）
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        type: boolean
+        default: true
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [prices-2015, prices-2016, prices-2017, prices-2018, prices-2019, chips-2015, chips-2016, chips-2017, chips-2018, chips-2019, misc]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas
+      - run: |
+          J="${{ matrix.job }}"; python tools/old_era.py ${J%%-*} $( [[ "$J" == *-* ]] && echo ${J##*-} )
+      - uses: actions/upload-artifact@v4
+        with:
+          name: old-${{ matrix.job }}
+          path: out/
+  merge:
+    needs: fetch
+    if: ${{ always() && inputs.commit }}
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: |
+          ls -la incoming
+          mkdir -p data/old/history data/old/chips data/old/revenue
+          for f in incoming/hist-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/old/history/$(basename $f | sed 's/hist-//')"; done
+          for f in incoming/chips-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/old/chips/$(basename $f | sed 's/chips-//')"; done
+          for f in incoming/revenue-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/old/revenue/$(basename $f | sed 's/revenue-//')"; done
+          for f in adjust.csv disposal.csv; do [ -f "incoming/$f" ] && cp "incoming/$f" data/old/; done
+          cat incoming/*.failed.txt incoming/*.closed.txt > data/old/fetch_notes.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/old
+          if ! git diff --cached --quiet; then git commit -q -m "old era data 2015-06..2019-12" && git pull --rebase -q && git push; fi
