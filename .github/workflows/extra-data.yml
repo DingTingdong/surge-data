@@ -1,0 +1,43 @@
+name: extra-data
+# 補抓每日籌碼補充資料（外資持股含發行股數、融券／借券賣出餘額、上市當沖）2015-06～今天，到 data/extra/（研究用）
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas
+      - run: python tools/fetch_extra.py year ${{ matrix.year }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extra-${{ matrix.year }}
+          path: out/
+  merge:
+    needs: fetch
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: |
+          ls -la incoming; mkdir -p data/extra
+          for f in incoming/extra-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/extra/$(basename $f | sed 's/extra-//')"; done
+          cat incoming/*.failed.txt > data/extra/fetch_notes.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/extra
+          if ! git diff --cached --quiet; then git commit -q -m "extra chips data 2015-06..today" && git pull --rebase -q && git push; fi

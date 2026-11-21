@@ -7,6 +7,11 @@
 import csv, gzip, os, sys, time, datetime as dt
 sys.path.insert(0, os.getcwd())
 from fetch_chips import get, four, num
+FAILED = []
+def gj(u, tag):
+    j = get(u)
+    if j is None: FAILED.append(tag)
+    return j
 COLS = ["date", "market", "code", "shares", "fshares", "fratio", "short_bal", "sbl_sell", "sbl_ret", "sbl_bal", "dt_shares", "dt_buy", "dt_sell"]
 
 def idx(fields, *names):
@@ -18,18 +23,18 @@ def idx(fields, *names):
 
 def twse(d):
     out = {}
-    j = get(f"https://www.twse.com.tw/rwd/zh/fund/MI_QFIIS?date={d:%Y%m%d}&selectType=ALLBUT0999&response=json"); time.sleep(3.5)
+    j = gj(f"https://www.twse.com.tw/rwd/zh/fund/MI_QFIIS?date={d:%Y%m%d}&selectType=ALLBUT0999&response=json", f"{d} twse_qfii"); time.sleep(3.5)
     if j and j.get("fields"):
         f = j["fields"]; ic, ish, ifs, ifr = idx(f, "證券代號"), idx(f, "發行股數"), idx(f, "全體外資及陸資持有股數"), idx(f, "全體外資及陸資持股比率")
         for r in j.get("data") or []:
             c = four(r[ic])
             if c: out.setdefault(c, {}).update(shares=num(r[ish]), fshares=num(r[ifs]), fratio=num(r[ifr]))
-    j = get(f"https://www.twse.com.tw/rwd/zh/marginTrading/TWT93U?date={d:%Y%m%d}&response=json"); time.sleep(3.5)
+    j = gj(f"https://www.twse.com.tw/rwd/zh/marginTrading/TWT93U?date={d:%Y%m%d}&response=json", f"{d} twse_sbl"); time.sleep(3.5)
     if j and j.get("data"):
         for r in j["data"]:
             c = four(r[0])
             if c and len(r) >= 13: out.setdefault(c, {}).update(short_bal=num(r[6]), sbl_sell=num(r[9]), sbl_ret=num(r[10]), sbl_bal=num(r[12]))
-    j = get(f"https://www.twse.com.tw/rwd/zh/dayTrading/TWTB4U?date={d:%Y%m%d}&selectType=All&response=json"); time.sleep(3.5)
+    j = gj(f"https://www.twse.com.tw/rwd/zh/dayTrading/TWTB4U?date={d:%Y%m%d}&selectType=All&response=json", f"{d} twse_dt"); time.sleep(3.5)
     for t in (j or {}).get("tables") or []:
         f = t.get("fields") or []; ic = idx(f, "證券代號")
         if ic is None: continue
@@ -41,14 +46,14 @@ def twse(d):
 
 def tpex(d):
     out = {}; r_ = f"{d.year - 1911}/{d:%m/%d}"
-    j = get(f"https://www.tpex.org.tw/www/zh-tw/insti/qfii?date={d:%Y/%m/%d}&response=json"); time.sleep(3.5)
+    j = gj(f"https://www.tpex.org.tw/www/zh-tw/insti/qfii?date={d:%Y/%m/%d}&response=json", f"{d} tpex_qfii"); time.sleep(3.5)
     for t in (j or {}).get("tables") or []:
         f = t.get("fields") or []; ic, ish, ifs, ifr = idx(f, "代號"), idx(f, "發行股數"), idx(f, "持有股數"), idx(f, "持股比率")
         if ic is None: continue
         for r in t.get("data") or []:
             c = four(r[ic])
             if c: out.setdefault(c, {}).update(shares=num(r[ish]), fshares=num(r[ifs]), fratio=num(r[ifr]))
-    j = get(f"https://www.tpex.org.tw/web/stock/margin_trading/margin_sbl/margin_sbl_result.php?l=zh-tw&d={r_}&o=json"); time.sleep(3.5)
+    j = gj(f"https://www.tpex.org.tw/web/stock/margin_trading/margin_sbl/margin_sbl_result.php?l=zh-tw&d={r_}&o=json", f"{d} tpex_sbl"); time.sleep(3.5)
     for t in (j or {}).get("tables") or []:
         for r in t.get("data") or []:
             c = four(r[0]) if r else None
@@ -64,7 +69,7 @@ def day_rows(d):
 if __name__ == "__main__":
     if sys.argv[1] == "probe":
         d = dt.date.fromisoformat(sys.argv[2]); rows = day_rows(d)
-        print(len(rows), "rows"); [print(r) for r in rows[:3]]; [print(r) for r in rows if r[1] == "TPEX"][:3]
+        print(len(rows), "rows"); [print(r) for r in rows[:3]]; [print(r) for r in [x for x in rows if x[1] == "TPEX"][:3]]
         print("非空比例", {k: round(sum(r[i] is not None for r in rows) / max(1, len(rows)), 2) for i, k in enumerate(COLS) if i >= 3})
     else:
         y = int(sys.argv[2]); a = max(dt.date(y, 1, 1), dt.date(2015, 6, 1)); b = min(dt.date(y, 12, 31), dt.date.today())
@@ -76,4 +81,4 @@ if __name__ == "__main__":
             d += dt.timedelta(days=1)
         with gzip.open(f"out/extra-{y}.csv.gz", "wt", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh); w.writerow(COLS); w.writerows(rows)
-        print("done", y, len(rows))
+        open(f"out/extra-{y}.failed.txt", "w").write("\n".join(FAILED)); print("done", y, len(rows), "failed", len(FAILED))
