@@ -88,7 +88,7 @@ def build():
         FW[f"b{h}"] = np.concatenate([(bidx[h:] / bidx[:-h] - 1) * 100, np.full(h, np.nan)])
         del Cff, fut
     dser = pd.Series(days); fd = set(dser[dser.dt.day >= 11].groupby(dser.dt.to_period("M")).first())
-    R = S[S.base & (S.date.isin(fd) | S.pk)][["date", "code", "pk", "hot", "r20"]].copy(); R["fd"] = R.date.isin(fd)
+    R = S[S.base & (S.date.isin(fd) | S.pk)][["date", "code", "pk", "hot", "r20", "amt"]].copy(); R["fd"] = R.date.isin(fd)
     R["ti"] = R.date.map({d: i for i, d in enumerate(days)}).values; R["ji"] = R.code.map({c: j for j, c in enumerate(cols)}).values
     ti, ji = R.ti.values, R.ji.values; take = lambda X: (X.values if isinstance(X, pd.DataFrame) else X)[ti, ji]
     R["panic"] = panic.values[ti]
