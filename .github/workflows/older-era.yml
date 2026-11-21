@@ -52,5 +52,5 @@ jobs:
           for f in adjust.csv disposal.csv; do [ -f "incoming/$f" ] && cp "incoming/$f" data/older/; done
           cat incoming/*.failed.txt incoming/*.closed.txt > data/older/fetch_notes.txt 2>/dev/null || true
           git config user.name github-actions; git config user.email actions@github.com
-          git add data/old
+          git add data/older
           if ! git diff --cached --quiet; then git commit -q -m "older era data 2010-01..2015-05" && git pull --rebase -q && git push; fi
