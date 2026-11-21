@@ -346,9 +346,10 @@ except Exception as _e:
     print("composite scoring skipped:", _e)
 CL = "data/score_log.csv"
 _cl = pd.read_csv(CL, dtype={"code": str}) if os.path.exists(CL) else None
-if cscore and (_cl is None or days[-1].strftime("%Y-%m-%d") not in set(_cl.date)):
+if cscore and set(cscore) & set(S[(S.date == days[-1]) & S.pk].code) and (_cl is None or days[-1].strftime("%Y-%m-%d") not in set(_cl.date)):
+    _pkset = set(S[(S.date == days[-1]) & S.pk].code)  # 只記今日發動（新高突破另有紀錄）
     _new = pd.DataFrame([{"date": days[-1].strftime("%Y-%m-%d"), "code": c, "name": name.get(c, ""), "score": round(v, 4), "weak": int(v < _cs.WEAK),
-                          "panic": int(int(bear.iloc[-10:].max()) >= 750)} for c, v in sorted(cscore.items())])
+                          "panic": int(int(bear.iloc[-10:].max()) >= 750)} for c, v in sorted(cscore.items()) if c in _pkset])
     pd.concat([_cl, _new], ignore_index=True).to_csv(CL, index=False) if _cl is not None else _new.to_csv(CL, index=False)
 
 RL_LOG = "data/relaunch_log.csv"  # 每天全部記下（不論恐慌與否），之後驗證；只增不改
