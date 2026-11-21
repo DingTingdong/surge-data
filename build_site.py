@@ -319,6 +319,21 @@ if mscore and (_ml is None or days[-1].strftime("%Y-%m-%d") not in set(_ml.date)
                           "panic": int(int(bear.iloc[-10:].max()) >= 750)} for c, (v, b) in sorted(mscore.items())])
     pd.concat([_ml, _new], ignore_index=True).to_csv(ML, index=False) if _ml is not None else _new.to_csv(ML, index=False)
 
+# ---- 「趨勢＋營收」綜合分數（composite_score.py；research/deep_normal.py）：防守標籤，< 0.5 標「趨勢營收弱」 ----
+cscore = {}
+try:
+    import composite_score as _cs
+    _pk_today = S[(S.date == days[-1]) & S.pk].code.tolist()
+    if _pk_today: cscore = _cs.scores(P, f, S, days[-1], _pk_today)
+except Exception as _e:
+    print("composite scoring skipped:", _e)
+CL = "data/score_log.csv"
+_cl = pd.read_csv(CL, dtype={"code": str}) if os.path.exists(CL) else None
+if cscore and (_cl is None or days[-1].strftime("%Y-%m-%d") not in set(_cl.date)):
+    _new = pd.DataFrame([{"date": days[-1].strftime("%Y-%m-%d"), "code": c, "name": name.get(c, ""), "score": round(v, 4), "weak": int(v < _cs.WEAK),
+                          "panic": int(int(bear.iloc[-10:].max()) >= 750)} for c, v in sorted(cscore.items())])
+    pd.concat([_cl, _new], ignore_index=True).to_csv(CL, index=False) if _cl is not None else _new.to_csv(CL, index=False)
+
 RL_LOG = "data/relaunch_log.csv"  # 每天全部記下（不論恐慌與否），之後驗證；只增不改
 _rl = pd.read_csv(RL_LOG, dtype={"code": str}) if os.path.exists(RL_LOG) else None
 _rlpmax = int(bear.iloc[-10:].max())
@@ -372,6 +387,7 @@ for code, r in d.iterrows():
     if code in top20: x["ts"] = 1
     if code in relaunch: x["rl"] = 1
     if code in mscore: x["ms"] = mscore[code][1]
+    if code in cscore: x["cs"] = round(cscore[code], 2)
     if gstate.get(code): x["gw"] = gstate[code]
     if _run.get(code) == _run.get(code): x["pr"] = round(float(_run[code]), 1)
     if _dw.get(code) == _dw.get(code): x["dw"] = round(float(_dw[code]), 1)

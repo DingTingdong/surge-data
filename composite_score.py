@@ -1,0 +1,63 @@
+"""「趨勢＋營收」綜合分數（research/deep_normal.py 的 12 個入選特性，等權百分位，不擬合）。
+
+每個特性換算成「當天分析範圍內全部股票」裡的百分位（缺值當 0.5），12 個平均＝分數（0～1）。
+研究結果（平常時期今日發動，抱20日）：分數 < 0.5 的三段期間都比 0050 少賺約 5%（每月為單位 t −5～−8），所以網站拿來當防守標籤「趨勢營收弱」。
+定義與 research/deep_normal.py snap() 相同；只用當天收盤後就知道的資料（營收：YYYY-MM 從下個月 11 日起才算知道）。
+"""
+import glob, os
+import numpy as np, pandas as pd
+
+FEATS = ["r20", "mom6_1", "d_hi250", "m60", "am", "yoy1", "yoy3", "rev_acc", "rev_hi12", "mom1", "mg20", "rs_g20"]
+WEAK = 0.5
+
+def factors_on(P, f, S, date):
+    """回傳 DataFrame（index＝全部股票代號）：當天 12 個特性的值，以及是否在分析範圍內。"""
+    C, A, raw = P["C"], P["A"], P["rawC"]; days, cols = C.index, C.columns; t = days.get_loc(date)
+    at = lambda X, k=0: (X.iloc[t - k] if t - k >= 0 else pd.Series(np.nan, index=cols))
+    Sd = S[S.date == date].set_index("code")
+    out = pd.DataFrame(index=cols)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out["r20"] = (Sd.r20 / 100).reindex(cols)
+        out["mom6_1"] = at(C, 20) / at(C, 125) - 1
+        w = C.iloc[max(0, t - 249):t + 1]; out["d_hi250"] = np.where(w.notna().sum() >= 120, at(C) / w.max() - 1, np.nan)
+        w = C.iloc[max(0, t - 59):t + 1]; out["m60"] = np.where(w.notna().sum() >= 60, at(C) / w.mean() - 1, np.nan)
+        a5 = A.iloc[max(0, t - 4):t + 1]; a20 = A.iloc[max(0, t - 19):t + 1]
+        out["am"] = np.where((a5.notna().sum() >= 5) & (a20.notna().sum() >= 10), a5.mean() / a20.mean(), np.nan)
+        fns = sorted(glob.glob("data/chips/*.csv*"), key=lambda x: (os.path.basename(x)[:4], x.endswith(".csv")))[-2:]
+        ch = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in fns], ignore_index=True)
+        ch["date"] = pd.to_datetime(ch.date); ch = ch.drop_duplicates(["date", "code"], keep="last")
+        mg = ch.pivot(index="date", columns="code", values="margin").reindex(index=days, columns=cols)
+        out["mg20"] = at(mg) / at(mg, 20) - 1
+        rv = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in sorted(glob.glob("data/revenue/*.csv*"))[-3:]], ignore_index=True)
+        rv["pub"] = pd.to_datetime(rv.ym + "-01") + pd.DateOffset(months=1) + pd.Timedelta(days=10)
+        rv = rv[rv.pub <= date]
+        piv = lambda v: rv.pivot_table(index="ym", columns="code", values=v).sort_index().reindex(columns=cols)
+        yoy, rev, mom = piv("yoy"), piv("rev"), piv("mom")
+        out["yoy1"] = yoy.iloc[-1]; out["yoy3"] = yoy.iloc[-3:].mean() if len(yoy) >= 3 else np.nan
+        p12 = rev.iloc[-13:-1]
+        out["rev_hi12"] = np.where(p12.notna().sum() >= 6, rev.iloc[-1] / p12.max() - 1, np.nan)
+        out["rev_acc"] = out.yoy1 - out.yoy3; out["mom1"] = mom.iloc[-1]
+        ind = pd.read_csv("data/industry.csv", dtype={"code": str}).set_index("code"); grp = pd.Series(ind["ind_name"]).reindex(cols)
+        lo = max(0, t - 21)
+        Cw = C.iloc[lo:t + 1]; r1 = Cw.pct_change(fill_method=None)
+        inb = S[S.base & (S.date >= days[lo]) & (S.date <= date)].assign(v=True).pivot(index="date", columns="code", values="v").reindex(index=Cw.index, columns=cols).fillna(False).astype(bool)
+        rb = r1.where(inb); g20 = pd.Series(np.nan, index=cols)
+        for g, cs in grp.dropna().groupby(grp.dropna()).groups.items():
+            ix = (1 + rb[list(cs)].mean(axis=1).fillna(0)).cumprod()
+            if len(ix) > 20: g20[list(cs)] = ix.iloc[-1] / ix.iloc[-21] - 1
+        out["rs_g20"] = out.r20 - g20
+    out = out.replace([np.inf, -np.inf], np.nan)
+    out["base"] = out.index.isin(Sd.index[Sd.base])
+    return out
+
+def scores(P, f, S, date, codes):
+    """codes 的綜合分數：每個特性在「當天分析範圍內全部股票」的百分位（缺值 0.5）等權平均。"""
+    X = factors_on(P, f, S, date); ref = X[X.base]; res = {}
+    for c in codes:
+        if c not in X.index: continue
+        ps = []
+        for k in FEATS:
+            v, r = X.at[c, k], np.sort(ref[k].dropna().values)
+            ps.append(0.5 if (pd.isna(v) or len(r) < 50) else float(np.searchsorted(r, v, side="right") / len(r)))
+        res[c] = float(np.mean(ps))
+    return res
