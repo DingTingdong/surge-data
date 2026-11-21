@@ -33,6 +33,13 @@
      而且 2024–2026 不比 v1「高」差超過 0.5 個百分點。否則網站維持 v1。
 另外報告（不影響判斷）：每天只買今日發動中分數最高的 1 檔／3 檔（資金分 20 份輪流進場、各抱 20 日）的資金曲線、最大回落，對比 0050；
      Q 另報從「仍在動＋今日發動」每天挑前 3 檔。
+
+補充登錄（2026/11/21 17:35，舊資料尚未下載完成、還沒看過任何 2016–2019 數字）：
+  開發期（2020–2023）探索看到三個簡單現象，門檻全部用 2020–2023 定，在 2016–2019 各檢驗一次：
+  S1 當天今日發動 ≤ 3 檔（市場不擁擠）vs 其他日子（2020–23：+2.25 vs 約 −0.9）
+  S2 離 250 日高 15% 以內 vs 離高超過 15%（2020–23：約 −0.2 vs −3.5）
+  S3 大盤等權指數離 60 日線 ≤ +6% vs > +6%（大盤過熱；2020–23：約 +0.5 vs −2.1）
+  判斷：2016–2019 中「好的一組」平均 > 「差的一組」，而且 4 年中至少 3 年如此 → 這個現象在全新期間也成立；否則照實報告不成立。
 """
 import glob, json, os, pickle, shutil, sys, warnings
 import numpy as np, pandas as pd
@@ -229,3 +236,109 @@ if __name__ == "__main__" and sys.argv[1:2] == ["dev"]:
     best = max(res, key=lambda k: res[k]["指標"])
     print("v2 ＝", best)
     json.dump({"dev": res, "v2": best}, open(f"{REPO}/research/results/model_v2_dev.json", "w"), ensure_ascii=False, indent=1)
+
+def bench(code, a, b):
+    """0050／00631L 含息報酬指數（除權息用官方參考價；分割當天視為不漲不跌）。"""
+    e = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in (f"{REPO}/data/old/etf.csv", f"{REPO}/data/etf.csv") if os.path.exists(fn)])
+    s = e[e.code == code].drop_duplicates("date", keep="last").assign(date=lambda z: pd.to_datetime(z.date)).set_index("date").close.sort_index()
+    adj = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in (f"{REPO}/data/old/adjust.csv", f"{REPO}/data/adjust.csv") if os.path.exists(fn)])
+    adj = adj[adj.code == code].assign(date=lambda z: pd.to_datetime(z.date)).groupby("date").ratio.prod()
+    r = s / (s.shift(1) * adj.reindex(s.index).fillna(1.0))
+    r = r.where((r > 0.45) & (r < 2.2), 1.0)
+    s = r.loc[a:b].fillna(1.0).cumprod()
+    return s / s.iloc[0]
+
+def curve_stats(eq):
+    yrs = (eq.index[-1] - eq.index[0]).days / 365.25
+    return {"總報酬%": round(float(eq.iloc[-1] / eq.iloc[0] - 1) * 100, 1), "年化%": round(float((eq.iloc[-1] / eq.iloc[0]) ** (1 / yrs) - 1) * 100, 1),
+            "最大回落%": round(float((eq / eq.cummax() - 1).min() * 100), 1)}
+
+def portfolio(rows, score, K, px):
+    """資金分 20 份；第 t 天的訊號用第 t mod 20 份資金，平均買進當天分數最高的 K 檔（K=None：全部），隔天開盤進、第 20 天收盤出、扣 1.1%。"""
+    C, O, days = px["C"], px["O"], px["days"]
+    z = rows.assign(s=score).sort_values(["date", "s"], ascending=[True, False])
+    pick = z if K is None else z.groupby("date").head(K)
+    t0, t1 = int(rows.ti.min()), int(rows.ti.max()) + HOLD
+    span_ = np.arange(t0, t1 + 1); val = np.full((20, len(span_)), np.nan)
+    Cv, Ov = C.values, O.values; cj = {c: j for j, c in enumerate(C.columns)}
+    by = {t: g.code.map(cj).values for t, g in pick.groupby("ti")}
+    trades = []
+    for tr_id in range(20):
+        V = 1 / 20; last = t0 - 1
+        for t in range(t0 + ((tr_id - t0) % 20), t1 - HOLD + 1, 20):
+            val[tr_id, last - t0 + 1:t + 1 - t0 + 1] = V
+            if t not in by: last = t; continue
+            jj = by[t]; e = t + 1
+            path = np.nanmean(Cv[e:e + HOLD, jj] / Ov[e, jj][None, :], axis=1)
+            path = pd.Series(path).ffill().fillna(1.0).values
+            val[tr_id, e - t0:e + HOLD - t0] = V * path; val[tr_id, e + HOLD - 1 - t0] = V * (path[-1] - COST / 100)
+            V = V * (path[-1] - COST / 100); last = e + HOLD - 1
+        val[tr_id, last - t0 + 1:] = V
+    eq = pd.Series(np.nansum(val, axis=0), index=days[span_])
+    st = curve_stats(eq); y = pick.y
+    st.update({"筆數": int(len(pick)), "每筆平均%": round(float(y.mean()), 2), "賺錢%": round(float((y > 0).mean() * 100), 1),
+               "有部位的天數%": round(float(pick.ti.nunique() / max(1, len(range(t0, t1 - HOLD + 1))) * 100), 1)})
+    return st, eq
+
+if __name__ == "__main__" and sys.argv[1:2] in (["final"], ["dry"]):
+    DRY = sys.argv[1] == "dry"   # dry：只用開發資料（2023）走一遍流程、檢查程式，不看檢驗期
+    Rn = build("new"); best = json.load(open(f"{REPO}/research/results/model_v2_dev.json"))["v2"]
+    dn = Rn.drop_duplicates("date").set_index("date").okn; RATIO = 750 / float(dn.mean())
+    m1 = pickle.load(open(f"{REPO}/data/model/normal_v1.pkl", "rb")); c1 = json.load(open(f"{REPO}/data/model/normal_v1.json"))
+    s_v1 = lambda Z: m1["model"].predict(Z[m1["feats"]].astype(float))
+    dev = Rn[Rn.date < "2024-01-01"]
+    s_v2, mv2 = fit(best, sample(dev, best)); s_q, _ = fit("Q", sample(dev, "Q"))
+    v2_23, _ = fit(best, sample(dev[dev.date < "2023-01-01"], best)); p23 = v2_23(sample(dev[dev.date.dt.year == 2023], "F"))
+    hi2, lo2 = float(np.quantile(p23, 0.8)), float(np.quantile(p23, 0.2))
+    print(f"v2＝{best}；門檻 高 ≥ {hi2:.4f}、低 ≤ {lo2:.4f}；2016–2019 恐慌比例門檻 {RATIO:.4f}", flush=True)
+    if DRY:
+        s_v2, _ = fit(best, sample(dev[dev.date < "2023-01-01"], best))
+        sets = {"dry2023": (Rn, "panic750", "2023-01-01", "2023-12-31", "new")}
+    else:
+        Ro = build("old"); Ro["panicR"] = Ro.bearf10 >= RATIO
+        sets = {"2016-2019": (Ro, "panicR", "2016-01-01", "2019-12-31", "old"), "2024-2026": (Rn, "panic750", "2024-01-01", "2026-12-31", "new")}
+    out = {"v2": best, "hi2": hi2, "lo2": lo2, "ratio": RATIO, "sets": {}}
+    for name, (R, pc, a, b, era) in sets.items():
+        Rp = R[(R.date >= a) & (R.date <= b)]
+        F = sample(Rp, "F", pc); pool = sample(Rp, "Q", pc)
+        sc1, sc2 = s_v1(F), s_v2(F)
+        b1 = np.where(sc1 >= c1["hi"], "高", np.where(sc1 <= c1["lo"], "低", "中")); b2 = np.where(sc2 >= hi2, "高", np.where(sc2 <= lo2, "低", "中"))
+        o = {"恐慌天數": int(Rp.drop_duplicates("date")[pc].sum()), "全部": grp_stats(F.y),
+             "v1": {k: grp_stats(F.y[b1 == k]) for k in ("高", "中", "低")}, "v2": {k: grp_stats(F.y[b2 == k]) for k in ("高", "中", "低")}}
+        yr = F.assign(b1=b1, b2=b2).groupby(F.date.dt.year)
+        o["逐年"] = {int(y): {"全部": round(g.y.mean(), 2), "v1高": round(g[g.b1 == "高"].y.mean(), 2), "v1低": round(g[g.b1 == "低"].y.mean(), 2),
+                             "v2高": round(g[g.b2 == "高"].y.mean(), 2), "v2低": round(g[g.b2 == "低"].y.mean(), 2), "n": int(len(g)),
+                             "v1高n": int((g.b1 == "高").sum()), "v2高n": int((g.b2 == "高").sum())} for y, g in yr}
+        for nm, s in (("v1", sc1), ("v2", sc2)):
+            dec = pd.qcut(pd.Series(s).rank(method="first"), 10, labels=False).values + 1
+            o[nm + "十分位"] = F.y.groupby(dec).mean().round(2).tolist()
+        px = pd.read_pickle(f"{CACHE}/px_{era}.pkl")
+        port = {}
+        for nm, s, K, rows in (("全部今日發動", np.zeros(len(F)), None, F), ("v1前1", sc1, 1, F), ("v1前3", sc1, 3, F), ("v2前1", sc2, 1, F), ("v2前3", sc2, 3, F),
+                               ("Q仍在動＋今日發動前3", s_q(pool), 3, pool)):
+            port[nm], eq = portfolio(rows, s, K, px)
+        d0, d1 = eq.index[0], eq.index[-1]
+        for code in ("0050", "00631L"):
+            try: port[code + "（含息）"] = curve_stats(bench(code, d0, d1))
+            except Exception as ex: port[code] = str(ex)
+        o["組合"] = port
+        out["sets"][name] = o
+        print("==", name, json.dumps({k: v for k, v in o.items() if k != "組合"}, ensure_ascii=False), flush=True)
+        for k, v in port.items(): print("  ", k, v)
+    if not DRY:
+        A, Bn = out["sets"]["2016-2019"], out["sets"]["2024-2026"]
+        y4 = A["逐年"]
+        v1ok = A["v1"]["高"]["平均"] > A["全部"]["平均"] and A["v1"]["高"]["平均"] > A["v1"]["低"]["平均"] and sum(y4[y]["v1高"] > y4[y]["全部"] for y in y4) >= 3
+        v2ok = (A["v2"]["高"]["平均"] >= A["v1"]["高"]["平均"] + 1 and A["v2"]["高"]["賺錢%"] >= A["v1"]["高"]["賺錢%"]
+                and sum(y4[y]["v2高"] > y4[y]["全部"] for y in y4) >= 3 and Bn["v2"]["高"]["平均"] >= Bn["v1"]["高"]["平均"] - 0.5)
+        out["判斷"] = {"v1在全新期間仍有用": bool(v1ok), "網站換成v2": bool(v2ok)}
+        Fo = sample(Ro[(Ro.date >= "2016-01-01") & (Ro.date <= "2019-12-31")], "F", "panicR"); Fo = Fo.join(Fo.groupby("date").size().rename("n"), on="date")
+        simple = {}
+        for nm, good in (("S1 當天今日發動≤3檔", Fo.n <= 3), ("S2 離250日高15%以內", Fo.d_hi250 >= -0.15), ("S3 大盤離60日線≤6%", Fo.mk_ew_m60 <= 0.06)):
+            yy = Fo.assign(g=good).groupby([Fo.date.dt.year, "g"]).y.mean().unstack()
+            ok = Fo.y[good].mean() > Fo.y[~good].mean() and int((yy[True] > yy[False]).sum()) >= 3
+            simple[nm] = {"好": grp_stats(Fo.y[good]), "差": grp_stats(Fo.y[~good]), "逐年好": yy[True].round(2).to_dict(), "逐年差": yy[False].round(2).to_dict(), "成立": bool(ok)}
+            print(nm, simple[nm])
+        out["簡單現象"] = simple
+        print("判斷：", out["判斷"])
+        json.dump(out, open(f"{REPO}/research/results/model_v2_final.json", "w"), ensure_ascii=False, indent=1)
