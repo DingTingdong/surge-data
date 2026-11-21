@@ -12,7 +12,8 @@ import csv, gzip, os, sys, time, datetime as dt
 sys.path.insert(0, os.getcwd())
 import fetch_history as fh, fetch_chips as fc, fetch_adjust as fa, fetch_disposal as fd, fetch_revenue as fr
 
-START = dt.date(2015, 6, 1); END = dt.date(2019, 12, 31)
+START = dt.date.fromisoformat(os.environ.get("OLD_START", "2015-06-01")); END = dt.date.fromisoformat(os.environ.get("OLD_END", "2019-12-31"))
+REV_YEARS = [int(x) for x in os.environ.get("REV_YEARS", "2014,2015,2016,2017,2018,2019").split(",")]
 os.makedirs("out", exist_ok=True)
 
 def span(year):
@@ -93,7 +94,7 @@ def misc():
         with open(fn, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f); w.writerow(cols); w.writerows(sorted({tuple(r) for r in rows}))
     print("adjust", len(adj), "disposal", len(dis), flush=True)
-    for y in range(2014, 2020):  # 2014 起：2015 年的「近3月營收」要用到
+    for y in REV_YEARS:  # 預設 2014 起：2015 年的「近3月營收」要用到
         rows = []
         for m in range(1, 13):
             rs, ok = fr.month_rows(y, m)
