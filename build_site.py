@@ -297,6 +297,28 @@ top20 = set(_run.reindex(sorted(theme)).dropna().sort_values(ascending=False).in
 _hi20s = C.iloc[-21:-1].max(); _lo5s = C.iloc[-6:-1].min()
 _last = S[S.date == days[-1]].set_index("code")
 relaunch = {c for c, r in _last.iterrows() if r.base and r.ch >= 9 and r.a1 >= 20 and r.snp <= 10 and _lo5s.get(c, np.nan) <= _hi20s.get(c, np.nan) * 0.85}
+# ---- 模型評分（凍結的 normal_v1，tools/train_model.py；research/normal_model.py）：只是標示，前瞻驗證中 ----
+# 每天替今日發動評分（高＝2023 分數前20%門檻以上、低＝後20%以下），記到 data/model_log.csv（只增不改）。
+mscore = {}
+try:
+    import pickle
+    from model_features import make_context, features_for
+    _mdl = pickle.load(open("data/model/normal_v1.pkl", "rb")); _mcfg = json.load(open("data/model/normal_v1.json", encoding="utf-8"))
+    _today_pk = S[(S.date == days[-1]) & S.pk].code.tolist()
+    if _today_pk:
+        _ctx = make_context(P, f, S, bear)
+        _X = pd.DataFrame([features_for(_ctx, days[-1], c) for c in _today_pk]).reindex(columns=_mdl["feats"]).replace([np.inf, -np.inf], np.nan)
+        for c, v in zip(_today_pk, _mdl["model"].predict(_X)):
+            mscore[c] = (float(v), "高" if v >= _mcfg["hi"] else ("低" if v <= _mcfg["lo"] else "中"))
+except Exception as _e:
+    print("model scoring skipped:", _e)
+ML = "data/model_log.csv"
+_ml = pd.read_csv(ML, dtype={"code": str}) if os.path.exists(ML) else None
+if mscore and (_ml is None or days[-1].strftime("%Y-%m-%d") not in set(_ml.date)):
+    _new = pd.DataFrame([{"date": days[-1].strftime("%Y-%m-%d"), "ver": "normal_v1", "code": c, "name": name.get(c, ""), "score": round(v, 3), "band": b,
+                          "panic": int(int(bear.iloc[-10:].max()) >= 750)} for c, (v, b) in sorted(mscore.items())])
+    pd.concat([_ml, _new], ignore_index=True).to_csv(ML, index=False) if _ml is not None else _new.to_csv(ML, index=False)
+
 RL_LOG = "data/relaunch_log.csv"  # 每天全部記下（不論恐慌與否），之後驗證；只增不改
 _rl = pd.read_csv(RL_LOG, dtype={"code": str}) if os.path.exists(RL_LOG) else None
 _rlpmax = int(bear.iloc[-10:].max())
@@ -349,6 +371,7 @@ for code, r in d.iterrows():
     if d20.get(code) == d20.get(code): x["d20"] = round(float(d20[code]), 1)
     if code in top20: x["ts"] = 1
     if code in relaunch: x["rl"] = 1
+    if code in mscore: x["ms"] = mscore[code][1]
     if gstate.get(code): x["gw"] = gstate[code]
     if _run.get(code) == _run.get(code): x["pr"] = round(float(_run[code]), 1)
     if _dw.get(code) == _dw.get(code): x["dw"] = round(float(_dw[code]), 1)

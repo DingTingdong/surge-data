@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests pandas numpy
+      - run: pip install requests pandas numpy scikit-learn==1.9.1
       - run: python fetch_prices.py
       - run: python fetch_disposal.py || echo 'disposal fetch failed, continuing'
       - run: python fetch_adjust.py || echo 'adjust fetch failed, continuing'
