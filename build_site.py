@@ -294,9 +294,11 @@ top20 = set(_run.reindex(sorted(theme)).dropna().sort_values(ascending=False).in
 # 研究只有 4～7 次歷史樣本，所以從 2026/11/19 起每天記下來，之後用真實結果檢驗。
 # ---- 再發動（research/relaunch.py）：前10日內漲停過、今天前曾從近20日最高拉回 ≥15%、今天又漲 ≥9%、成交額 ≥2,000萬 ----
 # 整體不比今日發動好（事先標準未過），但恐慌期間（上市空頭家數近10日最高 ≥750）歷史上7次恐慌全為正（探索），所以只在恐慌期間顯示。
-_hi20s = C.iloc[-21:-1].max(); _lo5s = C.iloc[-6:-1].min()
+# 2026/11/21 修正（外部檢查指出）：舊寫法「前5日最低 ≤ 前20日最高×0.85」沒要求高點在低點之前，一路漲也會被算進去。
+# 改成：前 5 日內某天的收盤，相對「到那天為止的近 20 日最高」跌了 ≥ 15%（research/panic_recheck.py 的修正定義）。
+_dd = C.iloc[-40:] / C.iloc[-40:].rolling(20, min_periods=10).max() - 1; _pull = _dd.iloc[-6:-1].min() <= -0.15
 _last = S[S.date == days[-1]].set_index("code")
-relaunch = {c for c, r in _last.iterrows() if r.base and r.ch >= 9 and r.a1 >= 20 and r.snp <= 10 and _lo5s.get(c, np.nan) <= _hi20s.get(c, np.nan) * 0.85}
+relaunch = {c for c, r in _last.iterrows() if r.base and r.ch >= 9 and r.a1 >= 20 and r.snp <= 10 and bool(_pull.get(c, False))}
 # ---- 模型評分（凍結的 normal_v1，tools/train_model.py；research/normal_model.py）：只是標示，前瞻驗證中 ----
 # 每天替今日發動評分（高＝2023 分數前20%門檻以上、低＝後20%以下），記到 data/model_log.csv（只增不改）。
 mscore = {}
