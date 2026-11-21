@@ -320,10 +320,27 @@ if mscore and (_ml is None or days[-1].strftime("%Y-%m-%d") not in set(_ml.date)
     pd.concat([_ml, _new], ignore_index=True).to_csv(ML, index=False) if _ml is not None else _new.to_csv(ML, index=False)
 
 # ---- 「趨勢＋營收」綜合分數（composite_score.py；research/deep_normal.py）：防守標籤，< 0.5 標「趨勢營收弱」 ----
+# ---- 新高突破（new_high.py；research/offense.py H5，驗證中）：最近 10 個交易日、在分析範圍內 ----
+nhev = {}
+try:
+    import new_high as _nh
+    _ev = _nh.events(10); _bs = set(zip(S[S.base].date, S[S.base].code))
+    for r in _ev.sort_values("date").itertuples():
+        if (r.date, r.code) in _bs:
+            nhev[r.code] = (r.date, float(r.close), round(float(r.ch), 2), int(int(bear.loc[:r.date].iloc[-10:].max()) >= 750))
+except Exception as _e:
+    print("new-high skipped:", _e)
+NH_LOG = "data/newhigh_log.csv"
+_nl = pd.read_csv(NH_LOG, dtype={"code": str}) if os.path.exists(NH_LOG) else None
+_nt = [(c, v) for c, v in nhev.items() if v[0] == days[-1]]
+if _nt and (_nl is None or days[-1].strftime("%Y-%m-%d") not in set(_nl.date)):
+    _new = pd.DataFrame([{"date": days[-1].strftime("%Y-%m-%d"), "code": c, "name": name.get(c, ""), "close": v[1], "ch": v[2], "panic": v[3]} for c, v in _nt])
+    pd.concat([_nl, _new], ignore_index=True).to_csv(NH_LOG, index=False) if _nl is not None else _new.to_csv(NH_LOG, index=False)
+
 cscore = {}
 try:
     import composite_score as _cs
-    _pk_today = S[(S.date == days[-1]) & S.pk].code.tolist()
+    _pk_today = sorted(set(S[(S.date == days[-1]) & S.pk].code) | set(nhev))
     if _pk_today: cscore = _cs.scores(P, f, S, days[-1], _pk_today)
 except Exception as _e:
     print("composite scoring skipped:", _e)
@@ -388,6 +405,9 @@ for code, r in d.iterrows():
     if code in relaunch: x["rl"] = 1
     if code in mscore: x["ms"] = mscore[code][1]
     if code in cscore: x["cs"] = round(cscore[code], 2)
+    if code in nhev:
+        _d, _c0, _, _pp = nhev[code]; x["nh"] = _d.strftime("%m/%d"); x["nhp"] = _pp
+        if _c0 > 0 and code in P["rawC"].columns and P["rawC"][code].iloc[-1] == P["rawC"][code].iloc[-1]: x["nhr"] = round((float(P["rawC"][code].iloc[-1]) / _c0 - 1) * 100, 1)
     if gstate.get(code): x["gw"] = gstate[code]
     if _run.get(code) == _run.get(code): x["pr"] = round(float(_run[code]), 1)
     if _dw.get(code) == _dw.get(code): x["dw"] = round(float(_dw[code]), 1)
