@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests pandas numpy
+      - run: pip install requests pandas numpy lxml
       - run: python tools/${{ inputs.script }}
       - name: commit
         if: ${{ inputs.commit }}
