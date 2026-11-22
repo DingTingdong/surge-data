@@ -30,7 +30,9 @@ dcs = [c for c in d.columns if "日期" in c]; ccs = [c for c in d.columns if "�
 if not dcs or not ccs: print("unexpected columns"); sys.exit(0)
 dc, cc = dcs[0], ccs[0]
 d = d[d[cc].str.fullmatch(r"[1-9]\d{3}", na=False)]
-if d.empty: print("no stock rows"); sys.exit(0)
+if d.empty:
+    allc = pd.read_csv(io.BytesIO(raw), dtype=str, encoding="utf-8-sig"); allc.columns = [c.strip().replace("\ufeff", "") for c in allc.columns]
+    v = allc[cc]; print("no stock rows; code lengths", v.str.len().value_counts().head().to_dict(), "samples", [repr(x) for x in v[v.str.contains("2330", na=False)].unique()[:5]], [repr(x) for x in v.unique()[100:110]]); sys.exit(0)
 day = d[dc].iloc[0].strip(); fn = f"data/tdcc/{day}.csv.gz"
 if os.path.exists(fn): print("already have", day)
 else: d.to_csv(fn, index=False, compression="gzip"); print("saved", fn, len(d), "rows")
