@@ -18,10 +18,19 @@ for i in range(6):
     r = None; time.sleep(10)
 if r is None:
     print("tdcc fetch failed"); sys.exit(0)
-d = pd.read_csv(io.BytesIO(r.content), dtype=str, encoding="utf-8-sig")
-d.columns = [c.strip() for c in d.columns]
-dc = [c for c in d.columns if "日期" in c][0]; cc = [c for c in d.columns if "代號" in c][0]
-d = d[d[cc].str.fullmatch(r"[1-9]\d{3}")]
+raw = r.content
+for enc in ("utf-8-sig", "big5", "cp950"):
+    try: d = pd.read_csv(io.BytesIO(raw), dtype=str, encoding=enc); break
+    except Exception: d = None
+if d is None: print("parse failed", raw[:300]); sys.exit(0)
+d.columns = [c.strip().replace("\ufeff", "") for c in d.columns]
+d = d.apply(lambda s: s.str.strip().str.strip('="') if s.dtype == object else s)
+print("columns", list(d.columns)); print(d.head(3).to_string())
+dcs = [c for c in d.columns if "日期" in c]; ccs = [c for c in d.columns if "代號" in c]
+if not dcs or not ccs: print("unexpected columns"); sys.exit(0)
+dc, cc = dcs[0], ccs[0]
+d = d[d[cc].str.fullmatch(r"[1-9]\d{3}", na=False)]
+if d.empty: print("no stock rows"); sys.exit(0)
 day = d[dc].iloc[0].strip(); fn = f"data/tdcc/{day}.csv.gz"
 if os.path.exists(fn): print("already have", day)
 else: d.to_csv(fn, index=False, compression="gzip"); print("saved", fn, len(d), "rows")
