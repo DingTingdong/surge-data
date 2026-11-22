@@ -2,16 +2,21 @@
 來源：集保結算所開放資料 https://smart.tdcc.com.tw/opendata/getOD.ashx?id=1-5（每週最後一個營業日收盤後更新）。
 存成 data/tdcc/YYYYMMDD.csv.gz（資料日期），只保留四碼普通股。
 """
-import io, os, sys, time, requests, pandas as pd
-URL = "https://smart.tdcc.com.tw/opendata/getOD.ashx?id=1-5"
+import io, os, socket, sys, time, requests, pandas as pd
+import urllib3.util.connection as _uc
+_uc.allowed_gai_family = lambda: socket.AF_INET   # 雲端主機走 IPv6 會「Network is unreachable」，強制 IPv4
+URLS = ["https://smart.tdcc.com.tw/opendata/getOD.ashx?id=1-5", "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5"]
 os.makedirs("data/tdcc", exist_ok=True)
-for i in range(3):
+r = None
+for i in range(6):
+    u = URLS[i % 2]
     try:
-        r = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=120)
-        if r.status_code == 200 and len(r.content) > 100000: break
-    except Exception as e: print("retry", e)
-    time.sleep(10 * (i + 1))
-else:
+        r = requests.get(u, headers={"User-Agent": "Mozilla/5.0"}, timeout=120)
+        if r.status_code == 200 and len(r.content) > 100000: print("ok", u); break
+        print("bad", u, r.status_code, len(r.content))
+    except Exception as e: print("retry", u, e)
+    r = None; time.sleep(10)
+if r is None:
     print("tdcc fetch failed"); sys.exit(0)
 d = pd.read_csv(io.BytesIO(r.content), dtype=str, encoding="utf-8-sig")
 d.columns = [c.strip() for c in d.columns]
