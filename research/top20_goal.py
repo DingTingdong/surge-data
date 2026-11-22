@@ -21,6 +21,12 @@
   V2 依成交值加權：前 20 檔依 20 日均額加權，單檔上限 15%（超過的部分依比例分給其他檔），讓大型、成交活絡的股票比重較高。
   V3 逐檔和 0050 比強弱：前 20 檔中，過去 120 個交易日漲幅不到 0050 同期漲幅的，那一格改放 0050（1/20）。
   成本、報酬算法、判斷（①②③）同第 1 輪；達標的規則用於網站分頁（多個達標用全期 t 最高的）。
+  第 2 輪結果（11/22，成本 1.1%）：V1 +1.29（t 2.95）四段都正、發現期外 +0.73（t 1.48）→ 差 ③；V2 +1.46（t 2.33），最大回落 −50%；
+    V3 +1.37（t 2.78），2024–26 −0.34 → 都不達標。成本 0.6% 時基準、V1、V3 都達標（另報，不改判斷）。
+
+第 3 輪（11/22 20:30 登錄；累計 7 個規則，門檻 t ≥ 2.9）：持股數。依據：Grinold 主動管理基本法則（資訊比率 ≈ 預測力 × √持股廣度），
+  分數在前 20 名以外仍有預測力（offense.py H4、deep_normal 五等分差），擴大持股可降低和 0050 的差距波動。
+  W30：分數前 30 檔等權（還在前 30 的不賣）；W40：前 40 檔等權（還在前 40 的不賣）。其餘同第 1 輪。
 """
 import os, sys, json, numpy as np, pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE); sys.path.insert(0, HERE)
@@ -74,3 +80,65 @@ if __name__ == "__main__" and (len(sys.argv) < 2 or sys.argv[1] == "r1"):
         T = simulate(kr); out[lab] = {"成本1.1%": evaluate(T, 1.1), "成本0.6%": evaluate(T, 0.6)}
         o = out[lab]["成本1.1%"]; print(lab, "1.1%:", {k: v for k, v in o.items() if k != "逐年"}, "| 0.6%:", out[lab]["成本0.6%"]["減0050 全期"], out[lab]["成本0.6%"]["年化 策略/0050"], flush=True)
     json.dump(out, open(f"{REPO}/research/results/top20_goal_r1.json", "w"), ensure_ascii=False, indent=1)
+
+def evaluate_x(x, r, b):
+    """x：每月減0050；r：策略報酬；b：0050（都是 %，同一組日期）。判斷同 evaluate。"""
+    pr = per(x.index); w, wb = (1 + r / 100).cumprod(), (1 + b / 100).cumprod(); yrs = (days[POS[FDS[-1]]] - FDS[0]).days / 365.25
+    a_ = (round(float(x.mean()), 2), round(nw_t(x, 1), 2)); ps = {p: (round(float(x[pr == p].mean()), 2), round(nw_t(x[pr == p], 1), 2)) for p in PER}
+    oo = x[pr != "2020-23"]; oos = (round(float(oo.mean()), 2), round(nw_t(oo, 1), 2))
+    ok = a_[0] > 0 and a_[1] >= 2.9 and all(ps[p][0] > 0 for p in PER) and oos[0] > 0 and oos[1] >= 2
+    yr = pd.DataFrame({"策略%": (1 + r / 100).groupby(x.index.year).prod() * 100 - 100, "0050%": (1 + b / 100).groupby(x.index.year).prod() * 100 - 100}).round(1)
+    return {"減0050 全期": a_, "四段": ps, "發現期外": oos, "達標": bool(ok),
+            "年化 策略/0050": (round(float((w.iloc[-1] ** (1 / yrs) - 1) * 100), 1), round(float((wb.iloc[-1] ** (1 / yrs) - 1) * 100), 1)),
+            "最大回落": (round(float((w / w.cummax() - 1).min() * 100), 1), round(float((wb / wb.cummax() - 1).min() * 100), 1)),
+            "贏0050年數": f"{int((yr['策略%'] > yr['0050%']).sum())}/{len(yr)}", "逐年": {int(k): (v["策略%"], v["0050%"]) for k, v in yr.iterrows()}}
+
+def simulate2(mode, n=20, keep_rank=20, cost=1.1):
+    """mode='a20'：依 20 日均額加權（單檔上限 15%）；mode='vs0050'：r120 不到 0050 的格子改放 0050。回傳每月 r（已扣成本）、b。"""
+    rows, held = [], []
+    for a, b_ in zip(FDS[:-1], FDS[1:]):
+        ta, tb = POS[a], POS[b_]; g = G[a]; rank = {c: i + 1 for i, c in enumerate(g.code)}
+        keep = [c for c in held if rank.get(c, 1e9) <= keep_rank]; new = [c for c in g.code if c not in keep][:n - len(keep)]
+        sells = len([c for c in held if c not in keep]); to = 1.0 if not held else sells / n
+        b = (bidx[tb] / bidx[ta] - 1) * 100; b120 = bidx[ta] / bidx[ta - 120] - 1 if ta >= 120 else np.nan
+        info = g.set_index("code"); picks, hold_next = [], []
+        for c in keep + new:
+            j = CJ[c]
+            if c in new and (not (Ov[ta + 1, j] > 0) or lockn[ta, j]): continue
+            o = Ov[ta + 1, j] if Ov[ta + 1, j] > 0 else Cff[ta, j]; ex = px_exit(tb, j)
+            if np.isfinite(ex) and np.isfinite(o) and o > 0: picks.append((c, (ex / o - 1) * 100, float(info.loc[c, "a20"]), float(info.loc[c, "r120"]))); hold_next.append(c)
+        held = hold_next
+        if not picks: rows.append({"date": a, "r": b, "b": b}); continue
+        P_ = pd.DataFrame(picks, columns=["code", "y", "a20", "r120"])
+        if mode == "a20":
+            w = P_.a20.fillna(P_.a20.median()).clip(lower=1).values.astype(float); w = w / w.sum()
+            for _ in range(20):
+                over = w > 0.15
+                if not over.any(): break
+                ex_ = (w[over] - 0.15).sum(); w[over] = 0.15; w[~over] += ex_ * w[~over] / w[~over].sum()
+            r = float((P_.y.values * w).sum()) - cost * to
+        else:
+            weak = P_.r120.values < b120 if np.isfinite(b120) else np.zeros(len(P_), bool)
+            k = len(P_); r = (P_.y.values[~weak].sum() + weak.sum() * b) / k - cost * to * (1 - weak.mean())
+        rows.append({"date": a, "r": r, "b": b})
+    T = pd.DataFrame(rows).set_index("date"); T.index = pd.DatetimeIndex(T.index); return T
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "r2":
+    out = {}
+    for cost in (1.1, 0.6):
+        base = simulate(20); x0 = base.g - cost * base.to - base.b
+        sig = pd.Series([x0.iloc[max(0, i - 7):max(0, i - 1)].std(ddof=1) if i >= 7 else np.nan for i in range(len(x0))], index=x0.index)
+        tgt = sig.expanding(min_periods=6).median(); w = (tgt / sig).clip(upper=1.0).fillna(1.0)
+        x1 = w * x0 - 0.5 * cost * w.diff().abs().fillna(0)
+        out[f"V1 波動控管 成本{cost}%"] = evaluate_x(x1, base.b + x1, base.b); out[f"V1 平均選股比重 成本{cost}%"] = round(float(w.mean()), 2)
+        T2 = simulate2("a20", cost=cost); out[f"V2 成交值加權 成本{cost}%"] = evaluate_x(T2.r - T2.b, T2.r, T2.b)
+        T3 = simulate2("vs0050", cost=cost); out[f"V3 逐檔和0050比強弱 成本{cost}%"] = evaluate_x(T3.r - T3.b, T3.r, T3.b)
+    for k, v in out.items(): print(k, {kk: vv for kk, vv in v.items() if kk != "逐年"} if isinstance(v, dict) else v, flush=True)
+    json.dump(out, open(f"{REPO}/research/results/top20_goal_r2.json", "w"), ensure_ascii=False, indent=1)
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "r3":
+    out = {}
+    for lab, n in (("W30 前30", 30), ("W40 前40", 40)):
+        T = simulate(n, n=n); out[lab] = {"成本1.1%": evaluate(T, 1.1), "成本0.6%": evaluate(T, 0.6)}
+        print(lab, "1.1%:", {k: v for k, v in out[lab]["成本1.1%"].items() if k != "逐年"}, "| 0.6%:", out[lab]["成本0.6%"]["減0050 全期"], out[lab]["成本0.6%"]["發現期外"], out[lab]["成本0.6%"]["達標"], flush=True)
+    json.dump(out, open(f"{REPO}/research/results/top20_goal_r3.json", "w"), ensure_ascii=False, indent=1)
