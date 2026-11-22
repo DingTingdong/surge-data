@@ -395,6 +395,37 @@ try:
     while _nx.weekday() >= 5: _nx += pd.Timedelta(days=1)
     m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
                 "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
+    # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 1.1% × 換股比例；0050 同段含息
+    _hist = []
+    if os.path.exists(T20_LOG):
+        _tl = pd.read_csv(T20_LOG, dtype={"code": str}); _fl = sorted(_tl.date.unique()); _prev = set()
+        _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
+        if _e5 is not None: _e5 = _e5[_e5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
+        _aj5 = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj5 = _aj5[_aj5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
+        for _k, _f0 in enumerate(_fl):
+            _t0 = pd.Timestamp(_f0)
+            if _t0 not in days or days.get_loc(_t0) + 1 >= len(days): continue
+            _i0 = days.get_loc(_t0) + 1; _i1 = None
+            if _k + 1 < len(_fl) and pd.Timestamp(_fl[_k + 1]) in days and days.get_loc(pd.Timestamp(_fl[_k + 1])) + 1 < len(days): _i1 = days.get_loc(pd.Timestamp(_fl[_k + 1])) + 1
+            _codes = _tl[_tl.date == _f0].code.tolist(); _rr = []
+            for c in _codes:
+                if c not in C.columns: continue
+                _o = O.iloc[_i0][c]; _pc = C.iloc[_i0 - 1][c]
+                if c not in _prev and (not (_o == _o and _o > 0) or (_o == H.iloc[_i0][c] == L.iloc[_i0][c] and _pc == _pc and _o / _pc - 1 >= LOCK)): continue
+                _x = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
+                _rr.append((float(_x) / float(_o if _o == _o and _o > 0 else _pc) - 1) * 100)
+            _to = 1.0 if not _prev else len(set(_codes) - _prev) / 20; _prev = set(_codes)
+            _bb = None
+            if _e5 is not None and days[_i0] in _e5.index:
+                _xe = days[_i1] if _i1 is not None else days[-1]
+                _px1 = float(_e5.open.get(_xe, np.nan)) if _i1 is not None else float(_e5.close.loc[:_xe].iloc[-1])
+                _dv = float(_aj5[(_aj5.date > days[_i0]) & (_aj5.date <= _xe)].ratio.prod()) if len(_aj5) else 1.0
+                if _px1 == _px1: _bb = round((_px1 / float(_e5.open[days[_i0]]) / _dv - 1) * 100, 1)
+            _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 1.1 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
+                          "late": str(_tl[_tl.date == _f0].logged.iloc[0]) > _f0})
+    m20_meta["hist"] = _hist
+    _ok = [h for h in _hist if h["r"] is not None and h["b"] is not None and not h["late"]]
+    m20_meta["fwd"] = {"n": len(_ok), "r": round((np.prod([1 + h["r"] / 100 for h in _ok]) - 1) * 100, 1), "b": round((np.prod([1 + h["b"] / 100 for h in _ok]) - 1) * 100, 1)} if _ok else None
 except Exception as _e:
     print("top20 skipped:", _e)
 
