@@ -27,17 +27,19 @@ COMP = ["r20", "mom6_1", "d_hi250", "m60", "am", "yoy1", "yoy3", "rev_acc", "rev
 LOCK = 0.095; CACHE = "/tmp/model_v2/vs0050.pkl"
 FDX = os.environ.get("FD_OFFSETS")  # 11/22 加：例如 "0,2,4"＝每月 11 日後第 1、3、5 個交易日都存快照（給 top20_goal 第 4 輪用）；不設時結果完全不變
 if FDX: CACHE = CACHE.replace(".pkl", "_fdx.pkl")
+OLDEST = os.environ.get("INCLUDE_OLDEST") == "1"  # 11/22 加：多讀 data/oldest（2005–2009，給 oos_2006.py）；不設時結果完全不變
+if OLDEST: CACHE = CACHE.replace(".pkl", "_oldest.pkl")
 PER = ("2011-15", "2016-19", "2020-23", "2024-26")
 
 def make_root():
-    r = "/tmp/root_all"; d = r + "/data"
+    r = "/tmp/root_all" + ("_oldest" if OLDEST else ""); d = r + "/data"
     if os.path.exists(r): shutil.rmtree(r)
     for sub in ("history", "chips", "revenue"): os.makedirs(f"{d}/{sub}")
     hist, chips, rev = {}, {}, {}
-    for s in ("older/", "old/", ""):
+    for s in (("oldest/",) if OLDEST else ()) + ("older/", "old/", ""):
         for fn in sorted(glob.glob(f"{REPO}/data/{s}history/*.csv.gz")): hist.setdefault(os.path.basename(fn), []).append(fn)
         for fn in sorted(glob.glob(f"{REPO}/data/{s}chips/*.csv*")): chips.setdefault(os.path.basename(fn), []).append(fn)
-    for s in ("", "older/", "old/"):  # 營收同年份：新資料優先，其次 older（同 offense.py／older_era.py）
+    for s in ("",) + (("oldest/",) if OLDEST else ()) + ("older/", "old/"):  # 營收同年份（oldest 的 2009 是整年，older 的 2009 只有 12 月）：新資料優先，其次 older（同 offense.py／older_era.py）
         for fn in sorted(glob.glob(f"{REPO}/data/{s}revenue/*.csv*")): rev.setdefault(os.path.basename(fn), fn)
     for dic, sub in ((hist, "history"), (chips, "chips")):
         for name, fns in dic.items():
@@ -45,7 +47,7 @@ def make_root():
             else: pd.concat([pd.read_csv(x, dtype={"code": str}) for x in fns]).drop_duplicates(["date", "market", "code"], keep="last").to_csv(f"{d}/{sub}/{name}", index=False)
     for name, fn in rev.items(): os.symlink(fn, f"{d}/revenue/{name}")
     for name in ("adjust.csv", "disposal.csv"):
-        pd.concat([pd.read_csv(f"{REPO}/data/{s}{name}", dtype={"code": str}) for s in ("older/", "old/", "")]).drop_duplicates().to_csv(f"{d}/{name}", index=False)
+        pd.concat([pd.read_csv(f"{REPO}/data/{s}{name}", dtype={"code": str}) for s in (("oldest/",) if OLDEST else ()) + ("older/", "old/", "") if os.path.exists(f"{REPO}/data/{s}{name}")]).drop_duplicates().to_csv(f"{d}/{name}", index=False)
     for name in ("industry.csv", "prices.csv"): os.symlink(f"{REPO}/data/{name}", f"{d}/{name}")
     print("合併的年份檔：", {k: len(v) for k, v in hist.items() if len(v) > 1}, {k: len(v) for k, v in chips.items() if len(v) > 1}, flush=True)
     return r
