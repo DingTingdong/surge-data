@@ -24,7 +24,7 @@ for enc in ("utf-8-sig", "big5", "cp950"):
     except Exception: d = None
 if d is None: print("parse failed", raw[:300]); sys.exit(0)
 d.columns = [c.strip().replace("\ufeff", "") for c in d.columns]
-d = d.apply(lambda s: s.str.strip().str.strip('="') if s.dtype == object else s)
+d = d.apply(lambda s: s.astype(str).str.strip().str.strip('="'))   # 代號補滿 6 格空白（例：'2330  '）
 print("columns", list(d.columns)); print(d.head(3).to_string())
 dcs = [c for c in d.columns if "日期" in c]; ccs = [c for c in d.columns if "代號" in c]
 if not dcs or not ccs: print("unexpected columns"); sys.exit(0)
