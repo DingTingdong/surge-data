@@ -29,18 +29,24 @@ FDX = os.environ.get("FD_OFFSETS")  # 11/22 加：例如 "0,2,4"＝每月 11 日
 if FDX: CACHE = CACHE.replace(".pkl", "_fdx.pkl")
 OLDEST = os.environ.get("INCLUDE_OLDEST") == "1"  # 11/22 加：多讀 data/oldest（2005–2009，給 oos_2006.py）；不設時結果完全不變
 if OLDEST: CACHE = CACHE.replace(".pkl", "_oldest.pkl")
+OLDEST_ONLY = os.environ.get("OLDEST_ONLY") == "1"  # 11/23 加：只讀 2005–2010（data/oldest＋data/older 的 2010），整段 2005–2026 會超過記憶體
+if OLDEST_ONLY: OLDEST = True; CACHE = "/tmp/model_v2/vs0050_oldestonly.pkl"
 PER = ("2011-15", "2016-19", "2020-23", "2024-26")
 
 def make_root():
-    r = "/tmp/root_all" + ("_oldest" if OLDEST else ""); d = r + "/data"
+    r = "/tmp/root_all" + ("_oldestonly" if OLDEST_ONLY else "_oldest" if OLDEST else ""); d = r + "/data"
     if os.path.exists(r): shutil.rmtree(r)
     for sub in ("history", "chips", "revenue"): os.makedirs(f"{d}/{sub}")
     hist, chips, rev = {}, {}, {}
-    for s in (("oldest/",) if OLDEST else ()) + ("older/", "old/", ""):
-        for fn in sorted(glob.glob(f"{REPO}/data/{s}history/*.csv.gz")): hist.setdefault(os.path.basename(fn), []).append(fn)
-        for fn in sorted(glob.glob(f"{REPO}/data/{s}chips/*.csv*")): chips.setdefault(os.path.basename(fn), []).append(fn)
-    for s in ("",) + (("oldest/",) if OLDEST else ()) + ("older/", "old/"):  # 營收同年份（oldest 的 2009 是整年，older 的 2009 只有 12 月）：新資料優先，其次 older（同 offense.py／older_era.py）
-        for fn in sorted(glob.glob(f"{REPO}/data/{s}revenue/*.csv*")): rev.setdefault(os.path.basename(fn), fn)
+    keep_y = (lambda fn: os.path.basename(fn)[:4] <= "2010") if OLDEST_ONLY else (lambda fn: True)
+    for s in (("oldest/",) if OLDEST else ()) + ((("older/",)) if OLDEST_ONLY else ("older/", "old/", "")):
+        for fn in sorted(glob.glob(f"{REPO}/data/{s}history/*.csv.gz")):
+            if keep_y(fn): hist.setdefault(os.path.basename(fn), []).append(fn)
+        for fn in sorted(glob.glob(f"{REPO}/data/{s}chips/*.csv*")):
+            if keep_y(fn): chips.setdefault(os.path.basename(fn), []).append(fn)
+    for s in ((("oldest/", "older/")) if OLDEST_ONLY else (("",) + (("oldest/",) if OLDEST else ()) + ("older/", "old/"))):  # 營收同年份（oldest 的 2009 是整年，older 的 2009 只有 12 月）：新資料優先，其次 older（同 offense.py／older_era.py）
+        for fn in sorted(glob.glob(f"{REPO}/data/{s}revenue/*.csv*")):
+            if keep_y(fn): rev.setdefault(os.path.basename(fn), fn)
     for dic, sub in ((hist, "history"), (chips, "chips")):
         for name, fns in dic.items():
             if len(fns) == 1: os.symlink(fns[0], f"{d}/{sub}/{name}")
@@ -48,12 +54,12 @@ def make_root():
     for name, fn in rev.items(): os.symlink(fn, f"{d}/revenue/{name}")
     for name in ("adjust.csv", "disposal.csv"):
         pd.concat([pd.read_csv(f"{REPO}/data/{s}{name}", dtype={"code": str}) for s in (("oldest/",) if OLDEST else ()) + ("older/", "old/", "") if os.path.exists(f"{REPO}/data/{s}{name}")]).drop_duplicates().to_csv(f"{d}/{name}", index=False)
-    for name in ("industry.csv", "prices.csv"): os.symlink(f"{REPO}/data/{name}", f"{d}/{name}")
+    for name in (("industry.csv",) if OLDEST_ONLY else ("industry.csv", "prices.csv")): os.symlink(f"{REPO}/data/{name}", f"{d}/{name}")
     print("合併的年份檔：", {k: len(v) for k, v in hist.items() if len(v) > 1}, {k: len(v) for k, v in chips.items() if len(v) > 1}, flush=True)
     return r
 
 def bench(days):
-    fs = sorted(glob.glob("data/history/*.csv.gz")) + ["data/prices.csv"]
+    fs = sorted(glob.glob("data/history/*.csv.gz")) + (["data/prices.csv"] if os.path.exists("data/prices.csv") else [])
     s = pd.concat([pd.read_csv(f, usecols=["date", "code", "close"], dtype={"code": str}).query("code == '0050'") for f in fs])
     s = s.assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").close.sort_index()
     adj = pd.read_csv("data/adjust.csv", dtype={"code": str}); adj = adj[adj.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).groupby("date").ratio.prod()

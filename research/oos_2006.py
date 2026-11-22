@@ -17,11 +17,17 @@
   X1 規則照 top20_exits.py（收盤比這期起點價低 10% → 隔天開盤賣，資金放 0050 到下次換股日；停損賣出算換股成本，0050 進出扣 0.2%）。
   網站加停損的條件（三項都要）：2006–2009（成本 0.6%）X1 每月減 0050 平均 > 0；X1 的最大回落比基準淺；X1 每月減 0050 不比基準少 0.3 個百分點以上。
   符合 → 「月選」分頁顯示每檔的停損價（這期起點價 × 0.9），說明改成含停損的版本；不符合 → 維持現狀。
+結果（11/23 00:15）：
+  資料：上市 2005–2009 每日都有，上櫃 2007/7/2 起；營收 2004–2009 每月 1,170–1,310 家；無抓取失敗。0050 逐年 2006 +21.1、2007 +10.3、2008 −43.3、2009 +75.0。
+  月選（成本 0.6%）：每月減 0050 +1.23（t 1.48）→ 未達 t ≥ 2.0，「新期間也成立」＝否。四年都贏 0050（30.4/15.1、22.4/6.3、−39.9/−41.3、130.3/84.6），
+    每月贏 0050 58%；減等權 +0.56（t 0.99）→ 這段挑股優勢弱；最大回落 −55.3（0050 −51.2）。成本 1.1% +0.82（t 0.99）。只用上市股 +1.14（t 1.35）。V1 +1.04（t 1.31）。
+  10% 停損：+0.27（t 0.36），最大回落 −65.0（基準 −55.3）→ 網站加停損＝否（大跌後急彈時被停損出場）。
 """
 import glob, json, os, sys, numpy as np, pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE); sys.path.insert(0, HERE)
 from vs0050 import COMP, nw_t
-X = pd.read_pickle("/tmp/model_v2/vs0050_oldest_extra.pkl"); days, cols = X["days"], X["cols"]; Ov, Cv, lockn, bidx = X["O"], X["C"], X["lockn"], X["bidx"]
+# 11/23：快照只建 2005–2010（整段 2005–2026 會超過記憶體），用 OLDEST_ONLY=1 建
+X = pd.read_pickle("/tmp/model_v2/vs0050_oldestonly_extra.pkl"); days, cols = X["days"], X["cols"]; Ov, Cv, lockn, bidx = X["O"], X["C"], X["lockn"], X["bidx"]
 Cff = pd.DataFrame(Cv).ffill(limit=60).values; POS = {d: i for i, d in enumerate(days)}; CJ = {c: j for j, c in enumerate(cols)}; ND = len(days)
 F = X["fd"].copy(); F = F[(F.date >= "2005-07-01") & (F.date < "2010-03-01")]
 F["cs"] = np.mean([F.groupby("date")[c].rank(pct=True).fillna(0.5).values for c in COMP], axis=0)
