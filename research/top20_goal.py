@@ -27,6 +27,8 @@
 第 3 輪（11/22 20:30 登錄；累計 7 個規則，門檻 t ≥ 2.9）：持股數。依據：Grinold 主動管理基本法則（資訊比率 ≈ 預測力 × √持股廣度），
   分數在前 20 名以外仍有預測力（offense.py H4、deep_normal 五等分差），擴大持股可降低和 0050 的差距波動。
   W30：分數前 30 檔等權（還在前 30 的不賣）；W40：前 40 檔等權（還在前 40 的不賣）。其餘同第 1 輪。
+  第 3 輪結果（11/22，成本 1.1%）：W30 +1.16（t 2.44）、W40 +0.96（t 2.14），都比前 20 差 → 不達標。
+  依第 1 輪事先定的規則：都不達標 → 網站分頁（11/22 上線，名稱「月選」）用基準前 20，並標明以 1.1% 成本計尚未達標。
 """
 import os, sys, json, numpy as np, pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE); sys.path.insert(0, HERE)

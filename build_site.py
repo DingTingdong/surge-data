@@ -354,6 +354,50 @@ if cscore and set(cscore) & set(S[(S.date == days[-1]) & S.pk].code) and (_cl is
                           "panic": int(int(bear.iloc[-10:].max()) >= 750)} for c, v in sorted(cscore.items()) if c in _pkset])
     pd.concat([_cl, _new], ignore_index=True).to_csv(CL, index=False) if _cl is not None else _new.to_csv(CL, index=False)
 
+# ---- 每月前20（research/top20_goal.py 的基準規則；research/top20_exact.py 回測）----
+# 每月 11 日後第一個交易日收盤後，分析範圍內「趨勢＋營收」分數最高的 20 檔，隔天開盤買；下次換股日還在前 20 的續抱。
+# 名單第一次算出（而且當天融資資料已更新）就記到 data/top20_log.csv，只增不改；之後的報酬才是真正的前瞻驗證。
+T20_LOG = "data/top20_log.csv"; m20 = {}; m20_meta = None
+try:
+    import composite_score as _cs2
+    _dsr = pd.Series(days); _fdm = _dsr[_dsr.dt.day >= 11].groupby(_dsr.dt.to_period("M")).first()
+    _form = _fdm.iloc[-1]; _fs = _form.strftime("%Y-%m-%d")
+    _t20 = pd.read_csv(T20_LOG, dtype={"code": str}) if os.path.exists(T20_LOG) else None
+    import glob as _g2; _chfs = sorted(_g2.glob("data/chips/*.csv*"), key=lambda x: (os.path.basename(x)[:4], x.endswith(".csv"))); _chf = _chfs[-1] if _chfs else None
+    _chip_ok = _chf is not None and pd.Timestamp(pd.read_csv(_chf, usecols=["date"]).date.max()) >= _form
+    if _t20 is not None and _fs in set(_t20.date):
+        _cur = _t20[_t20.date == _fs].sort_values("rank"); _logged = str(_cur.logged.iloc[0])
+    else:
+        _bs = S[(S.date == _form) & S.base].code.tolist()
+        _sc = _cs2.scores(P, f, S, _form, _bs)
+        _top = sorted(_sc.items(), key=lambda kv: (-kv[1], kv[0]))[:20]
+        _logged = (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d")
+        _cur = pd.DataFrame([{"date": _fs, "rank": i + 1, "code": c, "name": name.get(c, ""), "score": round(v, 4), "logged": _logged} for i, (c, v) in enumerate(_top)])
+        if _chip_ok and len(_cur) == 20:
+            pd.concat([_t20, _cur], ignore_index=True).to_csv(T20_LOG, index=False) if _t20 is not None else _cur.to_csv(T20_LOG, index=False)
+    _ie = days.get_loc(_form) + 1; _rets = []
+    for c, rk in zip(_cur.code, _cur["rank"]):
+        m20[c] = {"m20": int(rk)}
+        if _ie < len(days) and c in C.columns:
+            _o, _h, _l = O.iloc[_ie][c], H.iloc[_ie][c], L.iloc[_ie][c]; _pc = C.iloc[_ie - 1][c]
+            if not (_o == _o and _o > 0) or (_o == _h == _l and _pc == _pc and _o / _pc - 1 >= LOCK): m20[c]["m20x"] = 1; continue
+            _v = C[c].iloc[_ie:].dropna()
+            if len(_v): _r = (float(_v.iloc[-1]) / float(_o) - 1) * 100; m20[c]["m20r"] = round(_r, 1); _rets.append(_r)
+    _b = None
+    if _ie < len(days) and os.path.exists("data/etf.csv"):
+        _e = pd.read_csv("data/etf.csv", dtype={"code": str}); _e = _e[_e.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
+        _aj = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj = _aj[_aj.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
+        _d0 = days[_ie]
+        if _d0 in _e.index and _e.open.get(_d0, np.nan) > 0:
+            _div = float(_aj[(_aj.date > _d0) & (_aj.date <= days[-1])].ratio.prod()) if len(_aj) else 1.0
+            _b = round((float(_e.close.loc[:days[-1]].iloc[-1]) / float(_e.open[_d0]) / _div - 1) * 100, 1)
+    _nx = (_form + pd.offsets.MonthBegin(1)).replace(day=11)
+    while _nx.weekday() >= 5: _nx += pd.Timedelta(days=1)
+    m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
+                "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
+except Exception as _e:
+    print("top20 skipped:", _e)
+
 RL_LOG = "data/relaunch_log.csv"  # 每天全部記下（不論恐慌與否），之後驗證；只增不改
 _rl = pd.read_csv(RL_LOG, dtype={"code": str}) if os.path.exists(RL_LOG) else None
 _rlpmax = int(bear.iloc[-10:].max())
@@ -408,6 +452,7 @@ for code, r in d.iterrows():
     if code in relaunch: x["rl"] = 1
     if code in mscore: x["ms"] = mscore[code][1]
     if code in cscore: x["cs"] = round(cscore[code], 2)
+    if code in m20: x.update(m20[code])
     if code in nhev:
         _d, _c0, _, _pp = nhev[code]; x["nh"] = _d.strftime("%m/%d"); x["nhp"] = _pp
         if _c0 > 0 and code in P["rawC"].columns and P["rawC"][code].iloc[-1] == P["rawC"][code].iloc[-1]: x["nhr"] = round((float(P["rawC"][code].iloc[-1]) / _c0 - 1) * 100, 1)
@@ -466,7 +511,7 @@ if os.path.exists(PANIC_LOG):
 
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "m20": m20_meta,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
