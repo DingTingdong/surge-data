@@ -40,6 +40,7 @@ jobs:
       - run: python fetch_revenue.py || echo 'revenue fetch failed, continuing'
       - run: python fetch_etf.py || echo 'etf fetch failed, continuing'
       - run: python tools/fetch_fin.py pit || echo 'fin pit archive failed, continuing'
+      - run: python fetch_tdcc.py || echo 'tdcc fetch failed, continuing'
       - run: python build_site.py
       - name: commit
         run: |
