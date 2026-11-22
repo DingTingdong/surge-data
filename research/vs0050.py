@@ -25,6 +25,8 @@ warnings.filterwarnings("ignore")
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE); sys.path.insert(0, REPO)
 COMP = ["r20", "mom6_1", "d_hi250", "m60", "am", "yoy1", "yoy3", "rev_acc", "rev_hi12", "mom1", "mg20", "rs_g20"]
 LOCK = 0.095; CACHE = "/tmp/model_v2/vs0050.pkl"
+FDX = os.environ.get("FD_OFFSETS")  # 11/22 加：例如 "0,2,4"＝每月 11 日後第 1、3、5 個交易日都存快照（給 top20_goal 第 4 輪用）；不設時結果完全不變
+if FDX: CACHE = CACHE.replace(".pkl", "_fdx.pkl")
 PER = ("2011-15", "2016-19", "2020-23", "2024-26")
 
 def make_root():
@@ -85,9 +87,11 @@ def build():
     pm = pd.DataFrame(Cv).shift(1).expanding().max().values; isath = (Cv > pm) & (prior >= 750)
     recent = pd.DataFrame(isath.astype(float)).shift(1).rolling(60, min_periods=1).max().fillna(0).values > 0
     nhm = isath & ~recent & inb & (ch.values < lim.values[:, None])
-    dser = pd.Series(days); fd = set(dser[dser.dt.day >= 11].groupby(dser.dt.to_period("M")).first())
+    dser = pd.Series(days); _gm = dser[dser.dt.day >= 11].groupby(dser.dt.to_period("M")); fd = set(_gm.first()); fdx = set(fd)
+    if FDX:
+        for _k in [int(x) for x in FDX.split(",") if int(x) > 0]: fdx |= set(_gm.nth(_k))
     dpos = {d: i for i, d in enumerate(days)}; cpos = {c: j for j, c in enumerate(cols)}
-    B = S[S.base & S.date.isin(fd)]; parts = []
+    B = S[S.base & S.date.isin(fdx)]; parts = []
     for kind, m in (("pk", pkm), ("nh", nhm)):
         t_, j_ = np.nonzero(m); parts.append(pd.DataFrame({"ti": t_, "ji": j_, "kind": kind}))
     parts.append(pd.DataFrame({"ti": B.date.map(dpos).values, "ji": B.code.map(cpos).values, "kind": "fd"}))
@@ -143,7 +147,7 @@ def build():
     pd.to_pickle({"fd": R[R.kind == "fd"].drop(columns=["ti", "ji"]), "days": days, "cols": cols, "C": C.values, "O": Ov, "lockn": lockn, "bidx": bidx, "inb": inb},
                  CACHE.replace(".pkl", "_extra.pkl"))  # 11/22 加：給 directions.py 用
     # 分數：對「事件日當天或之前最近一次每月快照」算百分位
-    U = R[R.kind == "fd"]; fds = np.array(sorted(U.date.unique())); K = R[R.kind != "fd"].copy()
+    U = R[(R.kind == "fd") & R.date.isin(fd)]; fds = np.array(sorted(U.date.unique())); K = R[R.kind != "fd"].copy()
     ri = np.searchsorted(fds, K.date.values, side="right") - 1; K["ref"] = np.where(ri >= 0, fds[np.maximum(ri, 0)], np.datetime64("NaT"))
     sc = np.zeros(len(K)); refs = {d: g_ for d, g_ in U.groupby("date")}
     for fc in COMP:

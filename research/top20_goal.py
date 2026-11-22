@@ -42,6 +42,12 @@
   判斷「穩」：a–e 每個變化都要「全期每月減 0050 > 0 且 t ≥ 2、2024–26 > 0」；f 的 200 次中至少 90% 全期 > 0。
   穩 → 網站「月選」改用 V1（顯示本期選股比重，其餘放 0050）；不穩 → 維持基準前 20。
   另報穩定度：16 年中贏 0050 的年數、有沒有連兩年輸、滾動 12 個月贏 0050 的比例、最差的滾動 12 個月、最大回落。
+  第 4 輪結果（11/22）：不穩 → 網站維持基準前 20。
+    通過：a 回看 3／12 個月、目標用平均；c 晚一天進場 +1.42（t 3.32）；e 成本 1.1% +1.29（t 2.95）；f 隨機抽 200 次 100% 全期 > 0（中位數 +1.12）。
+    沒過：b 換股日改第 3 個交易日 +1.19（t 2.74）但 2024–26 −0.44、發現期外 t 1.33；第 5 個交易日 +1.09，2024–26 −0.40；
+          d 每月扣掉最好 1 檔 −0.13。（另報：隨機 20 檔一般股票扣掉最好 1 檔也從 −1.13 掉到 −2.52；前 20 扣掉後仍比它高 2.27，挑股能力還在，
+          但「贏 0050」靠每月抓到大漲股。前 20 有 58% 的月份贏 0050，每月中位數 +1.33。）
+    解讀：優勢集中在月營收公布後的頭幾天，要在換股日當天選、隔天開盤買；越晚越弱。
 """
 import os, sys, json, numpy as np, pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE); sys.path.insert(0, HERE)
@@ -157,3 +163,79 @@ if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "r3":
         T = simulate(n, n=n); out[lab] = {"成本1.1%": evaluate(T, 1.1), "成本0.6%": evaluate(T, 0.6)}
         print(lab, "1.1%:", {k: v for k, v in out[lab]["成本1.1%"].items() if k != "逐年"}, "| 0.6%:", out[lab]["成本0.6%"]["減0050 全期"], out[lab]["成本0.6%"]["發現期外"], out[lab]["成本0.6%"]["達標"], flush=True)
     json.dump(out, open(f"{REPO}/research/results/top20_goal_r3.json", "w"), ensure_ascii=False, indent=1)
+
+# ---------------- 第 4 輪：V1 穩健度檢查 ----------------
+def v1_apply(T, cost, look=6, tgt="median"):
+    x0 = T.g - cost * T.to - T.b
+    sig = pd.Series([x0.iloc[max(0, i - look - 1):max(0, i - 1)].std(ddof=1) if i >= look + 1 else np.nan for i in range(len(x0))], index=x0.index)
+    t_ = sig.expanding(min_periods=6).median() if tgt == "median" else sig.expanding(min_periods=6).mean()
+    w = (t_ / sig).clip(upper=1.0).fillna(1.0)
+    x1 = w * x0 - 0.5 * cost * w.diff().abs().fillna(0)
+    return x1, T.b + x1, w
+
+def stability(x, r, b):
+    pr = per(x.index); yr = pd.DataFrame({"s": (1 + r / 100).groupby(x.index.year).prod(), "b": (1 + b / 100).groupby(x.index.year).prod()})
+    lose = (yr.s <= yr.b).values; consec = any(lose[i] and lose[i + 1] for i in range(len(lose) - 1))
+    rs = (1 + r / 100).rolling(12).apply(np.prod, raw=True); rb = (1 + b / 100).rolling(12).apply(np.prod, raw=True); rel = (rs / rb - 1).dropna() * 100
+    w, wb = (1 + r / 100).cumprod(), (1 + b / 100).cumprod(); yrs = (x.index[-1] - x.index[0]).days / 365.25 + 1 / 12
+    return {"全期": (round(float(x.mean()), 2), round(nw_t(x, 1), 2)), "2024-26": round(float(x[pr == "2024-26"].mean()), 2),
+            "四段": {p: round(float(x[pr == p].mean()), 2) for p in PER}, "發現期外": (round(float(x[pr != "2020-23"].mean()), 2), round(nw_t(x[pr != "2020-23"], 1), 2)),
+            "贏0050年數": f"{int((~lose).sum())}/{len(lose)}", "連兩年輸": bool(consec), "滾動12月贏0050%": round(float((rel > 0).mean() * 100), 0),
+            "最差滾動12月%": round(float(rel.min()), 1), "最大回落 策略/0050": (round(float((w / w.cummax() - 1).min() * 100), 1), round(float((wb / wb.cummax() - 1).min() * 100), 1)),
+            "年化 策略/0050": (round(float(w.iloc[-1] ** (1 / yrs) - 1) * 100, 1), round(float(wb.iloc[-1] ** (1 / yrs) - 1) * 100, 1))}
+
+def sim_general(fds, G, n=20, keep_rank=20, off=1, drop_best=False, rnd=None):
+    rows, held = [], []
+    for a, b_ in zip(fds[:-1], fds[1:]):
+        ta, tb = POS[a], POS[b_]
+        if tb + off >= ND: break
+        g = G[a]
+        if rnd is not None:
+            pool = list(g.code[:40]); chosen = list(rnd.choice(pool, size=n, replace=False)); keep = [c for c in held if c in chosen]; new = [c for c in chosen if c not in keep]
+        else:
+            rank = {c: i + 1 for i, c in enumerate(g.code)}; keep = [c for c in held if rank.get(c, 1e9) <= keep_rank]; new = [c for c in g.code if c not in keep][:n - len(keep)]
+        sells = len([c for c in held if c not in keep]); to = 1.0 if not held else sells / n
+        rs, hn = [], []
+        for c in keep + new:
+            j = CJ[c]; ie = ta + off; ix = tb + off
+            if c in new and (not (Ov[ie, j] > 0) or lockn[ie - 1, j]): continue
+            o = Ov[ie, j] if Ov[ie, j] > 0 else Cff[ie - 1, j]
+            ex = Ov[ix, j] if ix < ND and Ov[ix, j] > 0 else Cff[min(ix, ND - 1), j]
+            if not np.isfinite(ex): ex = Cff[ix - 1, j]
+            if np.isfinite(ex) and np.isfinite(o) and o > 0: rs.append((ex / o - 1) * 100); hn.append(c)
+        held = hn
+        if drop_best and len(rs) > 1: rs = sorted(rs)[:-1]
+        rows.append({"date": a, "g": np.mean(rs) if rs else 0.0, "to": to, "b": (bidx[tb + off - 1] / bidx[ta + off - 1] - 1) * 100})
+    T = pd.DataFrame(rows).set_index("date"); T.index = pd.DatetimeIndex(T.index); return T
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "r4":
+    XX = pd.read_pickle("/tmp/model_v2/vs0050_fdx_extra.pkl"); FF = XX["fd"].copy(); FF = FF[FF.date >= "2011-01-01"]
+    FF["cs"] = np.mean([FF.groupby("date")[c].rank(pct=True).fillna(0.5).values for c in COMP], axis=0)
+    dser = pd.Series(sorted(FF.date.unique())); gm = dser.groupby(dser.dt.to_period("M"))
+    GG = {d: g.sort_values("cs", ascending=False).reset_index(drop=True) for d, g in FF.groupby("date")}
+    out, judge = {}, {}
+    def run(lab, T, cost=0.6, **kw):
+        x, r, w = v1_apply(T, cost, **kw); s = stability(x, r, T.b); out[lab] = s
+        ok = s["全期"][0] > 0 and s["全期"][1] >= 2 and s["2024-26"] > 0; judge[lab] = ok
+        print(lab, "穩" if ok else "不穩", {k: v for k, v in s.items() if k != "四段"}, flush=True); return x
+    T0 = sim_general(FDS, G)
+    # 基準與 V1 本身（另報穩定度）
+    s0 = stability(T0.g - 0.6 * T0.to - T0.b, T0.g - 0.6 * T0.to, T0.b); out["參考 基準前20（不控管）"] = s0; print("參考 基準前20", {k: v for k, v in s0.items() if k != "四段"})
+    run("V1 原設定（回看6、中位數）", T0)
+    run("a 回看3個月", T0, look=3); run("a 回看12個月", T0, look=12); run("a 目標用平均", T0, tgt="mean")
+    for k, nth in ((2, 1), (4, 2)):  # 每月只存了第 1、3、5 個交易日 → 存檔序號 0、1、2
+        fk = sorted(gm.nth(nth).values); fk = [pd.Timestamp(d) for d in fk]; Gk = {d: GG[d] for d in fk}
+        run(f"b 換股日改第{k + 1}個交易日", sim_general(fk, Gk))
+    run("c 晚一天進場", sim_general(FDS, G, off=2))
+    run("d 每月扣掉最好的1檔", sim_general(FDS, G, drop_best=True))
+    run("e 成本1.1%", T0, cost=1.1)
+    rng = np.random.default_rng(20261122); pos_ = []
+    for i in range(200):
+        Tr = sim_general(FDS, G, rnd=rng); x, r, w = v1_apply(Tr, 0.6); pos_.append((float(x.mean()), float(x[per(x.index) == "2024-26"].mean())))
+    pos_ = np.array(pos_); out["f 前40隨機抽20（200次）"] = {"全期>0比例%": round(float((pos_[:, 0] > 0).mean() * 100), 1), "全期平均 中位數/5%/95%": [round(float(np.percentile(pos_[:, 0], q)), 2) for q in (50, 5, 95)],
+                                                  "2024-26>0比例%": round(float((pos_[:, 1] > 0).mean() * 100), 1)}
+    judge["f"] = out["f 前40隨機抽20（200次）"]["全期>0比例%"] >= 90; print("f", out["f 前40隨機抽20（200次）"], flush=True)
+    w_now = v1_apply(T0, 0.6)[2]; out["V1 最近的選股比重"] = {str(k.date()): round(float(v), 2) for k, v in w_now.tail(8).items()}
+    out["判斷"] = {"各項": judge, "穩": bool(all(judge[k] for k in judge if not k.startswith("V1 原")))}
+    print("最近的選股比重", out["V1 最近的選股比重"]); print("判斷", out["判斷"])
+    json.dump(out, open(f"{REPO}/research/results/top20_goal_r4.json", "w"), ensure_ascii=False, indent=1)
