@@ -53,9 +53,9 @@ def make_root(kind):
 
 def bench_from_history(days):
     """0050 含息指數：從歷史行情原始檔（含 0050）＋除權息比例。"""
-    fs = sorted(glob.glob("data/history/*.csv.gz"))
+    fs = sorted(glob.glob("data/history/*.csv.gz")) + (["data/prices.csv"] if os.path.exists("data/prices.csv") else [])  # 11/22 修正：原本漏讀 prices.csv，2026 年 0050 報酬變成 0
     s = pd.concat([pd.read_csv(f, usecols=["date", "code", "close"], dtype={"code": str}).query("code == '0050'") for f in fs])
-    s = s.assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date").set_index("date").close.sort_index()
+    s = s.assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").close.sort_index()
     adj = pd.read_csv("data/adjust.csv", dtype={"code": str}); adj = adj[adj.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).groupby("date").ratio.prod()
     r = s / (s.shift(1) * adj.reindex(s.index).fillna(1.0)); r = r.where((r > 0.45) & (r < 2.2), 1.0).fillna(1.0)
     return r.cumprod().reindex(days).ffill()
