@@ -71,6 +71,16 @@ def main(start=None, end=None):
         rows, ok = month_rows(y, m)
         print(f"{y}-{m:02d}", len(rows), "rows" if ok else "FAILED", flush=True)
         if ok and rows: by_year.setdefault(y, {})[f"{y}-{m:02d}"] = rows
+    # 11/23 加：記下每家公司每月營收第一次被抓到的日期（台北時間），之後研究「營收一公布就買」用；只增不改
+    if not start:
+        seen_fn = "data/revenue_seen.csv"; tw_now = dt.datetime.utcnow() + dt.timedelta(hours=8)
+        seen = {(r[0], r[1]) for r in read(seen_fn)} if os.path.exists(seen_fn) else set()
+        add = [[ym, r[1], tw_now.strftime("%Y-%m-%d %H:%M")] for got in by_year.values() for ym, rs in got.items() for r in rs if (ym, r[1]) not in seen]
+        if add:
+            rows_all = (read(seen_fn) if os.path.exists(seen_fn) else []) + add
+            with open(seen_fn, "w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f); w.writerow(["ym", "code", "first_seen"]); w.writerows(rows_all)
+            print("revenue_seen +", len(add))
     for y, got in by_year.items():
         fn = f"data/revenue/{y}.csv" if y == today.year else f"data/revenue/{y}.csv.gz"
         old = [r for r in read(fn) if r[0] not in got]
