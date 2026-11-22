@@ -1,0 +1,33 @@
+name: merge-oldest
+# 把 oldest-era 某次執行已上傳的資料（artifacts）存進 data/oldest/（不重抓）
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          ls incoming | head -50
+          mkdir -p data/oldest/history data/oldest/chips data/oldest/revenue
+          for f in incoming/hist-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/oldest/history/$(basename $f | sed 's/hist-//')"; done
+          for f in incoming/chips-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/oldest/chips/$(basename $f | sed 's/chips-//')"; done
+          for f in incoming/revenue-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/oldest/revenue/$(basename $f | sed 's/revenue-//')"; done
+          for f in adjust.csv disposal.csv; do [ -f "incoming/$f" ] && cp "incoming/$f" data/oldest/; done
+          cat incoming/*.failed.txt incoming/*.closed.txt > data/oldest/fetch_notes.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/oldest
+          if ! git diff --cached --quiet; then git commit -q -m "oldest era data 2005-01..2009-12" && git pull --rebase -q && (git push || (sleep 20 && git pull --rebase -q && git push)); fi
