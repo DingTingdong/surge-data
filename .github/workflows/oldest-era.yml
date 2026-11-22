@@ -1,0 +1,56 @@
+name: oldest-era
+# 補抓 2005-01～2009-12 的資料到 data/oldest/（研究用的全新檢驗期，含 2008 金融海嘯；網站不讀）
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        type: boolean
+        default: true
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      OLD_START: "2005-01-01"
+      OLD_END: "2009-12-31"
+      REV_YEARS: "2004,2005,2006,2007,2008,2009"
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [prices-2005, prices-2006, prices-2007, prices-2008, prices-2009, chips-2005, chips-2006, chips-2007, chips-2008, chips-2009, misc]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas
+      - run: |
+          J="${{ matrix.job }}"; python tools/old_era.py ${J%%-*} $( [[ "$J" == *-* ]] && echo ${J##*-} )
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oldest-${{ matrix.job }}
+          path: out/
+  merge:
+    needs: fetch
+    if: ${{ always() && inputs.commit }}
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: |
+          ls -la incoming
+          mkdir -p data/oldest/history data/oldest/chips data/oldest/revenue
+          for f in incoming/hist-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/oldest/history/$(basename $f | sed 's/hist-//')"; done
+          for f in incoming/chips-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/oldest/chips/$(basename $f | sed 's/chips-//')"; done
+          for f in incoming/revenue-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/oldest/revenue/$(basename $f | sed 's/revenue-//')"; done
+          for f in adjust.csv disposal.csv; do [ -f "incoming/$f" ] && cp "incoming/$f" data/oldest/; done
+          cat incoming/*.failed.txt incoming/*.closed.txt > data/oldest/fetch_notes.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/oldest
+          if ! git diff --cached --quiet; then git commit -q -m "oldest era data 2005-01..2009-12" && git pull --rebase -q && git push; fi

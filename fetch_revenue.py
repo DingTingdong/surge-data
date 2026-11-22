@@ -18,9 +18,10 @@ def num(x):
 
 def month_rows(y, m):
     out, ok = {}, False
-    for mk in ("sii", "otc"):
-        for kind in (0, 1):  # 0 國內公司、1 外國公司（KY）
-            u = f"https://mopsov.twse.com.tw/nas/t21/{mk}/t21sc03_{y - 1911}_{m}_{kind}.html"
+    urls = [(mk, f"https://mopsov.twse.com.tw/nas/t21/{mk}/t21sc03_{y - 1911}_{m}_{kind}.html") for mk in ("sii", "otc") for kind in (0, 1)]  # 0 國內、1 外國（KY）
+    if y < 2010: urls = [(mk, f"https://mopsov.twse.com.tw/nas/t21/{mk}/t21sc03_{y - 1911}_{m}.html") for mk in ("sii", "otc")]  # 2009 年以前沒有國內／外國之分（11/22 探測）
+    for mk, u in urls:
+        if True:
             html = None
             for i in range(4):
                 try:
