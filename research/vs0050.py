@@ -138,7 +138,10 @@ def build():
             ix = (1 + rb[list(cs_)].mean(axis=1).fillna(0)).cumprod(); jj = [cols.get_loc(c) for c in cs_]
             g20[:, jj] = (ix / ix.shift(20) - 1).values[:, None]
         R["rs_g20"] = R.r20 - g20[ti, ji]
+        R["a20"] = take(A.rolling(20, min_periods=10).mean()); R["r120"] = take(C / C.shift(120) - 1)  # 11/22 加：給 directions.py 用，不影響本檔結果
     R = R.replace([np.inf, -np.inf], np.nan)
+    pd.to_pickle({"fd": R[R.kind == "fd"].drop(columns=["ti", "ji"]), "days": days, "cols": cols, "C": C.values, "O": Ov, "lockn": lockn, "bidx": bidx, "inb": inb},
+                 CACHE.replace(".pkl", "_extra.pkl"))  # 11/22 加：給 directions.py 用
     # 分數：對「事件日當天或之前最近一次每月快照」算百分位
     U = R[R.kind == "fd"]; fds = np.array(sorted(U.date.unique())); K = R[R.kind != "fd"].copy()
     ri = np.searchsorted(fds, K.date.values, side="right") - 1; K["ref"] = np.where(ri >= 0, fds[np.maximum(ri, 0)], np.datetime64("NaT"))
