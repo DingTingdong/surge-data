@@ -558,6 +558,20 @@ try:
 except Exception as _e:
     print("cb list skipped:", _e)
 
+# 封單過強（第 37 輪：今日發動收盤鎖死、封單 ÷ 成交量在近一年上市鎖死漲停的前 1/3，之後明顯較差；只有上市有資料）
+lockx = {}
+try:
+    _bf = sorted(_glob.glob("data/bidvol/*.csv.gz"))[-2:]
+    if _bf:
+        _bv = pd.concat([pd.read_csv(f_, dtype={"code": str}) for f_ in _bf], ignore_index=True); _bv["date"] = pd.to_datetime(_bv.date)
+        _bv = _bv[(_bv.market == "TWSE") & (_bv.chg / (_bv.close - _bv.chg) >= 0.09)].copy()
+        _bv["lk"] = (_bv.bid_px.round(2) == _bv.close.round(2)) & ~(_bv.ask_vol.fillna(0) > 0); _bv["L"] = np.where(_bv.lk, _bv.bid_vol / (_bv.vol / 1000).replace(0, np.nan), 0.0)
+        _h = _bv[(_bv.date > pd.Timestamp(days[-1]) - pd.Timedelta(days=365)) & (_bv.L > 0)]
+        if len(_h) > 100 and (_bv.date == pd.Timestamp(days[-1])).any():
+            _th = float(_h.L.quantile(2 / 3)); _t = _bv[(_bv.date == pd.Timestamp(days[-1])) & (_bv.L >= _th)]
+            lockx = {c: round(float(v), 2) for c, v in zip(_t.code, _t.L)}
+except Exception as _e:
+    print("lock skipped:", _e)
 _u10 = (P["C"].pct_change(fill_method=None).iloc[-10:] >= 0.09).sum()
 try:  # 盤中通知名單（data/notify_flags.json）：分數 ≥ 0.8、營收年增 ≥ 20% 且創 12 個月新高、借券不多、前 10 天沒漲停過
     import composite_score as _cs3
@@ -582,6 +596,7 @@ for code, r in d.iterrows():
     if code in cbinfo: x.update(cbinfo[code])
     if code in sbr: x["sbr"] = sbr[code]
     x["u10"] = int(_u10.get(code, 0))
+    if code in lockx: x["lkx"] = lockx[code]
     if code in nhev:
         _d, _c0, _, _pp = nhev[code]; x["nh"] = _d.strftime("%m/%d"); x["nhp"] = _pp
         if _c0 > 0 and code in P["rawC"].columns and P["rawC"][code].iloc[-1] == P["rawC"][code].iloc[-1]: x["nhr"] = round((float(P["rawC"][code].iloc[-1]) / _c0 - 1) * 100, 1)

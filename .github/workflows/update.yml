@@ -51,6 +51,9 @@ jobs:
       - run: python tools/fetch_sbl_daily.py || echo 'sbl daily fetch failed, continuing'
         timeout-minutes: 5
         continue-on-error: true
+      - run: python tools/fetch_bidvol_daily.py || echo 'bidvol daily fetch failed, continuing'
+        timeout-minutes: 5
+        continue-on-error: true
       - run: python build_site.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
