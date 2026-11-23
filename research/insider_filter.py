@@ -49,5 +49,15 @@ if __name__ == "__main__":
             res["分段 被標記/沒標記 20日減0050（筆數）"] = {k: (v.get(True), v.get(False)) for k, v in by.to_dict(orient="index").items()}
     b0, e = res["月選（原本）"], res["IX 排除內部人申報賣股"]
     res["IX 採用"] = bool(e["2011–2026 減0050"][1] >= 2.9 and all(v > 0 for v in e["五段"].values()) and e["最差段"] > b0["最差段"] and e["2011–2026 最大回落"] >= b0["2011–2026 最大回落"] - 3)
+    # IX-C（11/23 13:50 補充登錄）：穩健版 3 檔，標記的不新買、已持有被標記也賣出（分數設成 −1 → 掉出前 20）
+    from calm3 import sim_calm
+    from wr_confirm import stats
+    Dn = RS.load("/tmp/model_v2/vs0050_extra.pkl", "2011-01-01", "2027-01-01"); Do = RS.load("/tmp/model_v2/vs0050_oldestonly_extra.pkl", "2006-01-01", "2010-01-01")
+    s0 = stats(pd.concat([sim_calm(Do, 20), sim_calm(Dn, 20)]))
+    for D in (Dn, Do): D["F"] = flag(D["F"], I, None); D["F"]["cs"] = np.where(D["F"].ins, -1.0, D["F"].cs)
+    s1 = stats(pd.concat([sim_calm(Do, 20), sim_calm(Dn, 20)]))
+    res["穩健版"] = s0; res["IX-C 穩健版排除內部人申報賣股"] = s1
+    res["IX-C 採用"] = bool(s1["2011–2026"][0] > s0["2011–2026"][0] and s1["2011–2026"][1] >= 2.9 and sum(s1[k] >= s0[k] for k in RS.SEGS) >= 4 and s1["最大回落"] >= s0["最大回落"])
+    res["資料限制"] = "觀測站 report=SO 回傳的也是上市公司，上櫃完全沒抓到 → 只有上市股票會被標記"
     for k, v in res.items(): print("==", k, json.dumps(v, ensure_ascii=False, default=str))
     json.dump(res, open(f"{REPO}/research/results/insider_filter.json", "w"), ensure_ascii=False, indent=1, default=str)
