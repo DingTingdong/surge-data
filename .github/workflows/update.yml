@@ -40,9 +40,17 @@ jobs:
       - run: python fetch_revenue.py || echo 'revenue fetch failed, continuing'
       - run: python fetch_etf.py || echo 'etf fetch failed, continuing'
       - run: python tools/fetch_fin.py pit || echo 'fin pit archive failed, continuing'
+        timeout-minutes: 6
+        continue-on-error: true  # 觀測站忙的時候會拖很久，不能卡住網站更新
       - run: python fetch_tdcc.py || echo 'tdcc fetch failed, continuing'
+        timeout-minutes: 5
+        continue-on-error: true
       - run: python tools/fetch_cb_list.py || echo 'cb list fetch failed, continuing'
+        timeout-minutes: 5
+        continue-on-error: true
       - run: python tools/fetch_sbl_daily.py || echo 'sbl daily fetch failed, continuing'
+        timeout-minutes: 5
+        continue-on-error: true
       - run: python build_site.py
       - name: commit
         run: |
