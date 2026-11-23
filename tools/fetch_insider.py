@@ -4,10 +4,10 @@ import io, os, re, sys, time, datetime as dt, requests, pandas as pd
 H = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded"}
 Y = int(os.environ.get("YEAR", "2015")); os.makedirs("out", exist_ok=True)
 def post(api, data):
-    for k in range(4):
+    for k in range(3):
         try:
-            r = requests.post(f"https://mopsov.twse.com.tw/mops/web/{api}", data=data, headers=H, timeout=60); r.encoding = "utf-8"; return r.text
-        except Exception: time.sleep(10 * (k + 1))
+            r = requests.post(f"https://mopsov.twse.com.tw/mops/web/{api}", data=data, headers=H, timeout=40); r.encoding = "utf-8"; return r.text
+        except Exception: time.sleep(30 * (k + 1))   # 被擋時多等一下
     return ""
 def report_code(typ):
     txt = post("ajax_t56sb12_q1", {"encodeURIComponent": 1, "step": 1, "firstin": 1, "off": 1, "isQuery": "Y", "TYPEK": typ, "year": str(Y - 1911), "month": "01", "day": "05"})
@@ -28,7 +28,9 @@ while d.year == Y and d <= dt.date.today():
                 t.columns = ["_".join(dict.fromkeys(str(x).replace(" ", "") for x in (c if isinstance(c, tuple) else (c,)))) for c in t.columns]
                 t = t[t[[c for c in t.columns if "代號" in c][0]].astype(str).str.fullmatch(r"\d{4}")]
                 t.insert(0, "report", rep); t.insert(0, "qdate", d.isoformat()); rows.append(t)
-            time.sleep(2.5)
+            time.sleep(4)
+        if d.day in (10, 20, 28) and rows:  # 定期先存（超時也保得住）
+            pd.concat(rows, ignore_index=True).to_csv(f"out/insider-{Y}.csv.gz", index=False); open(f"out/insider-{Y}.failed.txt", "w").write("\n".join(fails))
     d += dt.timedelta(days=1)
 out = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
 out.to_csv(f"out/insider-{Y}.csv.gz", index=False); print(Y, "rows", len(out), "fails", len(fails), flush=True)
