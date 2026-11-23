@@ -20,7 +20,14 @@ def parse(txt, mkt):
         name, code, d0, tm, subj = [html.unescape(x).strip() for x in vals[:5]]; detail = html.unescape(vals[8]).strip()
         if any(k in subj for k in KEYS): rows.append({"date": d0, "time": tm, "code": code, "name": name, "subject": subj, "detail": re.sub(r"\s+", " ", detail), "market": mkt})
     return rows
-rows, failed = [], []; d = dt.date(YEAR, 1, 1); end = min(dt.date(YEAR, 12, 31), dt.date.today())
+HALF = int(os.environ.get("HALF", "0"))  # 11/24：每個查詢約 40 秒，改成半年一個工作、每天存一次進度
+TAG = f"{YEAR}h{HALF}" if HALF else str(YEAR)
+rows, failed = [], []
+d = dt.date(YEAR, 7, 1) if HALF == 2 else dt.date(YEAR, 1, 1); end = min(dt.date(YEAR, 6, 30) if HALF == 1 else dt.date(YEAR, 12, 31), dt.date.today())
+def ckpt():
+    df = pd.DataFrame(rows).drop_duplicates(subset=["date", "time", "code", "subject"]) if rows else pd.DataFrame(columns=["date", "time", "code", "name", "subject", "detail", "market"])
+    df.to_csv(f"out/mopsnews-{TAG}.csv.gz", index=False, compression="gzip"); open(f"out/mopsnews-{TAG}.failed.txt", "w").write("\n".join(failed)); return df
+t0 = time.time()
 while d <= end:
     if d.weekday() < 5:
         for typek in ("sii", "otc"):
@@ -28,6 +35,7 @@ while d <= end:
             if txt is None: failed.append(f"{typek} {d}")
             elif "<form" in txt: rows += parse(txt, typek)
             time.sleep(5)
+        ckpt(); print(d, "rows", len(rows), "failed", len(failed), f"{(time.time() - t0) / 60:.0f} 分", flush=True)
     d += dt.timedelta(days=1)
-df = pd.DataFrame(rows).drop_duplicates(subset=["date", "time", "code", "subject"]) if rows else pd.DataFrame(columns=["date", "time", "code", "name", "subject", "detail", "market"]); df.to_csv(f"out/mopsnews-{YEAR}.csv.gz", index=False, compression="gzip"); open(f"out/mopsnews-{YEAR}.failed.txt", "w").write("\n".join(failed))
-print(YEAR, "rows", len(df), "轉換價格", int(df.subject.str.contains("轉換價格").sum()) if len(df) else 0, "現金增資", int(df.subject.str.contains("現金增資").sum()) if len(df) else 0, "failed", len(failed))
+df = ckpt()
+print(TAG, "rows", len(df), "轉換價格", int(df.subject.str.contains("轉換價格").sum()) if len(df) else 0, "現金增資", int(df.subject.str.contains("現金增資").sum()) if len(df) else 0, "failed", len(failed))

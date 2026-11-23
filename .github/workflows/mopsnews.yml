@@ -10,8 +10,9 @@ jobs:
     timeout-minutes: 340
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 6
       matrix:
+        half: [1, 2]
         year: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
       - uses: actions/checkout@v4
@@ -24,10 +25,11 @@ jobs:
         continue-on-error: true
         env:
           YEAR: ${{ matrix.year }}
+          HALF: ${{ matrix.half }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mopsnews-${{ matrix.year }}
+          name: mopsnews-${{ matrix.year }}-${{ matrix.half }}
           path: out/
   merge:
     needs: fetch
@@ -42,7 +44,7 @@ jobs:
           merge-multiple: true
       - run: |
           mkdir -p data/mopsnews
-          for f in incoming/mopsnews-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/mopsnews/$(basename $f | sed 's/mopsnews-//')"; done
+          for f in incoming/mopsnews-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/mopsnews/$(basename $f | sed 's/mopsnews-//')"; done  # 檔名 YYYYh1／YYYYh2
           cat incoming/*.failed.txt > data/mopsnews/fetch_failed.txt 2>/dev/null || true
           git config user.name github-actions; git config user.email actions@github.com
           git add data/mopsnews
