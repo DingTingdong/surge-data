@@ -16,6 +16,12 @@ for u in j.get("result", []):
     c = m.get("chat") or {}
     if c.get("type") == "private" and c.get("id") not in ids: ids.append(c.get("id"))
 print("找到", len(ids), "個對話", "（末 3 碼 " + str(ids[-1])[-3:] + "）" if ids else "（找不到：請先在 Telegram 對機器人傳任何一句話，再重跑）")  # repo 是公開的，log 不印完整 id
-for c in ids[-1:]:
+for c in ([] if os.environ.get("TELEGRAM_CHAT_ID") else ids[-1:]):
     r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", data={"chat_id": c, "text": f"強勢股雷達：機器人連線成功 ✅\n你的 chat id：{c}\n請到 GitHub repo → Settings → Secrets and variables → Actions，新增 secret：名稱 TELEGRAM_CHAT_ID，值填上面這串數字。"}, timeout=20)
     print("test message", "ok" if r.status_code == 200 else f"failed {r.status_code}")
+cid = re.sub(r"\s+", "", os.environ.get("TELEGRAM_CHAT_ID") or "")
+if cid:
+    r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", data={"chat_id": cid, "text": "強勢股雷達：通知設定完成 ✅ 之後會在換股日、盤中符合條件的漲停、可轉債站上轉換價、大盤恐慌時通知你。"}, timeout=20)
+    print("secret chat id test", "ok" if r.status_code == 200 else f"failed {r.status_code}")
+else:
+    print("還沒有設定 TELEGRAM_CHAT_ID secret")
