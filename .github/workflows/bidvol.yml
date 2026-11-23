@@ -1,0 +1,49 @@
+name: bidvol
+# 回補收盤最後揭示買賣量（漲幅 ≥ 6% 的股票，2006–2026）到 data/bidvol/（研究用；網站不讀）
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        year: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas
+      - run: python tools/fetch_bidvol.py
+        timeout-minutes: 170
+        continue-on-error: true
+        env:
+          YEAR: ${{ matrix.year }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bidvol-${{ matrix.year }}
+          path: out/
+  merge:
+    needs: fetch
+    if: always()
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: |
+          mkdir -p data/bidvol
+          for f in incoming/bidvol-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/bidvol/$(basename $f | sed 's/bidvol-//')"; done
+          cat incoming/*.failed.txt > data/bidvol/fetch_failed.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/bidvol
+          if ! git diff --cached --quiet; then git commit -q -m "closing best bid/ask volume 2006-2026" && git pull --rebase -q && (git push || (sleep 20 && git pull --rebase -q && git push)); fi
