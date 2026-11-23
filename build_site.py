@@ -397,12 +397,16 @@ try:
                 "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
     # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 1.1% × 換股比例；0050 同段含息
     _hist = []; _h3 = []
+    def _calm(codes, i0):  # 穩健版：前 20 名依換股日（i0 − 1）收盤前 20 日波動由低到高排（第 24 輪，使用者 11/23 選定）
+        cs_ = [c for c in codes if c in C.columns]; w_ = C[cs_].iloc[max(0, i0 - 21):i0].pct_change(fill_method=None)
+        v_ = w_.std().where(w_.notna().sum() >= 15); rk_ = {c: k for k, c in enumerate(codes)}
+        return sorted(cs_, key=lambda c: (v_.get(c) if v_.get(c) == v_.get(c) else 9e9, rk_[c]))
     if os.path.exists(T20_LOG):
         _tl = pd.read_csv(T20_LOG, dtype={"code": str}); _fl = sorted(_tl.date.unique()); _prev = set()
         _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
         if _e5 is not None: _e5 = _e5[_e5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
         _aj5 = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj5 = _aj5[_aj5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
-        # 只買 3 檔：上期持有的還在前 20 續抱，不足的由名次高、開盤買得到的遞補
+        # 只買 3 檔：上期持有的還在前 20 續抱，不足的由前 20 名裡波動最低、開盤買得到的遞補
         for _k, _f0 in enumerate(_fl):
             _t0 = pd.Timestamp(_f0)
             if _t0 not in days or days.get_loc(_t0) + 1 >= len(days): continue
@@ -416,7 +420,7 @@ try:
                 _x = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
                 _rr.append((float(_x) / float(_o if _o == _o and _o > 0 else _pc) - 1) * 100)
             _keep3 = [c for c in _h3 if c in _codes]; _new3 = []
-            for c in _codes:
+            for c in _calm(_codes, _i0):
                 if len(_keep3) + len(_new3) >= 3: break
                 if c in _keep3 or c not in C.columns: continue
                 _o3 = O.iloc[_i0][c]; _pc3 = C.iloc[_i0 - 1][c]
@@ -443,7 +447,7 @@ try:
         _sx = h.pop("s3", None)
         if h["f"] == _form.strftime("%y/%m/%d"): _s3 = _sx
     if _s3 is None:  # 換股日當晚（還沒到買進日）：上期 3 檔還在前 20 的續抱，其餘依名次補（開盤漲停買不到就再往下補）
-        _cc = _cur.code.tolist(); _s3 = [c for c in _h3 if c in _cc]; _s3 += [c for c in _cc if c not in _s3][:3 - len(_s3)]
+        _cc = _cur.code.tolist(); _s3 = [c for c in _h3 if c in _cc]; _s3 += [c for c in _calm(_cc, days.get_loc(_form) + 1) if c not in _s3][:3 - len(_s3)]
     for c in _s3:
         if c in m20: m20[c]["m3"] = 1
     _r3 = [m20[c]["m20r"] for c in _s3 if c in m20 and "m20r" in m20[c]]
