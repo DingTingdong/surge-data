@@ -1,0 +1,50 @@
+name: insider-otc
+# 補抓上櫃的內部人持股轉讓事前申報（report=OY，2006–2026）到 data/insider/otc-YYYY.csv.gz（研究用；網站不讀）
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        year: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas lxml html5lib beautifulsoup4
+      - run: python tools/fetch_insider.py
+        timeout-minutes: 320
+        continue-on-error: true
+        env:
+          YEAR: ${{ matrix.year }}
+          ONLY_OTC: "1"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: insiderotc-${{ matrix.year }}
+          path: out/
+  merge:
+    needs: fetch
+    if: always()
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: |
+          mkdir -p data/insider
+          for f in incoming/insider-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/insider/otc-$(basename $f | sed s/insider-//)"; done
+          cat incoming/*.failed.txt > data/insider/fetch_failed_otc.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/insider
+          if ! git diff --cached --quiet; then git commit -q -m "insider transfer declarations OTC 2006-2026" && git pull --rebase -q && (git push || (sleep 20 && git pull --rebase -q && git push)); fi

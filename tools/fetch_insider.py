@@ -13,7 +13,8 @@ def report_code(typ):
     txt = post("ajax_t56sb12_q1", {"encodeURIComponent": 1, "step": 1, "firstin": 1, "off": 1, "isQuery": "Y", "TYPEK": typ, "year": str(Y - 1911), "month": "01", "day": "05"})
     m = re.search(r"name='report' value='([^']*)'", txt); return m.group(1) if m else None
 # 11/23：查詢頁回傳的 report 代碼不分市場（都是 SY），上櫃試 SO；回傳的列另外記下 report，之後依代號判斷市場
-reps = {"sii": "SY", "otc": "SO"}; print("report codes", reps, "(q1 回傳：", report_code("sii"), ")", flush=True)
+reps = {"sii": "SY", "otc": "SO"}
+if os.environ.get("ONLY_OTC") == "1": reps = {"otc": "OY"}  # 11/23 探測：上櫃的代碼是 OY（SO 回傳的其實是上市）；補抓上櫃用; print("report codes", reps, "(q1 回傳：", report_code("sii"), ")", flush=True)
 rows, fails = [], []
 d = dt.date(Y, 1, 1)
 while d.year == Y and d <= dt.date.today():
@@ -33,5 +34,5 @@ while d.year == Y and d <= dt.date.today():
             pd.concat(rows, ignore_index=True).to_csv(f"out/insider-{Y}.csv.gz", index=False); open(f"out/insider-{Y}.failed.txt", "w").write("\n".join(fails))
     d += dt.timedelta(days=1)
 out = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
-out.to_csv(f"out/insider-{Y}.csv.gz", index=False); print(Y, "rows", len(out), "fails", len(fails), flush=True)
+out.to_csv(f"out/insider-{Y}.csv.gz", index=False)  # ONLY_OTC 時由 insider-otc.yml 存成 data/insider/otc-YYYY.csv.gz; print(Y, "rows", len(out), "fails", len(fails), flush=True)
 open(f"out/insider-{Y}.failed.txt", "w").write("\n".join(fails))
