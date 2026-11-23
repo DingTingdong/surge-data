@@ -58,6 +58,11 @@ def main():
     if not probe or probe[0].get("d") != today:
         print("not a trading day", probe[0].get("d") if probe else None); return
     rows, seen, opens, latest = {}, set(), {}, {}
+    try:  # 盤中通知：前一天收盤時「營收強＋分數高」、借券不多、前 10 天沒漲停過的股票，今天第一次碰到漲停就通知
+        import sys; sys.path.insert(0, "tools"); import notify as nt
+        FL = json.load(open("data/notify_flags.json", encoding="utf-8")).get("codes", {})
+    except Exception:
+        nt, FL = None, {}
     last_save = time.time(); last_pub = 0
     while now().strftime("%H%M") <= "1333":
         t0 = time.time()
@@ -76,6 +81,8 @@ def main():
                 for k in hits:
                     if (c, k) in seen: continue
                     seen.add((c, k))
+                    if k == "limit" and nt and c in FL:
+                        nt.send(f"live-pk-{day}-{c}", f"【盤中今日發動】{FL[c] or a.get('n', '')}（{c}）{now().strftime('%H:%M')} 碰到漲停 {u}\n營收強＋分數高、前 10 天沒漲停過（回測參考，還沒達標）\nhttps://dingtingdong.github.io/surge-data/", log="data/notify_log_live.csv")
                     rows[(c, k)] = [day, c, a.get("n", ""), a.get("ex", ""), y, opens.get(c, ""), k, now().strftime("%H:%M"), z if z is not None else "", v]
             time.sleep(0.5)
         if time.time() - last_save > 1800: save(day, rows); last_save = time.time()

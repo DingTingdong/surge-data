@@ -558,7 +558,14 @@ try:
 except Exception as _e:
     print("cb list skipped:", _e)
 
-_u10 = (P["C"].pct_change(fill_method=None).iloc[-10:] >= 0.09).sum()  # 盤中：今天 ≥9% 且這個是 0 ＝第一根漲停（今日發動）
+_u10 = (P["C"].pct_change(fill_method=None).iloc[-10:] >= 0.09).sum()
+try:  # 盤中通知名單（data/notify_flags.json）：分數 ≥ 0.8、營收年增 ≥ 20% 且創 12 個月新高、借券不多、前 10 天沒漲停過
+    import composite_score as _cs3
+    _base3 = S[(S.date == days[-1]) & S.base].code.tolist(); _all3 = _cs3.scores(P, f, S, days[-1], _base3)
+    _fl = {c: name.get(c, "") for c, v in _all3.items() if v >= 0.8 and c in rev_last.index and float(rev_last.at[c, "yoy"]) >= 20 and c in rev_hi and sbr.get(c, 0) < 80 and int(_u10.get(c, 0)) == 0}
+    json.dump({"date": days[-1].strftime("%Y-%m-%d"), "codes": _fl}, open("data/notify_flags.json", "w", encoding="utf-8"), ensure_ascii=False)
+except Exception as _e:
+    print("notify flags skipped:", _e)  # 盤中：今天 ≥9% 且這個是 0 ＝第一根漲停（今日發動）
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
@@ -642,3 +649,24 @@ html = html.replace("/*DATA*/[]", J(data)).replace("/*META*/{}", J(meta)).replac
 os.makedirs("docs", exist_ok=True); open("docs/index.html", "w", encoding="utf-8").write(html)
 print({k: meta[k] for k in ("date", "ver", "above")}, len(data), "stocks,", int(d.pk.sum()), "picks,", len(track), "tracked days,", len(html) // 1024, "KB")
 print(json.dumps(summary, ensure_ascii=False))
+
+# ---- Telegram 通知（11/23 起；只在 GitHub Actions 有設定 token 時才發，同一件事只發一次）----
+try:
+    import sys as _sys; _sys.path.insert(0, "tools"); import notify as _nt
+    _td = days[-1]; _tds = _td.strftime("%m/%d"); _url = "https://dingtingdong.github.io/surge-data/"
+    if m20_meta and m20_meta.get("chg") and m20_meta.get("form") == _tds and not m20_meta.get("entry"):
+        _c = m20_meta["chg"]
+        _msg = f"【月選換股】{_tds} 收盤選出，明天開盤：" + "".join(f"\n{k} " + "、".join(v) for k, v in (("賣", _c["sell"]), ("買", _c["buy"]), ("續抱", _c["keep"])) if v)
+        _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（開盤前掛限價單；開盤漲停買不到就換候補下一檔）\n" + _url)
+    for _x in data:
+        if _x.get("cbb") == _tds and _x.get("cbk", -1) >= 0:
+            _nt.send(f"cbb-{_x['t']}-{_td:%Y-%m-%d}", f"【可轉債】{_x['n']}（{_x['t']}）今天放量站上轉換價 {_x['cbp']}（{_x['cb']}），收盤 {_x['c']}。\n依三日法則：之後 3 天收盤都沒跌回才算確認。（觀察名單，還沒回測）\n" + _url)
+        if _x.get("cbk") == 3:
+            _nt.send(f"cbk-{_x['t']}-{_x.get('cbb')}", f"【可轉債】{_x['n']}（{_x['t']}）{_x.get('cbb')} 放量站上轉換價後已守住 3 天（三日法則成立），收盤 {_x['c']}，轉換價 {_x['cbp']}。（觀察名單，還沒回測）\n" + _url)
+    _gs = [_x for _x in data if _x.get("e") and (_x.get("cs") or 0) >= 0.8 and (_x.get("ry") or 0) >= 20 and _x.get("rh") and _x.get("sbr", 0) < 80]
+    if _gs:
+        _nt.send(f"pk-{_td:%Y-%m-%d}", f"【今日發動・營收強＋分數高】{_tds}：" + "、".join(f"{_x['n']}（{_x['t']}）" for _x in _gs) + "\n回測五段都贏 0050（每筆 +1.7%），但還沒達標，只當參考。\n" + _url)
+    if len(bear) >= 2 and int(bear.iloc[-1]) >= 800 and int(bear.iloc[-2]) < 800:
+        _nt.send(f"panic-{_td:%Y-%m-%d}", f"【大盤】{_tds} 上市空頭家數 {int(bear.iloc[-1])}，第一次衝上 800（深度恐慌）。月選照常抱到換股日；撿跌深分頁已出現。\n" + _url)
+except Exception as _e:
+    print("notify skipped:", type(_e).__name__)
