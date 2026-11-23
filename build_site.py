@@ -396,7 +396,7 @@ try:
     m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
                 "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
     # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 1.1% × 換股比例；0050 同段含息
-    _hist = []; _h3 = []
+    _hist = []; _h3 = []; _sels = []
     def _calm(codes, i0):  # 穩健版：前 20 名依換股日（i0 − 1）收盤前 20 日波動由低到高排（第 24 輪，使用者 11/23 選定）
         cs_ = [c for c in codes if c in C.columns]; w_ = C[cs_].iloc[max(0, i0 - 21):i0].pct_change(fill_method=None)
         v_ = w_.std().where(w_.notna().sum() >= 15); rk_ = {c: k for k, c in enumerate(codes)}
@@ -431,7 +431,7 @@ try:
                 _o3 = O.iloc[_i0][c]; _pc3 = C.iloc[_i0 - 1][c]
                 _x3 = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
                 _rr3.append((float(_x3) / float(_o3 if _o3 == _o3 and _o3 > 0 else _pc3) - 1) * 100)
-            _to3 = 1.0 if not _h3 else len(_new3) / 3; _h3 = _sel3
+            _to3 = 1.0 if not _h3 else len(_new3) / 3; _h3 = _sel3; _sels.append(_sel3)
             _to = 1.0 if not _prev else len(set(_codes) - _prev) / 20; _prev = set(_codes)
             _bb = None
             if _e5 is not None and days[_i0] in _e5.index:
@@ -450,6 +450,11 @@ try:
         _cc = _cur.code.tolist(); _s3 = [c for c in _h3 if c in _cc]; _s3 += [c for c in _calm(_cc, days.get_loc(_form) + 1) if c not in _s3][:3 - len(_s3)]
     for c in _s3:
         if c in m20: m20[c]["m3"] = 1
+    # 換股提醒：上一期的 3 檔 → 這一期的 3 檔
+    _incur = bool(_hist) and _hist[-1]["f"] == _form.strftime("%y/%m/%d")
+    _prev3 = (_sels[-2] if len(_sels) >= 2 else []) if _incur else (_sels[-1] if _sels else [])
+    _nm = lambda c: f"{name.get(c, c)}（{c}）"
+    m20_meta["chg"] = {"sell": [_nm(c) for c in _prev3 if c not in _s3], "buy": [_nm(c) for c in _s3 if c not in _prev3], "keep": [_nm(c) for c in _s3 if c in _prev3]}
     _r3 = [m20[c]["m20r"] for c in _s3 if c in m20 and "m20r" in m20[c]]
     m20_meta["avg3"] = round(float(np.mean(_r3)), 1) if _r3 else None
     m20_meta["hist"] = _hist
