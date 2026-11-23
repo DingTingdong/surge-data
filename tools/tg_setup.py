@@ -1,7 +1,7 @@
 """Telegram 設定：用 TELEGRAM_BOT_TOKEN 讀機器人收到的訊息，找出使用者的 chat id，直接用 Telegram 告訴使用者（repo 是公開的，log 不印 id、絕不印 token）。"""
 import os, requests
 import re
-tok = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip().strip('"').strip("'")
+tok = re.sub(r"\s+", "", os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip('"').strip("'")  # token 不會有空白；貼上時夾到的空白、換行都拿掉
 print("token 格式", "看起來正確" if re.fullmatch(r"\d{6,12}:[A-Za-z0-9_-]{30,}", tok) else f"不像 BotFather 給的格式（長度 {len(tok)}，有冒號：{':' in tok}，有空白：{' ' in tok}）")
 if not tok: print("沒有設定 TELEGRAM_BOT_TOKEN"); raise SystemExit(0)
 try: j = requests.get(f"https://api.telegram.org/bot{tok}/getUpdates", timeout=20).json()
