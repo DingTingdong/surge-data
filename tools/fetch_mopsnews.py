@@ -1,8 +1,8 @@
 """抓觀測站「重大訊息依日期查詢」（ajax_t05st02）裡跟可轉債、現金增資有關的公告（含明細全文）到 out/mopsnews-YEAR.csv.gz（研究用；網站不讀）。
-每個交易日上市、上櫃各一次查詢；主旨含「轉換公司債／轉換價格／可轉換／現金增資」的才留。欄位：date, time, code, name, subject, detail, market。"""
+每個交易日上市、上櫃各一次查詢；主旨含可轉債、現金增資、法說會、自結損益、訂單／合約、減資、私募等關鍵字的才留（同樣的查詢次數，多存幾類之後研究用）。欄位：date, time, code, name, subject, detail, market。"""
 import datetime as dt, html, io, os, re, time, requests, pandas as pd
 YEAR = int(os.environ["YEAR"]); os.makedirs("out", exist_ok=True)
-H = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded"}; KEYS = ("轉換公司債", "轉換價格", "可轉換", "現金增資")
+H = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded"}; KEYS = ("轉換公司債", "轉換價格", "可轉換", "現金增資", "法人說明會", "自結", "訂單", "合約", "減資", "私募")
 def get(typek, d):
     data = {"encodeURIComponent": 1, "step": 0, "firstin": 1, "TYPEK": typek, "year": f"{d.year - 1911:03d}", "month": f"{d.month:02d}", "day": f"{d.day:02d}"}
     for k in range(4):
