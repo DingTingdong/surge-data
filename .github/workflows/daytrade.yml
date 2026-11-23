@@ -1,0 +1,49 @@
+name: daytrade
+# 回補上市現股當沖個股量值（2014–2026）到 data/daytrade/（研究用；網站不讀）
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        year: [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas
+      - run: python tools/fetch_daytrade.py
+        timeout-minutes: 170
+        continue-on-error: true
+        env:
+          YEAR: ${{ matrix.year }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: daytrade-${{ matrix.year }}
+          path: out/
+  merge:
+    needs: fetch
+    if: always()
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: |
+          mkdir -p data/daytrade
+          for f in incoming/daytrade-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/daytrade/$(basename $f | sed 's/daytrade-//')"; done
+          cat incoming/*.failed.txt > data/daytrade/fetch_failed.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/daytrade
+          if ! git diff --cached --quiet; then git commit -q -m "TWSE day-trading volume 2014-2026" && git pull --rebase -q && (git push || (sleep 20 && git pull --rebase -q && git push)); fi
