@@ -558,6 +558,7 @@ try:
 except Exception as _e:
     print("cb list skipped:", _e)
 
+_u10 = (P["C"].pct_change(fill_method=None).iloc[-10:] >= 0.09).sum()  # 盤中：今天 ≥9% 且這個是 0 ＝第一根漲停（今日發動）
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
@@ -573,6 +574,7 @@ for code, r in d.iterrows():
     if code in m20: x.update(m20[code])
     if code in cbinfo: x.update(cbinfo[code])
     if code in sbr: x["sbr"] = sbr[code]
+    x["u10"] = int(_u10.get(code, 0))
     if code in nhev:
         _d, _c0, _, _pp = nhev[code]; x["nh"] = _d.strftime("%m/%d"); x["nhp"] = _pp
         if _c0 > 0 and code in P["rawC"].columns and P["rawC"][code].iloc[-1] == P["rawC"][code].iloc[-1]: x["nhr"] = round((float(P["rawC"][code].iloc[-1]) / _c0 - 1) * 100, 1)
