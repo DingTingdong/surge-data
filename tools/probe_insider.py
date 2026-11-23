@@ -1,16 +1,19 @@
-"""探測（第 2 次）：內部人持股轉讓事前申報的日期參數格式。"""
+"""探測（第 3 次）：印出 t56sb12_q1 自動送出表單的欄位，再照欄位送 ajax_t56sb12。"""
 import io, re, time, requests, pandas as pd
 H = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded"}
 base = {"encodeURIComponent": 1, "step": 1, "firstin": 1, "off": 1, "isQuery": "Y", "TYPEK": "sii"}
-tries = [("t56sb12", {"date1": "1040601", "date2": "1040605"}), ("t56sb12", {"sdate": "104/06/01", "edate": "104/06/05"}),
-         ("t56sb12", {"year": "104", "month": "06", "b_date": "1", "e_date": "5"}), ("t56sb12", {"s_date": "1040601", "e_date": "1040605"}),
-         ("t56sb12", {"date1": "104/06/01"}), ("t56sb12", {"qryDate": "104/06/01"}),
-         ("t56sb12_q1", {"year": "104", "month": "06", "day": "01", "co_id": ""}), ("t56sb12_q1", {"year": "104", "month": "6", "day": "2"})]
-for api, prm in tries:
-    try:
-        r = requests.post(f"https://mopsov.twse.com.tw/mops/web/ajax_{api}", data={**base, **prm}, headers=H, timeout=60); r.encoding = "utf-8"; txt = r.text
-        body = re.sub(r"\s+", " ", re.sub(r"<script.*?</script>", " ", txt, flags=re.S)); body = re.sub(r"<[^>]+>", " ", body)
-        print("##", api, prm, r.status_code, len(txt), "|", re.sub(r"\s+", " ", body)[:300], flush=True)
-        if api == "t56sb12_q1" and prm.get("day") == "01": print("RAW", txt[:1500].replace("\n", " "), flush=True)
-    except Exception as e: print("##", api, "ERR", e, flush=True)
+r = requests.post("https://mopsov.twse.com.tw/mops/web/ajax_t56sb12_q1", data={**base, "year": "104", "month": "06", "day": "01"}, headers=H, timeout=60); r.encoding = "utf-8"
+inputs = re.findall(r"<input[^>]*>", r.text, flags=re.I); print("INPUTS", inputs, flush=True)
+fields = {}
+for tag in inputs:
+    n = re.search(r"name=['\"]?([^'\" >]+)", tag, flags=re.I); v = re.search(r"value=['\"]?([^'\">]*)", tag, flags=re.I)
+    if n: fields[n.group(1)] = v.group(1) if v else ""
+print("FIELDS", fields, flush=True)
+for extra in ({}, {"step": "2"}):
+    r2 = requests.post("https://mopsov.twse.com.tw/mops/web/ajax_t56sb12", data={**fields, **extra}, headers=H, timeout=60); r2.encoding = "utf-8"
+    try: tabs = [t for t in pd.read_html(io.StringIO(r2.text)) if len(t) > 2]
+    except Exception: tabs = []
+    body = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>", " ", r2.text, flags=re.S)))
+    print("POST", extra, r2.status_code, len(r2.text), "tables", len(tabs), [t.shape for t in tabs][:3], (list(map(str, tabs[0].columns))[:8] if tabs else ""), "|", body[:400], flush=True)
+    if tabs: print(tabs[0].head(5).to_string()[:1500], flush=True)
     time.sleep(3)
