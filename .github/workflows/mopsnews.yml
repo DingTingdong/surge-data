@@ -1,0 +1,49 @@
+name: mopsnews
+# 回補重大訊息裡的可轉債、現金增資公告（2006–2026）到 data/mopsnews/（研究用；網站不讀）
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        year: [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas lxml html5lib beautifulsoup4
+      - run: python tools/fetch_mopsnews.py
+        timeout-minutes: 320
+        continue-on-error: true
+        env:
+          YEAR: ${{ matrix.year }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mopsnews-${{ matrix.year }}
+          path: out/
+  merge:
+    needs: fetch
+    if: always()
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+      - run: |
+          mkdir -p data/mopsnews
+          for f in incoming/mopsnews-*.csv.gz; do [ -f "$f" ] && cp "$f" "data/mopsnews/$(basename $f | sed 's/mopsnews-//')"; done
+          cat incoming/*.failed.txt > data/mopsnews/fetch_failed.txt 2>/dev/null || true
+          git config user.name github-actions; git config user.email actions@github.com
+          git add data/mopsnews
+          if ! git diff --cached --quiet; then git commit -q -m "MOPS CB and SEO announcements 2006-2026" && git pull --rebase -q && (git push || (sleep 20 && git pull --rebase -q && git push)); fi
