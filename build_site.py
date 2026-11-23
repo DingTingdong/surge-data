@@ -396,12 +396,13 @@ try:
     m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
                 "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
     # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 1.1% × 換股比例；0050 同段含息
-    _hist = []
+    _hist = []; _h3 = []
     if os.path.exists(T20_LOG):
         _tl = pd.read_csv(T20_LOG, dtype={"code": str}); _fl = sorted(_tl.date.unique()); _prev = set()
         _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
         if _e5 is not None: _e5 = _e5[_e5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
         _aj5 = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj5 = _aj5[_aj5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
+        # 只買 3 檔：上期持有的還在前 20 續抱，不足的由名次高、開盤買得到的遞補
         for _k, _f0 in enumerate(_fl):
             _t0 = pd.Timestamp(_f0)
             if _t0 not in days or days.get_loc(_t0) + 1 >= len(days): continue
@@ -414,6 +415,19 @@ try:
                 if c not in _prev and (not (_o == _o and _o > 0) or (_o == H.iloc[_i0][c] == L.iloc[_i0][c] and _pc == _pc and _o / _pc - 1 >= LOCK)): continue
                 _x = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
                 _rr.append((float(_x) / float(_o if _o == _o and _o > 0 else _pc) - 1) * 100)
+            _keep3 = [c for c in _h3 if c in _codes]; _new3 = []
+            for c in _codes:
+                if len(_keep3) + len(_new3) >= 3: break
+                if c in _keep3 or c not in C.columns: continue
+                _o3 = O.iloc[_i0][c]; _pc3 = C.iloc[_i0 - 1][c]
+                if not (_o3 == _o3 and _o3 > 0) or (_o3 == H.iloc[_i0][c] == L.iloc[_i0][c] and _pc3 == _pc3 and _o3 / _pc3 - 1 >= LOCK): continue
+                _new3.append(c)
+            _sel3 = _keep3 + _new3; _rr3 = []
+            for c in _sel3:
+                _o3 = O.iloc[_i0][c]; _pc3 = C.iloc[_i0 - 1][c]
+                _x3 = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
+                _rr3.append((float(_x3) / float(_o3 if _o3 == _o3 and _o3 > 0 else _pc3) - 1) * 100)
+            _to3 = 1.0 if not _h3 else len(_new3) / 3; _h3 = _sel3
             _to = 1.0 if not _prev else len(set(_codes) - _prev) / 20; _prev = set(_codes)
             _bb = None
             if _e5 is not None and days[_i0] in _e5.index:
@@ -422,10 +436,23 @@ try:
                 _dv = float(_aj5[(_aj5.date > days[_i0]) & (_aj5.date <= _xe)].ratio.prod()) if len(_aj5) else 1.0
                 if _px1 == _px1: _bb = round((_px1 / float(_e5.open[days[_i0]]) / _dv - 1) * 100, 1)
             _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 1.1 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
+                          "r3": round(float(np.mean(_rr3)) - 1.1 * _to3, 1) if _rr3 else None, "s3": _sel3,
                           "late": str(_tl[_tl.date == _f0].logged.iloc[0]) > _f0})
+    _s3 = None
+    for h in _hist:
+        _sx = h.pop("s3", None)
+        if h["f"] == _form.strftime("%y/%m/%d"): _s3 = _sx
+    if _s3 is None:  # 換股日當晚（還沒到買進日）：上期 3 檔還在前 20 的續抱，其餘依名次補（開盤漲停買不到就再往下補）
+        _cc = _cur.code.tolist(); _s3 = [c for c in _h3 if c in _cc]; _s3 += [c for c in _cc if c not in _s3][:3 - len(_s3)]
+    for c in _s3:
+        if c in m20: m20[c]["m3"] = 1
+    _r3 = [m20[c]["m20r"] for c in _s3 if c in m20 and "m20r" in m20[c]]
+    m20_meta["avg3"] = round(float(np.mean(_r3)), 1) if _r3 else None
     m20_meta["hist"] = _hist
     _ok = [h for h in _hist if h["r"] is not None and h["b"] is not None and not h["late"]]
     m20_meta["fwd"] = {"n": len(_ok), "r": round((np.prod([1 + h["r"] / 100 for h in _ok]) - 1) * 100, 1), "b": round((np.prod([1 + h["b"] / 100 for h in _ok]) - 1) * 100, 1)} if _ok else None
+    _ok3 = [h for h in _ok if h.get("r3") is not None]
+    m20_meta["fwd3"] = {"n": len(_ok3), "r": round((np.prod([1 + h["r3"] / 100 for h in _ok3]) - 1) * 100, 1), "b": round((np.prod([1 + h["b"] / 100 for h in _ok3]) - 1) * 100, 1)} if _ok3 else None
 except Exception as _e:
     print("top20 skipped:", _e)
 
