@@ -486,6 +486,12 @@ _rv = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in _rf], ignore_ind
 _rv = _rv.dropna(subset=["yoy"]).sort_values("ym")
 rev_last = _rv.groupby("code").tail(1).set_index("code")  # 每檔最近一個已公布月份
 rev_3 = _rv.groupby("code").tail(3).groupby("code").yoy.mean()
+# 營收創 12 個月新高（第 32 輪「營收強」＝年增 ≥ 20% 且創新高；至少 6 個月可比）
+rev_hi = set()
+if "rev" in _rv.columns:
+    for _c, _g in _rv.dropna(subset=["rev"]).sort_values("ym").groupby("code"):
+        _p = _g.rev.iloc[-13:-1]
+        if len(_p) >= 6 and _g.rev.iloc[-1] >= _p.max(): rev_hi.add(_c)
 rev_ym = _rv.ym.max() if len(_rv) else None
 
 # ---- 族群（官方產業）走勢（research/group_trend.py）：同產業其他股票等權指數，近5日漲且站上10日線＝已反彈；在10日線下＝仍弱 ----
@@ -556,6 +562,7 @@ for code, r in d.iterrows():
     if code in rev_last.index:
         x["ry"] = round(float(rev_last.at[code, "yoy"]), 1); x["rm"] = int(rev_last.at[code, "ym"][5:])
         if code in rev_3.index: x["ry3"] = round(float(rev_3[code]), 1)
+        if code in rev_hi: x["rh"] = 1
     if bool(above10.get(code, False)) and x["ch"] > -9.4: x["s10"] = 1
     if dk is not None and dk.get(code) == dk.get(code): x["dk"] = round(float(dk[code]), 1)
     if code in disp: x["dp"] = disp[code]
