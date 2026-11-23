@@ -42,6 +42,7 @@ jobs:
       - run: python tools/fetch_fin.py pit || echo 'fin pit archive failed, continuing'
       - run: python fetch_tdcc.py || echo 'tdcc fetch failed, continuing'
       - run: python tools/fetch_cb_list.py || echo 'cb list fetch failed, continuing'
+      - run: python tools/fetch_sbl_daily.py || echo 'sbl daily fetch failed, continuing'
       - run: python build_site.py
       - name: commit
         run: |

@@ -508,6 +508,21 @@ for _gn, _cs in _g.dropna().groupby(_g.dropna()).groups.items():
         _ix = (1 + _m).cumprod(); _ma = _ix.rolling(10).mean()
         gstate[c] = 2 if (_ix.iloc[-1] > _ix.iloc[-6] and _ix.iloc[-1] > _ma.iloc[-1]) else (1 if _ix.iloc[-1] < _ma.iloc[-1] else 0)
 
+# ---- 借券賣出餘額比（第 33 輪另報：今日發動借券比前 20% 的，比其他今日發動差 1～4 個百分點，五段中四段）----
+sbr = {}
+try:
+    _sf = sorted(_glob.glob("data/sbl/*.csv.gz"))[-2:]
+    if _sf:
+        _sb = pd.concat([pd.read_csv(f, dtype={"code": str}, usecols=["date", "code", "sbl_bal"]) for f in _sf], ignore_index=True); _sb["date"] = pd.to_datetime(_sb.date)
+        _ld = _sb.date.max()
+        if (pd.Timestamp(days[-1]) - _ld).days <= 7:
+            _b = _sb[_sb.date == _ld].drop_duplicates("code").set_index("code").sbl_bal
+            _sh = (P["A"] / P["rawC"]).iloc[-20:].mean()
+            _r = (_b / _sh.reindex(_b.index)).replace([np.inf, -np.inf], np.nan).dropna(); _r = _r[_r.index.isin(d.index)]
+            sbr = {c: int(round(v * 100)) for c, v in _r.rank(pct=True).items()}
+except Exception as _e:
+    print("sbl skipped:", _e)
+
 # ---- 可轉債觀察名單（使用者原本的可轉債選股法；11/23 起，還沒回測，歷史名單回補中）----
 # 每檔取最近發行、仍有餘額的一檔；轉換價用發行時的價格（除權息後可能已往下調）。
 # 放量站上轉換價＝收盤從轉換價以下站上、當天成交值 ≥ 前 20 日平均 2 倍（近 30 個交易日內）；之後每天收盤都沒跌回＝守住天數（三日法則：≥ 3 天才算確認）。
@@ -552,6 +567,7 @@ for code, r in d.iterrows():
     if code in cscore: x["cs"] = round(cscore[code], 2)
     if code in m20: x.update(m20[code])
     if code in cbinfo: x.update(cbinfo[code])
+    if code in sbr: x["sbr"] = sbr[code]
     if code in nhev:
         _d, _c0, _, _pp = nhev[code]; x["nh"] = _d.strftime("%m/%d"); x["nhp"] = _pp
         if _c0 > 0 and code in P["rawC"].columns and P["rawC"][code].iloc[-1] == P["rawC"][code].iloc[-1]: x["nhr"] = round((float(P["rawC"][code].iloc[-1]) / _c0 - 1) * 100, 1)
