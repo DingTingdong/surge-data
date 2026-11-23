@@ -502,6 +502,36 @@ for _gn, _cs in _g.dropna().groupby(_g.dropna()).groups.items():
         _ix = (1 + _m).cumprod(); _ma = _ix.rolling(10).mean()
         gstate[c] = 2 if (_ix.iloc[-1] > _ix.iloc[-6] and _ix.iloc[-1] > _ma.iloc[-1]) else (1 if _ix.iloc[-1] < _ma.iloc[-1] else 0)
 
+# ---- 可轉債觀察名單（使用者原本的可轉債選股法；11/23 起，還沒回測，歷史名單回補中）----
+# 每檔取最近發行、仍有餘額的一檔；轉換價用發行時的價格（除權息後可能已往下調）。
+# 放量站上轉換價＝收盤從轉換價以下站上、當天成交值 ≥ 前 20 日平均 2 倍（近 30 個交易日內）；之後每天收盤都沒跌回＝守住天數（三日法則：≥ 3 天才算確認）。
+cbinfo = {}
+try:
+    _cbf = sorted(_glob.glob("data/cb/issbd5_*.csv*"))
+    if _cbf:
+        _cb = pd.read_csv(_cbf[-1], dtype=str)
+        _cb["cp"] = pd.to_numeric(_cb["Conversion/ExchangePriceAtIssuance"], errors="coerce"); _cb["iss"] = pd.to_numeric(_cb.IssueAmount, errors="coerce"); _cb["out"] = pd.to_numeric(_cb.OutstandingAmount, errors="coerce")
+        _cb = _cb[(_cb.cp > 0) & (_cb.out > 0) & ~_cb.ShortName.astype(str).str.contains("私") & (_cb.OfferingMethod.astype(str) != "8")].sort_values("IssueDate")  # 私募債不在市場交易，不列
+        _rc, _am = P["rawC"], P["A"]; _todays = pd.Timestamp(days[-1])
+        for _code, _g in _cb.groupby("IssuerCode"):
+            if _code not in _rc.columns: continue
+            _z = _g.iloc[-1]; _cp = float(_z.cp); _s = _rc[_code].dropna()
+            if len(_s) < 45: continue
+            _px = float(_s.iloc[-1]); _a = _am[_code].reindex(_s.index); _a20 = _a.shift(1).rolling(20, min_periods=15).mean()
+            _info = {"cb": str(_z.ShortName).strip(), "cbp": round(_cp, 2), "cbd": round((_px / _cp - 1) * 100, 1), "cb20": round((_px / float(_s.iloc[-21]) - 1) * 100, 1),
+                     "cbc": int(round((1 - float(_z.out) / float(_z.iss)) * 100)) if _z.iss > 0 else None}
+            _st = pd.to_datetime(str(_z["Conversion/ExchangePeriodStartDate"]), format="%Y%m%d", errors="coerce")
+            if _st == _st and _st > _todays: _info["cbs"] = _st.strftime("%m/%d")
+            _up = (_s > _cp).values
+            for _i in range(len(_s) - 1, max(len(_s) - 30, 1) - 1, -1):
+                if _up[_i] and not _up[_i - 1]:
+                    if _a.iloc[_i] >= 2 * _a20.iloc[_i]:
+                        _after = _up[_i + 1:]; _info["cbb"] = _s.index[_i].strftime("%m/%d"); _info["cbk"] = int(len(_after)) if _after.all() else -1
+                    break
+            cbinfo[_code] = _info
+except Exception as _e:
+    print("cb list skipped:", _e)
+
 data = []
 for code, r in d.iterrows():
     x = {"t": code}
@@ -515,6 +545,7 @@ for code, r in d.iterrows():
     if code in mscore: x["ms"] = mscore[code][1]
     if code in cscore: x["cs"] = round(cscore[code], 2)
     if code in m20: x.update(m20[code])
+    if code in cbinfo: x.update(cbinfo[code])
     if code in nhev:
         _d, _c0, _, _pp = nhev[code]; x["nh"] = _d.strftime("%m/%d"); x["nhp"] = _pp
         if _c0 > 0 and code in P["rawC"].columns and P["rawC"][code].iloc[-1] == P["rawC"][code].iloc[-1]: x["nhr"] = round((float(P["rawC"][code].iloc[-1]) / _c0 - 1) * 100, 1)
