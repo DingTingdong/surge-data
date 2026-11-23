@@ -8,7 +8,7 @@ def _sent(log):
     with open(log, encoding="utf-8") as f: return {r["key"] for r in csv.DictReader(f)}
 
 def send(key, text, log="data/notify_log.csv"):
-    tok, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    tok, chat = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip().strip("\"'"), (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
     if not tok or not chat or key in _sent(log): return False
     try:
         ok = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", data={"chat_id": chat, "text": text, "disable_web_page_preview": "true"}, timeout=20).status_code == 200

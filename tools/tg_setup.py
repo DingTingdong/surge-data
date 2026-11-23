@@ -1,10 +1,12 @@
 """Telegram 設定：用 TELEGRAM_BOT_TOKEN 讀機器人收到的訊息，找出使用者的 chat id，直接用 Telegram 告訴使用者（repo 是公開的，log 不印 id、絕不印 token）。"""
 import os, requests
-tok = os.environ.get("TELEGRAM_BOT_TOKEN")
+import re
+tok = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip().strip('"').strip("'")
+print("token 格式", "看起來正確" if re.fullmatch(r"\d{6,12}:[A-Za-z0-9_-]{30,}", tok) else f"不像 BotFather 給的格式（長度 {len(tok)}，有冒號：{':' in tok}，有空白：{' ' in tok}）")
 if not tok: print("沒有設定 TELEGRAM_BOT_TOKEN"); raise SystemExit(0)
 try: j = requests.get(f"https://api.telegram.org/bot{tok}/getUpdates", timeout=20).json()
 except Exception: print("連不上 Telegram"); raise SystemExit(0)
-if not j.get("ok"): print("token 不對或機器人無法使用"); raise SystemExit(0)
+if not j.get("ok"): print("Telegram 回覆錯誤：", j.get("error_code"), j.get("description")); raise SystemExit(0)
 ids = []
 for u in j.get("result", []):
     m = u.get("message") or u.get("edited_message") or {}
