@@ -7,9 +7,12 @@ if not tok: print("沒有設定 TELEGRAM_BOT_TOKEN"); raise SystemExit(0)
 try: j = requests.get(f"https://api.telegram.org/bot{tok}/getUpdates", timeout=20).json()
 except Exception: print("連不上 Telegram"); raise SystemExit(0)
 if not j.get("ok"): print("Telegram 回覆錯誤：", j.get("error_code"), j.get("description")); raise SystemExit(0)
+res = j.get("result", []); print("收到的更新", len(res), "種類", sorted({k for u in res for k in u if k != "update_id"}), "對話類型", sorted({((u.get("message") or u.get("edited_message") or u.get("my_chat_member") or {}).get("chat") or {}).get("type", "?") for u in res}))
+try: me = requests.get(f"https://api.telegram.org/bot{tok}/getMe", timeout=20).json().get("result", {}); print("機器人帳號 @" + str(me.get("username")))
+except Exception: pass
 ids = []
 for u in j.get("result", []):
-    m = u.get("message") or u.get("edited_message") or {}
+    m = u.get("message") or u.get("edited_message") or u.get("my_chat_member") or {}
     c = m.get("chat") or {}
     if c.get("type") == "private" and c.get("id") not in ids: ids.append(c.get("id"))
 print("找到", len(ids), "個對話", "（末 3 碼 " + str(ids[-1])[-3:] + "）" if ids else "（找不到：請先在 Telegram 對機器人傳任何一句話，再重跑）")  # repo 是公開的，log 不印完整 id
