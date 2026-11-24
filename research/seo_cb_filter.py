@@ -17,6 +17,12 @@
   「60 個交易日內」：公告日在換股日（含）往前 60 個交易日內。報酬、持有規則、成本同 calm3.py 穩健版（等金額、0.6%）。
   再補充（11/25 03:40，只看過事件筆數、還沒看任何績效）：照原文字 SEO 一年約 1,000 則，其中 21% 是「子公司」現增、另有「初次上市／上櫃前」承銷現增，
   都不是這家上市櫃公司自己籌資。判斷改用「主旨不含 子公司、初次上市、初次上櫃」的版本（CB 同樣排除）；原文字版本另報、不影響判斷。
+結果（11/25 04:10）：X1 不通過（② 五段只有 2 段不比穩健版差），網站不改。
+  穩健版 +2.35（t 4.40，回落 −23）；X1 跳過 SEO 或 CB +2.38（t 4.31）：2006–09 2.16／2011–15 2.91／2016–19 1.37／2020–23 2.26／2024–26 3.02（穩健版 2.42／2.50／1.96／2.57／2.32）。
+  X2 只 SEO +2.42（回落 −25）；X3 只 CB +2.25。原文字版（含子公司、IPO 前）X1 +2.32，同樣不通過。
+  月選前 20 名有事件的占 11%；有事件的下月減 0050 +1.79，沒事件 +2.48（533 筆），差距不穩定。
+  事件研究（全部股票，公告後減 0050，2011–2026）：SEO 60 日平均 −3.2%、中位 −6.1%；CB 60 日平均 −2.1%、中位 −5.1%（未和全部股票同期平均比，只供參考）。
+
 """
 
 import json, os, sys, glob, re, warnings
@@ -86,7 +92,7 @@ def evstudy(D, days, ev):
         if c not in CJ: continue
         i = int(np.searchsorted(days.values, np.datetime64(d))); j = CJ[c]
         for h in (20, 60):
-            if i + 1 + h < len(days) and np.isfinite(Cff[i, j]) and np.isfinite(Cff[i + h, j]): out[h].append((Cff[i + h, j] / Cff[i, j] - 1) * 100 - (bidx[i + h] / bidx[i] - 1) * 100)
+            if i + 1 + h < len(days) and np.isfinite(Cff[i, j]) and Cff[i, j] > 0 and np.isfinite(Cff[i + h, j]) and Cff[i + h, j] > 0: out[h].append((Cff[i + h, j] / Cff[i, j] - 1) * 100 - (bidx[i + h] / bidx[i] - 1) * 100)
     return {f"{h}日": {"n": len(v), "平均": round(float(np.mean(v)), 2), "中位": round(float(np.median(v)), 2)} for h, v in out.items() if v}
 
 if __name__ == "__main__":
