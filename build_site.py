@@ -749,6 +749,15 @@ try:
     _gs = [_x for _x in data if _x.get("e") and (_x.get("cs") or 0) >= 0.8 and (_x.get("ry") or 0) >= 20 and _x.get("rh") and _x.get("sbr", 0) < 80]
     if _gs and os.environ.get("NOTIFY_PK") == "1":  # 11/24 使用者決定：今日發動還沒達標，預設不通知（設 NOTIFY_PK=1 才恢復）
         _nt.send(f"pk-{_td:%Y-%m-%d}", f"【今日發動・營收強＋分數高】{_tds}：" + "、".join(f"{_x['n']}（{_x['t']}）" for _x in _gs) + "\n回測五段都贏 0050（每筆 +1.7%），但還沒達標，只當參考。\n" + _url)
+    # 撿跌深（第 43～45 輪）：上市空頭家數「第一次」到 750（前 20 日都在 750 下）那天收盤後通知前 3；第 19 個交易日晚上提醒隔天收盤賣（回測抱到第 20 天收盤）
+    _t0w = globals().get("_t0")
+    if _t0w is not None and pwave:
+        if _t0w == len(days) - 1:
+            _nm = "、".join(f"{n_}（{c_}）" for c_, n_ in pwave[0]["s"])
+            _nt.send(f"pick3-buy-{_td:%Y-%m-%d}", f"【撿跌深】{_tds} 上市空頭家數第一次到 {int(bear.iloc[-1])}（≥750）。前 3：{_nm}\n明天開盤買（開盤鎖漲停買不到就換撿跌深下一名），抱 20 個交易日。\n回測 2020–2026 這個時點 7 次都贏全部股票（平均多 21%），2006–2019 也較好；但單檔約 6 成賺錢、持有中最大回落平均 −11%，次數少，不要重壓。\n" + _url)
+        if _t0w + 19 == len(days) - 1:
+            _nm = "、".join(n_ for c_, n_ in pwave[0]["s"])
+            _nt.send(f"pick3-sell-{days[_t0w]:%Y-%m-%d}", f"【撿跌深】{days[_t0w]:%m/%d} 選的前 3（{_nm}）明天是第 20 個交易日，回測是在第 20 天收盤賣出。\n" + _url)
     if len(bear) >= 2 and int(bear.iloc[-1]) >= 800 and int(bear.iloc[-2]) < 800:
         _nt.send(f"panic-{_td:%Y-%m-%d}", f"【大盤】{_tds} 上市空頭家數 {int(bear.iloc[-1])}，第一次衝上 800（深度恐慌）。月選照常抱到換股日；撿跌深分頁已出現。\n" + _url)
 except Exception as _e:
