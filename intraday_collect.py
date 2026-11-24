@@ -60,9 +60,11 @@ def main():
     rows, seen, opens, latest = {}, set(), {}, {}
     try:  # 盤中通知：前一天收盤時「營收強＋分數高」、借券不多、前 10 天沒漲停過的股票，今天第一次碰到漲停就通知
         import sys; sys.path.insert(0, "tools"); import notify as nt
-        FL = json.load(open("data/notify_flags.json", encoding="utf-8")).get("codes", {}) if os.environ.get("NOTIFY_PK") == "1" else {}  # 11/24 起預設不發今日發動通知
+        _flj = json.load(open("data/notify_flags.json", encoding="utf-8"))
+        FL = _flj.get("codes", {}) if os.environ.get("NOTIFY_PK") == "1" else {}  # 11/24 起預設不發今日發動通知
+        HOLD = _flj.get("hold", {})  # 月選本期買：盤中碰跌停提醒
     except Exception:
-        nt, FL = None, {}
+        nt, FL, HOLD = None, {}, {}
     last_save = time.time(); last_pub = 0
     while now().strftime("%H%M") <= "1333":
         t0 = time.time()
@@ -75,6 +77,9 @@ def main():
                 if px is None:  # 剛開盤還沒成交或漲停鎖住時 z 可能是「-」：用最佳買價
                     bb = str(a.get("b", "")).split("_")[0]; px = num(bb)
                 if px: latest[c] = [px, round((px / y - 1) * 100, 2), v, 1 if (u and px >= u) else 0]
+                lo_ = num(a.get("l")); dn = num(a.get("w"))
+                if nt and c in HOLD and dn and lo_ is not None and lo_ <= dn and (c, "ld") not in seen:
+                    seen.add((c, "ld")); nt.send(f"live-ld-{day}-{c}", f"【持股注意】月選持股 {HOLD[c] or a.get('n', '')}（{c}）{now().strftime('%H:%M')} 碰到跌停 {dn}。\n回測裡月中停損沒有幫助；如果是公司爆雷，請先查公開資訊觀測站重大訊息再決定。\nhttps://dingtingdong.github.io/surge-data/", log="data/notify_log_live.csv")
                 hi = max([x for x in (z, h) if x is not None], default=None)  # 用當日最高價判斷「碰到」（兩次掃描之間碰到也算）
                 if hi is None: continue
                 hits = [k for k, th in LEVELS if hi >= y * (1 + th)] + (["limit"] if u and hi >= u else [])

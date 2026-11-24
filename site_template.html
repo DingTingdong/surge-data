@@ -665,8 +665,8 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <div class="doc"><h2>資料與更新</h2>
 <p>行情來自證交所與櫃買中心每日收盤資料，雲端排程每個平日台北18:30自動抓取並重新計算。清單包含近20日平均成交額1,000萬元以上、已有60日行情的上市櫃普通股。</p>
 <h2>分頁</h2>
-<ul><li>上面一排是選股方式：<b>月選</b>（每月換股的 3 檔，唯一回測穩定贏 0050 的）、<b>可轉債</b>（觀察名單，回測進行中）、<b>自選</b>、<b>全部</b>。</li>
-<li>下面「觀察」是看盤用的名單：今日發動、新高突破，大跌時多一個撿跌深（「仍在動」回測沒用，11/23 拿掉）。這些回測都沒有穩定贏 0050，不是買進訊號。</li></ul>
+<ul><li>上面一排是選股方式：<b>月選</b>（每月換股的 3 檔，唯一回測穩定贏 0050 的）、<b>自選</b>、<b>全部</b>。可轉債分頁 11/24 拿掉（突破轉換價沒有回測根據；個股詳細資料仍顯示可轉債資訊，公告回補後再檢驗）。</li>
+<li>下面「觀察」是看盤用的名單：今日發動、新高突破，大跌時多一個撿跌深（「仍在動」回測沒用，11/23 拿掉）。這些回測都沒有穩定贏 0050，不是買進訊號。</li><li>Telegram 通知：月選換股（每月一次）、上市空頭家數第一次衝上 800、月選持股盤中碰跌停／收跌停／被列處置（資訊提醒，不是賣出訊號：回測裡大跌時賣掉換 0050 反而較差）。今日發動、可轉債通知 11/24 停用。</li></ul>
 <h2>各欄位</h2>
 <ul><li>今日發動（v2）：今天漲9%以上、前10個交易日都沒有漲9%以上（第一根漲停），今天成交額至少2,000萬、前20日平均至少300萬。代表剛發動，不代表比較值得買。</li>
 <li>仍在動：活躍度前10%（上市、上櫃分開排名），且今天或前10個交易日內有漲停。「仍在動」分頁只放<b>收盤還在10日線上、今天沒跌停</b>的；已經跌破10日線或今天跌停的不放進來（在「全部」分頁看得到）。這是為了讓分頁符合「強勢股」的意思；回測中強弱兩邊之後的表現差不多，所以不代表仍強比較值得買。追蹤頁的仍在動統計兩邊都算。</li>
@@ -685,7 +685,7 @@ const MV=s=>s.cap!=null&&s.c!=null?s.cap*s.c/10:null; // 市值（億）＝股�
 const PMAX=META.bear?Math.max(...META.bear.h.slice(-10)):0,PANIC=PMAX>=750,DEEPP=PMAX>=800; /* 近10天上市空頭家數最高值：≥750 初步恐慌、≥800 深度恐慌 */const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
 const HOT=s=>!!s.h,PK=s=>!!s.e,fx=(v,d)=>v==null?"—":v.toFixed(d);const DEEP=s=>s.d20!=null&&s.d20<=-20;
-const RL={M:["月選",s=>!!s.m20],P:["今日發動",s=>PK(s)||(PANIC&&!!s.rl)],N:["新高突破",s=>!!s.nh],C:["可轉債",s=>s.cb!=null&&s.cbd>=-20&&s.cbd<=15&&s.cb20<30],...(PANIC?{D:["撿跌深",s=>!!s.ts]}:{}),F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
+const RL={M:["月選",s=>!!s.m20],P:["今日發動",s=>PK(s)||(PANIC&&!!s.rl)],N:["新高突破",s=>!!s.nh],...(PANIC?{D:["撿跌深",s=>!!s.ts]}:{}),F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
 let FAV=new Set();try{FAV=new Set(JSON.parse(localStorage.getItem("fav")||"[]"))}catch(e){}
 function saveFav(){try{localStorage.setItem("fav",JSON.stringify([...FAV]))}catch(e){}}
 const kurl=s=>"https://tw.stock.yahoo.com/quote/"+s.t+(s.mk==="櫃"?".TWO":".TW")+"/technical-analysis";
@@ -696,7 +696,7 @@ function grps(){const a=cur();if(!a.length){$("grp").innerHTML="";return}
 const M={};a.forEach(s=>{const g=s.g||"未分類";(M[g]=M[g]||[]).push(s.ch)});const med=x=>{x=[...x].sort((p,q)=>p-q);const n=x.length;return n%2?x[(n-1)/2]:(x[n/2-1]+x[n/2])/2};
 const G=Object.entries(M).map(([g,x])=>[g,x.length,med(x)]).sort((p,q)=>q[1]-p[1]||q[2]-p[2]);const K=6,show=st.gx?G:G.slice(0,K);
 $("grp").innerHTML=`<div class="gh"><span>產業分布</span><small>括號＝今日漲跌中位數</small></div><div class="gp">${show.map(([g,n,m])=>`<span>${g} <b class="n">${n}</b> <i class="n ${cl(m)}">(${sg(m)}%)</i></span>`).join("")}${G.length>K?`<button class="gx" data-gx="1">${st.gx?"收起 ▴":"其他 "+(G.length-K)+" 類 ▾"}</button>`:""}</div>`}
-function chips(){grps();const PRI=["M","C","F","ALL"],SEC=Object.keys(RL).filter(k=>!PRI.includes(k)),cnt=k=>k==="M"&&D.some(s=>s.m3)?D.filter(s=>s.m3).length:k==="C"?D.filter(s=>RL.C[1](s)&&CBB(s)).length:k==="P"?D.filter(s=>RL.P[1](s)&&PKG(s)).length:D.filter(RL[k][1]).length,btn=k=>`<button class="chip${k==="D"?" pd":""}" data-r="${k}" aria-pressed="${st.rule===k}"><span>${RL[k][0]}</span><small class="n">${cnt(k)}</small></button>`;
+function chips(){grps();const PRI=["M","F","ALL"],SEC=Object.keys(RL).filter(k=>!PRI.includes(k)),cnt=k=>k==="M"&&D.some(s=>s.m3)?D.filter(s=>s.m3).length:k==="C"?D.filter(s=>RL.C[1](s)&&CBB(s)).length:k==="P"?D.filter(s=>RL.P[1](s)&&PKG(s)).length:D.filter(RL[k][1]).length,btn=k=>`<button class="chip${k==="D"?" pd":""}" data-r="${k}" aria-pressed="${st.rule===k}"><span>${RL[k][0]}</span><small class="n">${cnt(k)}</small></button>`;
 $("rules").innerHTML=`<div class="seg">${PRI.map(btn).join("")}</div>`+(SEC.length?`<div class="obs"><span class="ol">觀察</span>${SEC.map(btn).join("")}</div>`:"");
 const M20=META.m20,sg1=v=>v==null?"—":(v>0?"+":"")+v+"%";const CHG=M20&&M20.chg?((M20.chg.sell.length?"賣 "+M20.chg.sell.join("、")+"；":"")+(M20.chg.buy.length?"買 "+M20.chg.buy.join("、"):"")+(M20.chg.keep.length?"；續抱 "+M20.chg.keep.join("、"):"")):"";
 const TD=META.date?META.date.slice(5).replace("-","/"):"";

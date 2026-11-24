@@ -577,7 +577,8 @@ try:  # 盤中通知名單（data/notify_flags.json）：分數 ≥ 0.8、營收
     import composite_score as _cs3
     _base3 = S[(S.date == days[-1]) & S.base].code.tolist(); _all3 = _cs3.scores(P, f, S, days[-1], _base3)
     _fl = {c: name.get(c, "") for c, v in _all3.items() if v >= 0.8 and c in rev_last.index and float(rev_last.at[c, "yoy"]) >= 20 and c in rev_hi and sbr.get(c, 0) < 80 and int(_u10.get(c, 0)) == 0}
-    json.dump({"date": days[-1].strftime("%Y-%m-%d"), "codes": _fl}, open("data/notify_flags.json", "w", encoding="utf-8"), ensure_ascii=False)
+    _hold3 = {c: name.get(c, "") for c, v in m20.items() if v.get("m3")}  # 月選本期買：盤中碰跌停就提醒（資訊，不是賣出訊號）
+    json.dump({"date": days[-1].strftime("%Y-%m-%d"), "codes": _fl, "hold": _hold3}, open("data/notify_flags.json", "w", encoding="utf-8"), ensure_ascii=False)
 except Exception as _e:
     print("notify flags skipped:", _e)  # 盤中：今天 ≥9% 且這個是 0 ＝第一根漲停（今日發動）
 data = []
@@ -736,11 +737,15 @@ try:
         _c = m20_meta["chg"]
         _msg = f"【月選換股】{_tds} 收盤選出，明天開盤：" + "".join(f"\n{k} " + "、".join(v) for k, v in (("賣", _c["sell"]), ("買", _c["buy"]), ("續抱", _c["keep"])) if v)
         _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（開盤前掛限價單；開盤漲停買不到就換候補下一檔）\n" + _url)
+    # 月選本期買的「爆雷」資訊提醒（11/24 使用者要求；不是賣出訊號：回測裡大跌時賣掉換 0050 反而較差）
+    _h3 = {c: v for c, v in m20.items() if v.get("m3")}
+    if _h3 and os.path.exists("data/disposal.csv"):
+        _dp = pd.read_csv("data/disposal.csv", dtype={"code": str}); _dp = _dp[(_dp.announced == _td.strftime("%Y-%m-%d")) & _dp.code.isin(list(_h3))]
+        for _r in _dp.itertuples():
+            _nt.send(f"hold-dp-{_r.code}-{_r.announced}", f"【持股注意】月選持股 {_r.name}（{_r.code}）今天被公告{_r.measure}（{_r.start}～{_r.end}），處置期間要預收款券、流動性變差。\n這是資訊提醒，不是賣出訊號；請自己判斷是不是公司出問題。\n" + _url)
     for _x in data:
-        if _x.get("cbb") == _tds and _x.get("cbk", -1) >= 0:
-            _nt.send(f"cbb-{_x['t']}-{_td:%Y-%m-%d}", f"【可轉債】{_x['n']}（{_x['t']}）今天放量站上轉換價 {_x['cbp']}（{_x['cb']}），收盤 {_x['c']}。\n依三日法則：之後 3 天收盤都沒跌回才算確認。（觀察名單，還沒回測）\n" + _url)
-        if _x.get("cbk") == 3:
-            _nt.send(f"cbk-{_x['t']}-{_x.get('cbb')}", f"【可轉債】{_x['n']}（{_x['t']}）{_x.get('cbb')} 放量站上轉換價後已守住 3 天（三日法則成立），收盤 {_x['c']}，轉換價 {_x['cbp']}。（觀察名單，還沒回測）\n" + _url)
+        if _x.get("t") in _h3 and (_x.get("ch") or 0) <= -9.5:
+            _nt.send(f"hold-ld-{_x['t']}-{_td:%Y-%m-%d}", f"【持股注意】月選持股 {_x['n']}（{_x['t']}）今天收跌停 {_x.get('ch')}%。\n回測裡月中停損沒有幫助，照規則抱到換股日；但如果是公司爆雷（財報、掏空、違約），請先查公開資訊觀測站重大訊息。\n" + _url)
     _gs = [_x for _x in data if _x.get("e") and (_x.get("cs") or 0) >= 0.8 and (_x.get("ry") or 0) >= 20 and _x.get("rh") and _x.get("sbr", 0) < 80]
     if _gs and os.environ.get("NOTIFY_PK") == "1":  # 11/24 使用者決定：今日發動還沒達標，預設不通知（設 NOTIFY_PK=1 才恢復）
         _nt.send(f"pk-{_td:%Y-%m-%d}", f"【今日發動・營收強＋分數高】{_tds}：" + "、".join(f"{_x['n']}（{_x['t']}）" for _x in _gs) + "\n回測五段都贏 0050（每筆 +1.7%），但還沒達標，只當參考。\n" + _url)
