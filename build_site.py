@@ -688,9 +688,38 @@ try:
 except Exception as _e:
     print("pwave skipped:", _e)
 
+# ---- 今日發動「營收強＋分數高」往前記錄（11/24 起，只增不改；不再回測，用新資料驗證）----
+# 每天收盤記下全部今日發動與是否符合（分數 ≥ 0.8、營收年增 ≥ 20% 且創 12 個月新高、借券餘額比不在前 20%）；
+# 報酬：隔天開盤買、抱 20 個交易日（未滿到最新收盤），扣 0.6%；0050 同段。
+GS_LOG = "data/gs_log.csv"; pkf = None
+try:
+    _gl = pd.read_csv(GS_LOG, dtype={"code": str}) if os.path.exists(GS_LOG) else None
+    _tdk = days[-1].strftime("%Y-%m-%d"); _pkx = [x for x in data if x.get("e")]
+    if _pkx and (_gl is None or _tdk not in set(_gl.date)):
+        _pan = int(int(bear.iloc[-10:].max()) >= 750)
+        _new = pd.DataFrame([{"date": _tdk, "code": x["t"], "name": x["n"], "gs": int((x.get("cs") or 0) >= 0.8 and (x.get("ry") or 0) >= 20 and bool(x.get("rh")) and x.get("sbr", 0) < 80),
+                              "cs": x.get("cs"), "ry": x.get("ry"), "rh": int(bool(x.get("rh"))), "sbr": x.get("sbr"), "panic": _pan} for x in _pkx])
+        _gl = pd.concat([_gl, _new], ignore_index=True) if _gl is not None else _new; _gl.to_csv(GS_LOG, index=False)
+    if _gl is not None and len(_gl):
+        _o50, _c50 = _etf("0050"); _pos = {d.strftime("%Y-%m-%d"): i for i, d in enumerate(days)}; _N = len(days); _rows = []
+        for r in _gl.itertuples():
+            i = _pos.get(r.date)
+            if i is None or i + 1 >= _N or r.code not in C.columns: continue
+            o = O.iloc[i + 1][r.code]; x = min(i + 20, _N - 1); cx = C.iloc[x][r.code]
+            if not (o > 0 and cx == cx): continue
+            _rows.append({"gs": r.gs, "panic": r.panic, "r": (cx / o - 1) * 100 - 0.6, "b": (_c50.iloc[x] / _o50.iloc[i + 1] - 1) * 100, "done": int(i + 20 <= _N - 1)})
+        _R = pd.DataFrame(_rows, columns=["gs", "panic", "r", "b", "done"])
+        pkf = {"since": str(_gl.date.min())[5:].replace("-", "/"), "days": int(_gl.date.nunique()), "lg": int((_gl.gs == 1).sum()), "lo": int((_gl.gs == 0).sum())}
+        if len(_R):
+            for k, g in (("gs", _R[_R.gs == 1]), ("other", _R[_R.gs == 0])):
+                pkf[k] = {"n": int(len(g)), "done": int(g.done.sum()), "r": round(float(g.r.mean()), 2) if len(g) else None, "ex": round(float((g.r - g.b).mean()), 2) if len(g) else None,
+                          "win": int(round((g.r > g.b).mean() * 100)) if len(g) else None}
+except Exception as _e:
+    print("gs log skipped:", _e)
+
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "m20": m20_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pkf": pkf, "m20": m20_meta,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
