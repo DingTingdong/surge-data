@@ -713,7 +713,7 @@ try:
         if _x.get("cbk") == 3:
             _nt.send(f"cbk-{_x['t']}-{_x.get('cbb')}", f"【可轉債】{_x['n']}（{_x['t']}）{_x.get('cbb')} 放量站上轉換價後已守住 3 天（三日法則成立），收盤 {_x['c']}，轉換價 {_x['cbp']}。（觀察名單，還沒回測）\n" + _url)
     _gs = [_x for _x in data if _x.get("e") and (_x.get("cs") or 0) >= 0.8 and (_x.get("ry") or 0) >= 20 and _x.get("rh") and _x.get("sbr", 0) < 80]
-    if _gs:
+    if _gs and os.environ.get("NOTIFY_PK") == "1":  # 11/24 使用者決定：今日發動還沒達標，預設不通知（設 NOTIFY_PK=1 才恢復）
         _nt.send(f"pk-{_td:%Y-%m-%d}", f"【今日發動・營收強＋分數高】{_tds}：" + "、".join(f"{_x['n']}（{_x['t']}）" for _x in _gs) + "\n回測五段都贏 0050（每筆 +1.7%），但還沒達標，只當參考。\n" + _url)
     if len(bear) >= 2 and int(bear.iloc[-1]) >= 800 and int(bear.iloc[-2]) < 800:
         _nt.send(f"panic-{_td:%Y-%m-%d}", f"【大盤】{_tds} 上市空頭家數 {int(bear.iloc[-1])}，第一次衝上 800（深度恐慌）。月選照常抱到換股日；撿跌深分頁已出現。\n" + _url)

@@ -60,7 +60,7 @@ def main():
     rows, seen, opens, latest = {}, set(), {}, {}
     try:  # 盤中通知：前一天收盤時「營收強＋分數高」、借券不多、前 10 天沒漲停過的股票，今天第一次碰到漲停就通知
         import sys; sys.path.insert(0, "tools"); import notify as nt
-        FL = json.load(open("data/notify_flags.json", encoding="utf-8")).get("codes", {})
+        FL = json.load(open("data/notify_flags.json", encoding="utf-8")).get("codes", {}) if os.environ.get("NOTIFY_PK") == "1" else {}  # 11/24 起預設不發今日發動通知
     except Exception:
         nt, FL = None, {}
     last_save = time.time(); last_pub = 0
