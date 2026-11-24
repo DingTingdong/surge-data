@@ -15,6 +15,8 @@
   排除字詞（盈餘轉增資、資本公積轉增資、員工、私募）只檢查「主旨」：現金增資公告的內容幾乎都會寫到員工認購，若連內容一起排除會把全部 SEO 排掉。
   公告資料：TYPEK=sii 的查詢實際含上市＋上櫃（11/25 探測，otc 回傳相同內容），market 欄不可信；2025-05-28～06-30、2026-05-19～06-30 另外補抓。
   「60 個交易日內」：公告日在換股日（含）往前 60 個交易日內。報酬、持有規則、成本同 calm3.py 穩健版（等金額、0.6%）。
+  再補充（11/25 03:40，只看過事件筆數、還沒看任何績效）：照原文字 SEO 一年約 1,000 則，其中 21% 是「子公司」現增、另有「初次上市／上櫃前」承銷現增，
+  都不是這家上市櫃公司自己籌資。判斷改用「主旨不含 子公司、初次上市、初次上櫃」的版本（CB 同樣排除）；原文字版本另報、不影響判斷。
 """
 
 import json, os, sys, glob, re, warnings
@@ -24,12 +26,15 @@ HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE);
 import robust_select as RS
 from wr_confirm import stats
 
+LITERAL = False
 def events():
     N = pd.concat([pd.read_csv(f, dtype={"code": str, "date": str, "time": str}) for f in sorted(glob.glob(f"{REPO}/data/mopsnews/*.csv.gz"))], ignore_index=True)
     N = N.drop_duplicates(["date", "time", "code", "subject"]); N["detail"] = N.detail.fillna(""); N["subject"] = N.subject.fillna("")
     s, t = N.subject, N.subject + " " + N.detail
     seo = s.str.contains("現金增資") & t.str.contains("董事會決議|決議辦理|發行新股") & ~s.str.contains("盈餘轉增資|資本公積轉增資|員工|私募")
     cb = s.str.contains("轉換公司債") & t.str.contains("董事會決議|決議發行|募集") & ~s.str.contains("私募")
+    if not LITERAL:
+        own = ~s.str.contains("子公司|初次上市|初次上櫃|初次上巿"); seo &= own; cb &= own
     N["d"] = pd.to_datetime(N.date, format="%Y%m%d", errors="coerce")
     return N[seo][["d", "code"]].dropna(), N[cb][["d", "code"]].dropna()
 
@@ -85,7 +90,8 @@ def evstudy(D, days, ev):
     return {f"{h}日": {"n": len(v), "平均": round(float(np.mean(v)), 2), "中位": round(float(np.median(v)), 2)} for h, v in out.items() if v}
 
 if __name__ == "__main__":
-    SEO, CB = events(); print("SEO 事件", len(SEO), "CB 事件", len(CB), flush=True)
+    LITERAL = os.environ.get("LITERAL") == "1"
+    SEO, CB = events(); print("SEO 事件", len(SEO), "CB 事件", len(CB), "原文字版" if LITERAL else "判斷版", flush=True)
     Dn = RS.load("/tmp/model_v2/vs0050_extra.pkl", "2011-01-01", "2027-01-01"); Do = RS.load("/tmp/model_v2/vs0050_oldestonly_extra.pkl", "2006-01-01", "2010-01-01")
     dn = pd.DatetimeIndex(pd.read_pickle("/tmp/model_v2/vs0050_extra.pkl")["days"]); do = pd.DatetimeIndex(pd.read_pickle("/tmp/model_v2/vs0050_oldestonly_extra.pkl")["days"])
     res = {"事件數": {"SEO": len(SEO), "CB": len(CB)}}
@@ -100,4 +106,4 @@ if __name__ == "__main__":
     b, x = res["基準"], res["X1 SEO或CB"]
     c = {"①": bool(x["2011–2026"][0] > b["2011–2026"][0] and x["2011–2026"][1] >= 2.9), "②": bool(sum(x[k] >= b[k] for k in RS.SEGS) >= 4), "③": bool(x["最大回落"] >= b["最大回落"])}
     res["判斷 X1"] = {"各項": c, "通過": all(c.values())}; print(res["判斷 X1"])
-    json.dump(res, open(f"{REPO}/research/results/seo_cb_filter.json", "w"), ensure_ascii=False, indent=1, default=str)
+    json.dump(res, open(f"{REPO}/research/results/seo_cb_filter{'_literal' if LITERAL else ''}.json", "w"), ensure_ascii=False, indent=1, default=str)
