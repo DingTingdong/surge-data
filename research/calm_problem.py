@@ -12,6 +12,11 @@ B 改良（每個各自和穩健版比）：
 回測：同 calm3.py（2006–09＋2011–2026，成本 0.6%，月中出場多扣 0.3% 單邊），並看三個換股日（第 1／3／5 個交易日）。
 採用條件（各自）：① 2011–2026 每月比 0050 不少於穩健版 −0.3 且 t ≥ 2.9；② 五段都贏 0050；③ 最大回落不比穩健版差；
   ④ 每月多 0.3 以上，或最大回落淺 3 個百分點以上；⑤ 三個換股日平均也符合 ④ 的方向（不比穩健版差）。全過才改網站，多個過選最大回落最淺的。
+結果（11/24 13:20）：四個都沒過，網站不改。
+  A1 前 20 名依 20 日波動三等分（2011–2026，下月減 0050）：低 +3.13（中位數 +0.26、跌 >10% 占 12.3%）、中 +2.11、高 +2.19（中位數 −1.54、跌 >10% 占 26.5%）。
+     依 60 日 beta：低 +1.75（中位數 −0.73、跌 >10% 20.6%）、中 +3.15、高 +2.67；2006–2009 反而低 beta 最好（+3.09）。低 beta 且低波動 +2.78（跌 >10% 11.3%）。
+  穩健版 +2.35（t 4.40，回落 −23%，單檔當月跌 >10% 占 9.8%）。B1 剔低 beta +2.53 但 2006–09、2016–19 變差、換股日晚幾天回落 −35～−38%；
+  B2 剔 20 日線下 +2.45（多不到 0.3）；B3 跌破 60 日線出場 +2.15、回落 −22%（156 次出場）；B4 跌 15% 出場 +2.33、回落 −24%。
 """
 import json, os, sys, warnings
 import numpy as np, pandas as pd
@@ -110,7 +115,7 @@ if __name__ == "__main__":
         s = res[m]; c = {"①": s["2011–2026"][0] >= b["2011–2026"][0] - 0.3 and s["2011–2026"][1] >= 2.9, "②": all(s[k] > 0 for k in RS.SEGS), "③": s["最大回落"] >= b["最大回落"],
                           "④": s["2011–2026"][0] >= b["2011–2026"][0] + 0.3 or s["最大回落"] >= b["最大回落"] + 3,
                           "⑤": s["三日平均"][0] >= b["三日平均"][0] - 0.3 and s["三日平均"][1] >= b["三日平均"][1]}
-        chk[m] = {"各項": c, "通過": all(c.values())}
+        c = {k: bool(v) for k, v in c.items()}; chk[m] = {"各項": c, "通過": all(c.values())}
     passed = [m for m in chk if chk[m]["通過"]]; best = max(passed, key=lambda m: res[m]["最大回落"]) if passed else None
-    out.update({"B": res, "判斷": chk, "採用": best}); print(json.dumps(chk, ensure_ascii=False), "採用", best)
+    out.update({"B": res, "判斷": chk, "採用": best}); print(json.dumps(chk, ensure_ascii=False, default=str), "採用", best)
     json.dump(out, open(f"{REPO}/research/results/calm_problem.json", "w"), ensure_ascii=False, indent=1, default=str)
