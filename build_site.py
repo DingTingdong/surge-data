@@ -654,9 +654,43 @@ if os.path.exists(PANIC_LOG):
             _row.update({"now": _ret(None), "d5": _ret(5), "d20": _ret(20), "e_now": _ret2(None), "e5": _ret2(5), "e20": _ret2(20)})
         ptrack.append(_row)
 
+# ---- 這一波恐慌「第一天」與「第二次碰到」選出的撿跌深前 3 名（第 43、44 輪：回測是在這兩個時點選才有效；事後補算） ----
+pwave = None
+try:
+    _bv = bear.values; _N = len(days); _t0 = None
+    for _t in range(max(_N - 60, 21), _N):
+        if _bv[_t] >= 750 and (_bv[_t - 20:_t] < 750).all(): _t0 = _t
+    if _t0 is not None:
+        _s2, _bl = None, 0
+        for _t in range(_t0 + 1, min(_t0 + 41, _N)):
+            if _bv[_t] < 750: _bl += 1
+            else:
+                if _bl >= 3: _s2 = _t; break
+                _bl = 0
+        _o50, _c50 = _etf("0050")
+        def _w2top(j, k=3):
+            bs = set(S[(S.date == days[j]) & S.base].code); Cj = C.iloc[:j + 1]
+            hi = Cj.iloc[-20:].max(); rv = (hi / Cj.iloc[-100:-19].min() - 1); rv = rv[rv.index.isin(bs)].dropna()
+            rr = rv.rank(pct=True); l60 = (f["ch"].iloc[j - 59:j + 1] >= 9.5).any(); dw = Cj.iloc[-1] / hi - 1
+            on = O.iloc[j + 1] if j + 1 < _N else pd.Series(dtype=float)
+            cs = [c for c in rv.sort_values(ascending=False).index if rr[c] > 0.7 and bool(l60.get(c, False)) and dw.get(c, 0) <= -0.2 and (j + 1 >= _N or on.get(c, 0) > 0)]
+            return cs[:k]
+        def _pack(j, lab):
+            cs = _w2top(j); r = {"lab": lab, "d": days[j].strftime("%m/%d"), "s": [[c, str(name.get(c, c))] for c in cs]}
+            if j + 1 < _N and cs:
+                rs = [(float(C.iloc[-1][c]) / float(O.iloc[j + 1][c]) - 1) * 100 for c in cs if O.iloc[j + 1][c] > 0]
+                for (c, _n), x in zip(r["s"], rs): pass
+                r["r"] = round(float(np.mean(rs)), 1) if rs else None
+                r["each"] = [round((float(C.iloc[-1][c]) / float(O.iloc[j + 1][c]) - 1) * 100, 1) for c in cs]
+                if _o50 is not None and _o50.iloc[j + 1] == _o50.iloc[j + 1]: r["b"] = round(float((_c50.iloc[-1] / _o50.iloc[j + 1] - 1) * 100), 1)
+            return r
+        pwave = [_pack(_t0, "第一天")] + ([_pack(_s2, "第二次碰到 750")] if _s2 is not None else [])
+except Exception as _e:
+    print("pwave skipped:", _e)
+
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "m20": m20_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "m20": m20_meta,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
