@@ -734,7 +734,7 @@ function rs(v){return v==null?"—":`<b class="${cl(v)}">${sg(v)}%</b>`}
 function m3box(){const M=META.m20,H=(M&&M.hist)||[],f=v=>v==null?"—":(v>0?"+":"")+v+"%";const R=H.filter(h=>h.r3!=null);
 $("m3track").innerHTML=`<h2>月選 3 檔正式紀錄</h2><p>每期換股日隔天開盤買、下次換股日隔天開盤賣（進行中的算到最新收盤），扣 1.1%×換股比例；0050 含息。補算的期別（*）不計入正式紀錄。</p>`+(M&&M.fwd3?`<p class="n">正式紀錄 ${M.fwd3.n} 期累計 ${f(M.fwd3.r)}，0050 ${f(M.fwd3.b)}</p>`:`<p>第一期正式紀錄從 12/11 換股開始。</p>`)+(R.length?`<table class="tb n"><tr><th>換股日</th><th>3 檔</th><th>0050</th><th></th></tr>${R.slice().reverse().map(h=>`<tr><td>${h.f}${h.late?"*":""}</td><td>${f(h.r3)}</td><td>${f(h.b)}</td><td>${h.done?"":"進行中"}</td></tr>`).join("")}</table>`:"")}
 function live(){const dd=(META.date||"").replace(/\//g,"-");fetch("live.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(L=>{if(!L||!L.q||!(L.d>dd))return;
-D.forEach(s=>{const q=L.q[s.t];s.e=false;if(!q)return;const pc=s.c;if(s.m20r!=null&&pc>0)s.m20r=+(((1+s.m20r/100)*(q[0]/pc)-1)*100).toFixed(1);s.c=q[0];s.ch=q[1];s.lv=1;s.e=q[1]>=9&&!s.u10});
+D.forEach(s=>{const q=L.q[s.t];s.e=false;s.rl=0;if(!q)return;const pc=s.c;if(s.m20r!=null&&pc>0)s.m20r=+(((1+s.m20r/100)*(q[0]/pc)-1)*100).toFixed(1);s.c=q[0];s.ch=q[1];s.lv=1;s.e=q[1]>=9&&!s.u10});
 if(META.m20){const r=D.filter(s=>s.m3&&s.m20r!=null).map(s=>s.m20r);if(r.length)META.m20.avg3=+(r.reduce((a,b)=>a+b,0)/r.length).toFixed(1)}
 $("sub").innerHTML="<b>"+L.d.slice(5).replace("-","/")+"</b>盤中 "+L.t+"，"+D.length.toLocaleString()+' 檔<br><span class="upd">盤中約每 15 分鐘更新</span>';chips();list()}).catch(()=>{})}
 function ptrackbox(){const P=META.ptrack||[];if(!P.length)return;const f=v=>v==null?"—":`<span class="${cl(v)}">${sg(v)}%</span>`;
