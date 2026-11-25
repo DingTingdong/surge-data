@@ -400,9 +400,9 @@ try:
     def _calm(codes, i0):  # 穩健版：前 20 名依換股日（i0 − 1）收盤前 20 日波動由低到高排（第 24 輪，使用者 11/23 選定）
         cs_ = [c for c in codes if c in C.columns]; w_ = C[cs_].iloc[max(0, i0 - 21):i0].pct_change(fill_method=None)
         v_ = w_.std().where(w_.notna().sum() >= 15); rk_ = {c: k for k, c in enumerate(codes)}
-        # 11/25 使用者要求：換股日收盤實際股價 ≥ 1,000 元（一張買不起的千元股）直接跳過、排到最後（回測影響很小：research/results/README.md「千元股」）
+        # 11/25 使用者要求：換股日收盤實際股價 ≥ 500 元（一張太貴買不起）直接跳過、排到最後（回測影響很小：research/results/README.md「千元股」）
         _px = P["rawC"].iloc[i0 - 1] if i0 - 1 < len(P["rawC"]) else P["rawC"].iloc[-1]
-        return sorted(cs_, key=lambda c: (1 if float(_px.get(c, 0) or 0) >= 1000 else 0, v_.get(c) if v_.get(c) == v_.get(c) else 9e9, rk_[c]))
+        return sorted(cs_, key=lambda c: (1 if float(_px.get(c, 0) or 0) >= 500 else 0, v_.get(c) if v_.get(c) == v_.get(c) else 9e9, rk_[c]))
     if os.path.exists(T20_LOG):
         _tl = pd.read_csv(T20_LOG, dtype={"code": str}); _fl = sorted(_tl.date.unique()); _prev = set()
         _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
