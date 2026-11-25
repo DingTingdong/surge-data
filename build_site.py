@@ -730,34 +730,61 @@ try:
 except Exception as _e:
     print("gs log skipped:", _e)
 
-# 可轉債代收公告後 10 天（第 57 輪往後記錄，11/25 起）：公告日隔天開盤買、抱 10 個交易日收盤，扣 0.6%；0050 同一天開盤買、扣 0.18%。
-# 去重同 research/cb_holdout.py：抓得到「第 N 次」照次數，抓不到的同公司 90 天內一次；同公司 30 天內只留一筆。只記錄，不提醒（2006–2010 驗證 t 1.71 未過 2.0）。
+# 可轉債代收公告後 10 天（第 57 輪往後記錄，11/25 起）。11/25 第六份覆核後與回測對齊：
+#   事件與去重：data/mopsnews（歷史）＋ data/cb_live.csv（每天抓）合併後才去重（同 research/cb_holdout.py），只記 11/25 以後的事件。
+#   進場：公告日隔天開盤（週末假日公告＝之後第一個交易日開盤）；換股日不在分析範圍、隔天沒開盤、開盤已比前收漲 ≥ 9.5%（只用開盤價判斷）→ 不買，記原因。
+#   來不及：首次抓到時間（seen）晚於進場日 09:00 → 記為「來不及」，不算進主要統計。
+#   出場：第 5／10／20 個交易日收盤；那天沒成交或一價鎖跌停 → 順延到下一個可賣的開盤。個股扣 0.6%；0050 同日開盤買、含息（adjust.csv）、扣 0.18%。
 cbf = None
 try:
     if os.path.exists("data/cb_live.csv"):
-        _k = pd.read_csv("data/cb_live.csv", dtype=str); _k["d"] = pd.to_datetime(_k.date.map(lambda s: f"{int(s.split('/')[0]) + 1911}-{s.split('/')[1]}-{s.split('/')[2]}" if "/" in s else s), errors="coerce")
-        _k = _k.dropna(subset=["d"]); _k = _k[_k.d >= "2026-11-25"].sort_values("d"); _k["n"] = _k.subject.str.replace(r"\s+", "", regex=True).str.extract(r"第([一二三四五六七八九十\d]+)次")[0]
+        def _cbev(df):
+            s_ = df.subject.fillna("").str.replace(r"\s+", "", regex=True)
+            k_ = df[s_.str.contains("轉換公司債") & s_.str.contains("代收") & ~s_.str.contains("私募|海外|外國|子公司")].copy()
+            k_["n"] = s_[k_.index].str.extract(r"第([一二三四五六七八九十\d]+)次")[0]; return k_
+        _lv = pd.read_csv("data/cb_live.csv", dtype=str)
+        _lv["d"] = pd.to_datetime(_lv.date.map(lambda s: f"{int(s.split('/')[0]) + 1911}-{s.split('/')[1]}-{s.split('/')[2]}" if "/" in str(s) else s), errors="coerce")
+        _arc = pd.concat([pd.read_csv(fn, dtype=str) for fn in sorted(glob.glob("data/mopsnews/*.csv.gz"))]) if glob.glob("data/mopsnews/*.csv.gz") else pd.DataFrame(columns=_lv.columns)
+        _arc["d"] = pd.to_datetime(_arc.date, format="%Y%m%d", errors="coerce"); _arc["seen"] = None
+        _k = _cbev(pd.concat([_arc[["d", "code", "name", "subject", "seen"]], _lv.reindex(columns=["d", "code", "name", "subject", "seen"])], ignore_index=True)).dropna(subset=["d"]).sort_values("d")
         _a = _k[_k.n.notna()].drop_duplicates(["code", "n"]); _rw, _ls = [], {}
-        for _d, _c, _nm in zip(_k[_k.n.isna()].d, _k[_k.n.isna()].code, _k[_k.n.isna()].name):
-            if _c in _ls and (_d - _ls[_c]).days < 90: continue
-            _ls[_c] = _d; _rw.append((_d, _c, _nm))
-        _ev = pd.concat([_a[["d", "code", "name"]], pd.DataFrame(_rw, columns=["d", "code", "name"])]).sort_values("d"); _kp, _lc = [], {}
-        for _d, _c, _nm in zip(_ev.d, _ev.code, _ev.name):
-            if _c in _lc and (_d - _lc[_c]).days < 30: continue
-            _lc[_c] = _d; _kp.append((_d, _c, _nm))
-        _o50, _c50 = _etf("0050"); _N = len(days); _rs = []
-        for _d, _c, _nm in _kp:
-            i = int(days.searchsorted(_d)); ie = i if (i < _N and days[i] != _d) else i + 1   # 週末假日公告：之後第一個交易日開盤買
-            if ie >= _N or _c not in C.columns or not (O.iloc[ie][_c] > 0): _rs.append({"d": _d.strftime("%m/%d"), "c": _c, "n": _nm}); continue
-            z = {"d": _d.strftime("%m/%d"), "c": _c, "n": _nm}
-            for H in (5, 10, 20):
-                x = min(ie + H - 1, _N - 1); r = (C.iloc[x][_c] / O.iloc[ie][_c] - 1) * 100 - 0.6; bb = (_c50.iloc[x] / _o50.iloc[ie] - 1) * 100 - 0.18
-                z[f"x{H}"] = round(float(r - bb), 1); z[f"done{H}"] = int(ie + H - 1 <= _N - 1)
-            z["x"], z["done"] = z["x10"], z["done10"]; _rs.append(z)
-        cbf = {"n": len(_rs), "last": _rs[-5:]}
-        for H in (5, 10, 20):
-            _dn = [z for z in _rs if z.get(f"done{H}")]
-            cbf[f"h{H}"] = {"done": len(_dn), "ex": round(float(np.mean([z[f"x{H}"] for z in _dn])), 2) if _dn else None, "win": int(round(np.mean([z[f"x{H}"] > 0 for z in _dn]) * 100)) if _dn else None}
+        for r_ in _k[_k.n.isna()].itertuples():
+            if r_.code in _ls and (r_.d - _ls[r_.code]).days < 90: continue
+            _ls[r_.code] = r_.d; _rw.append(r_)
+        _ev = pd.concat([_a, pd.DataFrame([x._asdict() for x in _rw]).drop(columns=["Index"], errors="ignore")]).sort_values("d"); _kp, _lc = [], {}
+        for r_ in _ev.itertuples():
+            if r_.code in _lc and (r_.d - _lc[r_.code]).days < 30: continue
+            _lc[r_.code] = r_.d; _kp.append(r_)
+        _kp = [r_ for r_ in _kp if r_.d >= pd.Timestamp("2026-11-25")]
+        _o50, _c50 = _etf("0050"); _aj50 = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj50 = _aj50[_aj50.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
+        _N = len(days); _rs = []; _base = {(r.date, r.code) for r in S[S.base].itertuples()} if "base" in S.columns else set()
+        for r_ in _kp:
+            _d, _c, _nm = r_.d, r_.code, r_.name; z = {"d": _d.strftime("%m/%d"), "c": _c, "n": _nm}
+            i = int(days.searchsorted(_d)); ie = i if (i < _N and days[i] != _d) else i + 1
+            if ie >= _N: z["st"] = "待買"; _rs.append(z); continue
+            sn = pd.to_datetime(r_.seen, errors="coerce") if isinstance(r_.seen, str) else pd.NaT
+            if sn == sn and sn > days[ie] + pd.Timedelta(hours=9): z["st"] = "來不及"; _rs.append(z); continue
+            if _c not in C.columns or (days[ie - 1], _c) not in _base: z["st"] = "不在分析範圍"; _rs.append(z); continue
+            o = O.iloc[ie][_c]; pv = C.iloc[ie - 1][_c]
+            if not (o == o and o > 0): z["st"] = "隔天沒開盤"; _rs.append(z); continue
+            if pv == pv and pv > 0 and o / pv - 1 >= 0.095: z["st"] = "開盤近漲停"; _rs.append(z); continue
+            z["st"] = "買"
+            for Hh in (5, 10, 20):
+                x = ie + Hh - 1
+                if x >= _N: z[f"x{Hh}"] = round(float((C[_c].iloc[ie:].dropna().iloc[-1] / o - 1) * 100 - 0.6 - ((_c50.iloc[-1] / _o50.iloc[ie] - 1) * 100 - 0.18)), 1); z[f"done{Hh}"] = 0; continue
+                px = C.iloc[x][_c]; q = x
+                while q < _N and (not (C.iloc[q][_c] == C.iloc[q][_c]) or (O.iloc[q][_c] == H.iloc[q][_c] == L.iloc[q][_c] and C.iloc[q - 1][_c] > 0 and C.iloc[q][_c] / C.iloc[q - 1][_c] - 1 <= -0.095)): q += 1
+                if q >= _N: z[f"x{Hh}"] = None; z[f"done{Hh}"] = 0; continue
+                if q > x: px = O.iloc[q][_c] if O.iloc[q][_c] > 0 else C.iloc[q][_c]
+                _dv = float(_aj50[(_aj50.date > days[ie]) & (_aj50.date <= days[q])].ratio.prod()) if len(_aj50) else 1.0
+                bb = (_c50.iloc[q] / _o50.iloc[ie] / _dv - 1) * 100 - 0.18
+                z[f"x{Hh}"] = round(float((px / o - 1) * 100 - 0.6 - bb), 1); z[f"done{Hh}"] = 1
+            z["x"], z["done"] = z.get("x10"), z.get("done10", 0); _rs.append(z)
+        _buy = [z for z in _rs if z.get("st") == "買"]
+        cbf = {"n": len(_rs), "nbuy": len(_buy), "skip": {k: sum(1 for z in _rs if z.get("st") == k) for k in ("來不及", "不在分析範圍", "隔天沒開盤", "開盤近漲停", "待買")}, "last": _rs[-5:]}
+        for Hh in (5, 10, 20):
+            _dn = [z for z in _buy if z.get(f"done{Hh}") and z.get(f"x{Hh}") is not None]
+            cbf[f"h{Hh}"] = {"done": len(_dn), "ex": round(float(np.mean([z[f"x{Hh}"] for z in _dn])), 2) if _dn else None, "win": int(round(np.mean([z[f"x{Hh}"] > 0 for z in _dn]) * 100)) if _dn else None}
         cbf["done"], cbf["ex"], cbf["win"] = cbf["h10"]["done"], cbf["h10"]["ex"], cbf["h10"]["win"]
 except Exception as _e:
     print("cb forward skipped:", _e)

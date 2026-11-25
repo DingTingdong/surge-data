@@ -1,5 +1,5 @@
 """每天抓觀測站重大訊息裡「可轉換公司債…代收」公告（第 57 輪往後記錄用），附加到 data/cb_live.csv（只增不改）。
-查最近 4 個工作日；TYPEK=sii 會一起回上市、上櫃公司。規則同 research/cb_holdout.py：排除私募／海外／外國／子公司。"""
+查最近 6 個日曆日（含週末，11/25 第六份覆核：週末公告也要收）；每筆記下首次抓到的時間 seen（台北），用來判斷是否來得及隔天開盤買。TYPEK=sii 會一起回上市、上櫃公司。規則同 research/cb_holdout.py：排除私募／海外／外國／子公司。"""
 import datetime as dt, html, os, re, socket, time, requests, pandas as pd
 import urllib3.util.connection as _uc
 _uc.allowed_gai_family = lambda: socket.AF_INET
@@ -13,10 +13,10 @@ def get(d):
         except Exception: pass
         time.sleep(15 * (k + 1))
     return None
-rows, n = [], 0
-d = (dt.datetime.utcnow() + dt.timedelta(hours=8)).date()
-while n < 4:
-    if d.weekday() < 5:
+now = dt.datetime.utcnow() + dt.timedelta(hours=8); rows, n = [], 0
+d = now.date()
+while n < 6:
+    if True:
         n += 1; txt = get(d)
         if txt is None: print("failed", d)
         else:
@@ -25,9 +25,11 @@ while n < 4:
                 if len(v) < 9: continue
                 name, code, d0, tm, subj = [html.unescape(x).strip() for x in v[:5]]; s = re.sub(r"\s+", "", subj)
                 if "轉換公司債" in s and "代收" in s and not re.search("私募|海外|外國|子公司", s):
-                    rows.append({"date": d0, "time": tm, "code": code, "name": name, "subject": subj})
+                    rows.append({"date": d0, "time": tm, "code": code, "name": name, "subject": subj, "seen": now.strftime("%Y-%m-%d %H:%M")})
         time.sleep(4)
     d -= dt.timedelta(days=1)
-old = pd.read_csv(OUT, dtype=str) if os.path.exists(OUT) else pd.DataFrame(columns=["date", "time", "code", "name", "subject"])
-new = pd.concat([old, pd.DataFrame(rows, columns=old.columns).astype(str)]).drop_duplicates(["date", "time", "code", "subject"])
+COLS = ["date", "time", "code", "name", "subject", "seen"]
+old = pd.read_csv(OUT, dtype=str) if os.path.exists(OUT) else pd.DataFrame(columns=COLS)
+old = old.reindex(columns=COLS)
+new = pd.concat([old, pd.DataFrame(rows, columns=COLS).astype(str)]).drop_duplicates(["date", "time", "code", "subject"], keep="first")   # 保留第一次看到的時間
 new.to_csv(OUT, index=False); print("cb_live", len(old), "→", len(new))
