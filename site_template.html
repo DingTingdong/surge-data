@@ -737,11 +737,15 @@ function rs(v){return v==null?"—":`<b class="${cl(v)}">${sg(v)}%</b>`}
 // 11/26 使用者要求：輸入可用金額，算每檔買幾張＋幾股零股（等金額，對應回測的等金額假設）。金額只存在這支手機（localStorage），不會上傳。
 function m3calc(){const el=$("m3calc");if(!el)return;const M=META.m20;let st={};try{st=JSON.parse(localStorage.getItem("m3calc")||"{}")}catch(e){}
 const P=D.filter(s=>s.m3).sort((a,b)=>(a.m20||99)-(b.m20||99));const buyC=new Set(((M&&M.chg&&M.chg.buy)||[]).map(x=>(x.match(/（(\w+)）/)||[])[1]).filter(Boolean));
-const first=st.first!==false,amt=+st.amt||0,buf=1.03;
+const first=st.first!==false,amt=+st.amt||((M&&M.acct&&M.acct.budget)||700000),buf=1.03;
 const L=first?P:P.filter(s=>buyC.has(s.t));const per=L.length?amt/L.length:0;
 const rows=L.map(s=>{const px=s.c*buf;let sh=Math.floor(per/px);const lots=Math.floor(sh/1000),odd=sh-lots*1000;return{s,lots,odd,sh,cost:sh*s.c}});
 const tot=rows.reduce((a,r)=>a+r.cost,0);const fm=v=>Math.round(v).toLocaleString();
-el.innerHTML=`<h2>下單計算</h2><p class="n">輸入${first?"這次要投入的總金額":"這次可用的錢（賣掉的股票＋現金）"}，平均分給${first?"本期買的 "+P.length+" 檔":"這次要「買」的 "+L.length+" 檔（續抱的不動）"}。用最新收盤價加 3% 緩衝算（開盤可能跳空），整張以外的用零股補。金額只存在這支手機。</p>
+const A=M&&M.acct,fz=k=>(k>=1000?Math.floor(k/1000)+" 張":"")+(k%1000?(k>=1000?"＋":"")+(k%1000)+" 股":"");
+const AH=A?`<h2>70 萬基準帳戶</h2><p>照規則實際買賣（整張＋零股、手續費 2.8 折、證交稅、股利入帳）。現在市值 <b>${fm(A.val)}</b> 元（${(A.val/A.budget*100-100).toFixed(1)}%）`+(A.v50!=null?`，同一天 70 萬買 0050：${fm(A.v50)} 元（${(A.v50/A.budget*100-100).toFixed(1)}%）`:"")+`；現金 ${fm(A.cash)}。</p>`+
+`<table class="tb n"><tr><th>持股</th><th>股數</th><th>收盤</th><th>市值</th></tr>${A.hold.map(x=>`<tr><td>${x.n} ${x.c}</td><td>${fz(x.sh)}</td><td>${x.px}</td><td>${fm(x.sh*x.px)}</td></tr>`).join("")}</table>`+
+(A.trades.length&&A.trades[A.trades.length-1].est?(()=>{const t=A.trades[A.trades.length-1];return `<p><b>${t.f} 換股（明天開盤，估算）</b>：`+[...t.sell.map(x=>`賣 ${x.n} ${fz(x.sh)}`),...t.buy.map(x=>`買 ${x.n} ${fz(x.sh)}`),...t.keep.map(x=>`續抱 ${x.n} ${fz(x.sh)}`)].join("、")+`</p>`})():""):`<h2>70 萬基準帳戶</h2><p class="n">從 12/11 換股、12/14 開盤那期開始，照規則用 70 萬實際買賣（張數＋零股），換股通知會寫要賣、要買幾股；之後在這裡看市值和同期 0050。</p>`;
+el.innerHTML=AH+`<h2>下單計算</h2><p class="n">輸入${first?"這次要投入的總金額":"這次可用的錢（賣掉的股票＋現金）"}，平均分給${first?"本期買的 "+P.length+" 檔":"這次要「買」的 "+L.length+" 檔（續抱的不動）"}。用最新收盤價加 3% 緩衝算（開盤可能跳空），整張以外的用零股補。金額只存在這支手機。</p>
 <p><label><input type="checkbox" id="m3first" ${first?"checked":""}> 第一次買（買齊全部 ${P.length} 檔）</label></p>
 <p><input id="m3amt" type="number" inputmode="numeric" placeholder="例如 650000" value="${amt||""}" style="width:12em;font-size:16px;padding:6px"> 元</p>`+
 (amt&&L.length?`<table class="tb n"><tr><th>股票</th><th>收盤</th><th>張</th><th>零股</th><th>約</th></tr>${rows.map(r=>`<tr><td>${r.s.n} ${r.s.t}</td><td>${r.s.c}</td><td>${r.lots}</td><td>${r.odd}</td><td>${fm(r.cost)}</td></tr>`).join("")}</table>

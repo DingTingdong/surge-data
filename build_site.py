@@ -14,6 +14,7 @@ SEED_DAYS = 40               # 第一次建立紀錄時往回補算的交易日�
 HOLD = 5                     # 隔日開盤買、第5個交易日收盤賣
 COST = 1.1                   # 手續費＋稅＋滑價，約1.1%
 LOCK = 0.095                 # 一價到底且漲跌幅達此比例 → 視為漲跌停鎖死
+BUDGET = 700000              # 11/26 使用者：先用 70 萬當基準（之後有閒錢再改）
 NPICK = 5                    # 月選本期買幾檔（11/26 使用者選 5 檔：第 60 輪，回落 −21%；原 3 檔）
 SIG, DAYS = "data/signals.csv", "data/days.csv"
 
@@ -403,7 +404,7 @@ try:
     m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
                 "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
     # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 0.6% × 換股比例（11/25 改，與研究同）；0050 同段含息
-    _hist = []; _h3 = []; _sels = []
+    _hist = []; _h3 = []; _sels = []; _pairs = []
     def _calm(codes, i0):  # 穩健版：前 20 名依換股日（i0 − 1）收盤前 20 日波動由低到高排（第 24 輪，使用者 11/23 選定）
         cs_ = [c for c in codes if c in C.columns]; w_ = C[cs_].iloc[max(0, i0 - 21):i0].pct_change(fill_method=None)
         v_ = w_.std().where(w_.notna().sum() >= 15); rk_ = {c: k for k, c in enumerate(codes)}
@@ -440,7 +441,7 @@ try:
                 _o3 = O.iloc[_i0][c]; _pc3 = C.iloc[_i0 - 1][c]
                 _x3 = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
                 _rr3.append((float(_x3) / float(_o3 if _o3 == _o3 and _o3 > 0 else _pc3) - 1) * 100)
-            _to3 = 1.0 if not _h3 else len(_new3) / NPICK; _h3 = _sel3; _sels.append(_sel3)
+            _to3 = 1.0 if not _h3 else len(_new3) / NPICK; _h3 = _sel3; _sels.append(_sel3); _pairs.append((_t0, _i0, list(_sel3)))
             _to = 1.0 if not _prev else len(set(_codes) - _prev) / 20; _prev = set(_codes)
             _bb = None
             if _e5 is not None and days[_i0] in _e5.index:
@@ -467,6 +468,51 @@ try:
     _r3 = [m20[c]["m20r"] for c in _s3 if c in m20 and "m20r" in m20[c]]
     m20_meta["avg3"] = round(float(np.mean(_r3)), 1) if _r3 else None; m20_meta["np"] = NPICK
     m20_meta["hist"] = _hist
+    # 70 萬基準帳戶（11/26 使用者要求）：從第一期正式紀錄（12/11 換股、12/14 開盤）起，照規則實際張數＋零股買賣。
+    #   賣：賣掉的股票全部股數、進場日開盤價，扣手續費 0.0399%＋證交稅 0.3%；買：可用現金平均分給新買的股票，開盤價（含手續費 0.0399%）買到最多的股數。
+    #   續抱不調股數。除權息：照 adjust.csv 的參考價把股利當現金入帳（股票股利也當現金近似）；減資照比例減股數。0050 同樣 70 萬同日開盤買、含息。
+    acct = None
+    try:
+        _rawO = P["O"] * (P["rawC"] / P["C"]); _rC = P["rawC"]; FEE, TAX = 0.000399, 0.003
+        _aj = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj["date"] = pd.to_datetime(_aj.date)
+        _pp = [x for x in _pairs if x[0] >= pd.Timestamp("2026-12-11")]
+        _pend = None if (_hist and _hist[-1]["f"] == _form.strftime("%y/%m/%d")) else (_form, None, list(_s3))
+        if _form >= pd.Timestamp("2026-12-11") and _pend is not None: _pp = _pp + [_pend]
+        if _pp:
+            sh, cash, trades, last_i = {}, float(BUDGET), [], None
+            for _t0, _ie, _sel in _pp:
+                if _ie is None:   # 換股日當晚：用換股日收盤價 ×1.03 估算
+                    _i = days.get_loc(_t0); px = lambda c: float(_rC.iloc[_i][c]); bufx = 1.03
+                else:
+                    _i = _ie; px = lambda c: float(_rawO.iloc[_i][c]) if _rawO.iloc[_i][c] == _rawO.iloc[_i][c] and _rawO.iloc[_i][c] > 0 else float(_rC.iloc[_i - 1][c]); bufx = 1.0
+                if last_i is not None:
+                    for r_ in _aj[(_aj.date > days[last_i]) & (_aj.date <= days[min(_i, len(days) - 1)]) & _aj.code.isin(list(sh))].itertuples():
+                        if r_.kind == "除權息" and r_.before > r_.ref: cash += sh[r_.code] * (r_.before - r_.ref)
+                        elif r_.ref > 0: sh[r_.code] = int(sh[r_.code] * r_.before / r_.ref)
+                sold = [c for c in sh if c not in _sel]; new = [c for c in _sel if c not in sh]; tr = {"f": _t0.strftime("%m/%d"), "est": _ie is None, "sell": [], "buy": []}
+                for c in sold:
+                    p_ = px(c); cash += sh[c] * p_ * (1 - FEE - TAX); tr["sell"].append({"c": c, "n": name.get(c, ""), "sh": sh[c], "px": round(p_, 2)}); del sh[c]
+                per = cash / len(new) if new else 0
+                for c in new:
+                    p_ = px(c) * bufx; k = int(per // (p_ * (1 + FEE)))
+                    if k > 0: sh[c] = k; cash -= k * px(c) * (1 + FEE)
+                    tr["buy"].append({"c": c, "n": name.get(c, ""), "sh": k, "px": round(px(c), 2)})
+                tr["keep"] = [{"c": c, "n": name.get(c, ""), "sh": sh[c]} for c in sh if c not in new]
+                trades.append(tr); last_i = _i
+                if _ie is None: break
+            for r_ in _aj[(_aj.date > days[last_i]) & _aj.code.isin(list(sh))].itertuples():
+                if r_.kind == "除權息" and r_.before > r_.ref: cash += sh[r_.code] * (r_.before - r_.ref)
+                elif r_.ref > 0: sh[r_.code] = int(sh[r_.code] * r_.before / r_.ref)
+            val = cash + sum(k * float(_rC[c].dropna().iloc[-1]) for c, k in sh.items())
+            _i1 = _pp[0][1]; v50 = None
+            if _i1 is not None:
+                if _e5 is not None and days[_i1] in _e5.index:
+                    _oo = float(_e5.open[days[_i1]]); _cc5 = float(_e5.close.iloc[-1]); _d50 = float(_aj[(_aj.code == "0050") & (_aj.date > days[_i1])].ratio.prod()) if len(_aj) else 1.0
+                    _k50 = int(BUDGET // (_oo * (1 + FEE))); v50 = BUDGET - _k50 * _oo * (1 + FEE) + _k50 * _cc5 / _d50 * (1 - FEE - 0.001)
+            acct = {"budget": BUDGET, "val": round(val), "cash": round(cash), "v50": round(float(v50)) if v50 is not None else None, "hold": [{"c": c, "n": name.get(c, ""), "sh": k, "px": round(float(_rC[c].dropna().iloc[-1]), 2)} for c, k in sh.items()], "trades": trades[-3:]}
+    except Exception as _e:
+        print("acct skipped:", _e)
+    m20_meta["acct"] = acct
     _ok = [h for h in _hist if h["r"] is not None and h["b"] is not None and not h["late"]]
     m20_meta["fwd"] = {"n": len(_ok), "r": round((np.prod([1 + h["r"] / 100 for h in _ok]) - 1) * 100, 1), "b": round((np.prod([1 + h["b"] / 100 for h in _ok]) - 1) * 100, 1)} if _ok else None
     _ok3 = [h for h in _ok if h.get("r3") is not None]
@@ -808,7 +854,11 @@ try:
     if m20_meta and m20_meta.get("chg") and m20_meta.get("form") == _tds and not m20_meta.get("entry"):
         _c = m20_meta["chg"]
         _msg = f"【月選換股】{_tds} 收盤選出，明天開盤：" + "".join(f"\n{k} " + "、".join(v) for k, v in (("賣", _c["sell"]), ("買", _c["buy"]), ("續抱", _c["keep"])) if v)
-        _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（開盤前掛限價單；開盤漲停買不到就換候補下一檔）\n" + _url)
+        _ac = m20_meta.get("acct"); _fmt = lambda k: (f"{k // 1000} 張" if k >= 1000 else "") + (f"{'＋' if k >= 1000 and k % 1000 else ''}{k % 1000} 股" if k % 1000 else "")
+        if _ac and _ac.get("trades") and _ac["trades"][-1].get("est"):
+            _tr = _ac["trades"][-1]
+            _msg += f"\n\n70 萬基準（估算，用今天收盤＋3% 緩衝）：" + "".join(f"\n賣 {x['n']} {_fmt(x['sh'])}" for x in _tr["sell"]) + "".join(f"\n買 {x['n']} {_fmt(x['sh'])}（約 {x['sh'] * x['px'] / 1e4:.1f} 萬）" for x in _tr["buy"]) + "".join(f"\n續抱 {x['n']} {_fmt(x['sh'])}" for x in _tr["keep"])
+        _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（開盤前掛限價單；開盤比昨收漲 9.5% 以上就不買、換候補下一檔）\n" + _url)
     # 月選週報（11/25 使用者要求）：每週最後一個交易日收盤後（週五；週五休市就看下週一前最後一天）傳一次
     if days[-1].weekday() == 4:
         _h3w = [x for x in data if x.get("m3")]
