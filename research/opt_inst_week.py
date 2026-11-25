@@ -12,6 +12,11 @@
 判斷（F1～F3 各自）：① 命中率 ≥ 60%；② 比永遠看多高 5 個百分點以上；③ 看多那幾週的下週報酬平均 − 看空那幾週 > 0，t ≥ 2.9；
   ④ 前後兩半（2023-11～2025-04、2025-05～2026-11）③ 的差都 > 0。全過 → 雷達加「選擇權外資方向」大盤訊號；否則照實報告、只當資料顯示。
 注意：只有約 150 週、只有一種盤勢（大多頭），就算通過也要往前記錄驗證。
+實作修正（跑出結果前）：下載檔的標籤是 CALL／PUT、「外資及陸資」，改對應名稱，規則不變。
+結果（11/25 12:50）：都不通過。2023-12-01～2026-11-20，153 週，永遠看多命中 60.8%。
+  F1 外資口數：命中 52.9%（看多後下週 +0.97%、看空後 +0.59%，差 0.38，t 0.67）；F2 外資金額：55.6%（差 0.54，t 0.91）；F3 週變化：54.6%（差 0.11）。
+  D1 自營商口數：同向 47.1%、反向 52.9%（差 −0.93，t −1.63）。→ 沒有一種比「永遠看多」準，離「7 成」很遠。
+
 """
 import json, os, sys, warnings
 import numpy as np, pandas as pd
@@ -29,7 +34,7 @@ def p0050():
 def load():
     D = pd.read_csv(f"{REPO}/data/taifex/opt_inst.csv", dtype=str); D.columns = [c.strip() for c in D.columns]
     D["date"] = pd.to_datetime(D["日期"].str.strip()); num = lambda s: pd.to_numeric(s.astype(str).str.replace(",", "").str.strip(), errors="coerce")
-    D["cp"] = D["買賣權別"].str.strip(); D["who"] = D["身份別"].str.strip()
+    D["cp"] = D["買賣權別"].str.strip().replace({"CALL": "買權", "PUT": "賣權"}); D["who"] = D["身份別"].str.strip().replace({"外資及陸資": "外資"})  # 下載檔標籤是 CALL／PUT、外資及陸資
     D["oi_n"] = num(D["未平倉口數買賣淨額"]); D["oi_v"] = num(D["未平倉契約金額買賣淨額(千元)"])
     return D
 
