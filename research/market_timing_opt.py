@@ -10,6 +10,13 @@ B 跳水時機（課程：「賭明天破 20 日線，或一天跌 150～200 點
   看隔天：跌 ≥ 1.5% 的機率、漲 ≥ 1.5% 的機率；之後 5 天內最低點曾跌 ≥ 3% 的機率；隔天、5 天平均報酬。和全部日子比。
   判斷（B1、B2 各自）：隔天跌 ≥ 1.5% 的機率 ≥ 全部日子的 1.5 倍，且二項檢定 p < 0.01，兩段都成立 → 雷達加「跳水警示」；
   同時報告漲 ≥ 1.5% 的機率（大跌後常大彈，買賣權都是樂透）。
+結果（11/25 13:10，用 2006–2026 完整指數）：都不通過（嚴格門檻），網站只顯示數值。
+  A1 未平倉 P/C 比的一年百分位分五組（低→高）20 日報酬 +0.21／+0.30／+1.18／+1.61／+2.62%：方向一致（賣權越多、之後越好），
+     但高減低 +1.86（t 1.73），2007–2015 +5.01（t 2.78）、2016–2026 只有 +0.67（t 0.41）→ 不通過。A2 成交量比 +2.66（t 2.09），2016–2026 +0.19 → 不通過。
+  B1 跌破 20 日線：隔天跌 ≥1.5% 的機率 6.9%，比全部日子（8.1%）還低（0.84 倍）→ 課程說法不成立。
+  B2 單日跌 ≥1.5%：隔天跌 ≥1.5% 13.5%（1.66 倍，p 0.0001），2007–2015 p 0.011（差一點）、2016–2026 p 0.007 → 依規則不通過；
+     但隔天「漲」≥1.5% 也變成 14.5%（全部日子 8.7%），隔天平均 +0.1%：大跌後是波動變大、上下都可能，不是更容易續跌。
+
 """
 import json, os, sys, warnings
 import numpy as np, pandas as pd
@@ -23,7 +30,14 @@ def binom_p(k, n, p):  # 單尾 P(X ≥ k)
     return float(binom.sf(k - 1, n, p))
 
 if __name__ == "__main__":
-    px = p0050().dropna(); r = px.pct_change() * 100
+    # 11/25 修正：data/etf.csv 的 0050 只到 2019 年起，改用回測資料裡 2006–2026 的 0050 還原指數（bidx）。修正前先看到只有 2019–2026 的結果（A1 t 2.06、B2 倍數 1.51、p 0.034），記在這裡。
+    xs = []
+    for f in ("/tmp/model_v2/vs0050_oldestonly_extra.pkl", "/tmp/model_v2/vs0050_extra.pkl"):
+        X = pd.read_pickle(f); xs.append(pd.Series(np.asarray(X["bidx"], float), index=pd.DatetimeIndex(X["days"])))
+    a, b = xs; px = pd.concat([a[a.index < b.index[0]] * (b.iloc[0] / a[a.index <= b.index[0]].iloc[-1]), b]).sort_index(); px = px[~px.index.duplicated()].dropna()
+    tail = p0050().dropna(); tail = tail[tail.index > px.index[-1]]
+    if len(tail): px = pd.concat([px, tail * (px.iloc[-1] / p0050().dropna().reindex([px.index[-1]]).iloc[0])])
+    r = px.pct_change() * 100
     P = pd.read_csv(f"{REPO}/data/taifex/pcratio.csv", dtype=str); P.columns = [c.strip() for c in P.columns]; P["date"] = pd.to_datetime(P["日期"].str.strip())
     P = P.set_index("date").sort_index(); P = P[~P.index.duplicated()]
     num = lambda s: pd.to_numeric(s.astype(str).str.replace(",", "").str.strip(), errors="coerce")
