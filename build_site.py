@@ -743,6 +743,13 @@ try:
         _c = m20_meta["chg"]
         _msg = f"【月選換股】{_tds} 收盤選出，明天開盤：" + "".join(f"\n{k} " + "、".join(v) for k, v in (("賣", _c["sell"]), ("買", _c["buy"]), ("續抱", _c["keep"])) if v)
         _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（開盤前掛限價單；開盤漲停買不到就換候補下一檔）\n" + _url)
+    # 月選週報（11/25 使用者要求）：每週最後一個交易日收盤後（週五；週五休市就看下週一前最後一天）傳一次
+    if days[-1].weekday() == 4:
+        _h3w = [x for x in data if x.get("m3")]
+        if _h3w and m20_meta.get("entry"):
+            _ln = "、".join(f"{x['n']} {('+' if (x.get('m20r') or 0) >= 0 else '')}{x.get('m20r')}%" for x in _h3w)
+            _f3 = m20_meta.get("fwd3"); _rec = f"\n正式紀錄 {_f3['n']} 期累計 {_f3['r']:+.1f}%，0050 {_f3['b']:+.1f}%。" if _f3 else "\n正式紀錄從 12/11 換股那期開始累計。"
+            _nt.send(f"weekly-{_td:%Y-%m-%d}", f"【月選週報】{_tds}\n本期（{m20_meta.get('entry')} 進場）：{_ln}\n3 檔平均 {m20_meta.get('avg3'):+.1f}%，同期 0050 {m20_meta.get('b'):+.1f}%。{_rec}\n下次換股：{m20_meta.get('next')} 收盤後出名單。\n" + _url)
     # 月選本期買的「爆雷」資訊提醒（11/24 使用者要求；不是賣出訊號：回測裡大跌時賣掉換 0050 反而較差）
     _h3 = {c: v for c, v in m20.items() if v.get("m3")}
     if _h3 and os.path.exists("data/disposal.csv"):
