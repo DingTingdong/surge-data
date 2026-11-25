@@ -355,12 +355,14 @@ if cscore and set(cscore) & set(S[(S.date == days[-1]) & S.pk].code) and (_cl is
     pd.concat([_cl, _new], ignore_index=True).to_csv(CL, index=False) if _cl is not None else _new.to_csv(CL, index=False)
 
 # ---- 每月前20（research/top20_goal.py 的基準規則；research/top20_exact.py 回測）----
-# 每月 11 日後第一個交易日收盤後，分析範圍內「趨勢＋營收」分數最高的 20 檔，隔天開盤買；下次換股日還在前 20 的續抱。
+# 每月營收期限日（10 日起第一個交易日）的下一個交易日收盤後，分析範圍內「趨勢＋營收」分數最高的 20 檔，隔天開盤買；下次換股日還在前 20 的續抱。
 # 名單第一次算出（而且當天融資資料已更新）就記到 data/top20_log.csv，只增不改；之後的報酬才是真正的前瞻驗證。
 T20_LOG = "data/top20_log.csv"; m20 = {}; m20_meta = None
 try:
     import composite_score as _cs2
-    _dsr = pd.Series(days); _fdm = _dsr[_dsr.dt.day >= 11].groupby(_dsr.dt.to_period("M")).first()
+    # 第 58 輪（11/25）：月營收期限＝每月 10 日起第一個交易日（遇假日順延）；換股日＝期限日的下一個交易日（10 日是交易日時＝11 日起第一個交易日，與舊規則相同）
+    _dsr = pd.Series(days); _dlm = _dsr[_dsr.dt.day >= 10].groupby(_dsr.dt.to_period("M")).first(); _dpi = np.searchsorted(_dsr.values, _dlm.values) + 1
+    _fdm = pd.Series([_dsr.iloc[k] for k in _dpi if k < len(_dsr)])
     _form = _fdm.iloc[-1]; _fs = _form.strftime("%Y-%m-%d")
     _t20 = pd.read_csv(T20_LOG, dtype={"code": str}) if os.path.exists(T20_LOG) else None
     import glob as _g2; _chfs = sorted(_g2.glob("data/chips/*.csv*"), key=lambda x: (os.path.basename(x)[:4], x.endswith(".csv"))); _chf = _chfs[-1] if _chfs else None
@@ -391,8 +393,10 @@ try:
         if _d0 in _e.index and _e.open.get(_d0, np.nan) > 0:
             _div = float(_aj[(_aj.date > _d0) & (_aj.date <= days[-1])].ratio.prod()) if len(_aj) else 1.0
             _b = round((float(_e.close.loc[:days[-1]].iloc[-1]) / float(_e.open[_d0]) / _div - 1) * 100, 1)
-    _nx = (_form + pd.offsets.MonthBegin(1)).replace(day=11)
-    while _nx.weekday() >= 5: _nx += pd.Timedelta(days=1)
+    _nx = (_form + pd.offsets.MonthBegin(1)).replace(day=10)   # 下次換股日（預估）：期限日（10 日，遇週末／國慶順延）的下一個工作日；農曆年等連假無法預知
+    while _nx.weekday() >= 5 or (_nx.month == 10 and _nx.day == 10): _nx += pd.Timedelta(days=1)
+    _nx += pd.Timedelta(days=1)
+    while _nx.weekday() >= 5 or (_nx.month == 10 and _nx.day == 10): _nx += pd.Timedelta(days=1)
     m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
                 "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
     # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 1.1% × 換股比例；0050 同段含息
