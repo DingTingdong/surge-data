@@ -24,6 +24,16 @@
   H1、H2：H20 每筆減 0050 平均五段都 > 0、以進場月份分群 NW t ≥ 2.9、贏 0050 比例 ≥ 50%，且減全部股票平均 > 0 → 網站加「週線轉強」觀察名單（不當買進訊號）。
   H3：H3 減 0050 符合 H1 的條件，且比同期沒有 CB 的 H1 好（差的 t ≥ 2）→ 可轉債加回網站當「可轉債＋週線轉強」。
   H4：60 日減全部股票平均 > 0 且 t ≥ 2，2011–2015、2016–2019、2020–2026 三段都 > 0 →「可轉債發行後」提醒。
+實作修正（11/25 11:30，跑出結果前的程式錯誤）：讀公告時索引重複、陣列唯讀，修正後才產生結果，規則沒變。
+結果（11/25 11:40）：H1、H2、H3 不通過（明顯是負的），H4 通過（只對「全部股票平均」）。
+  H1 週線布林低檔上碰上：2,380 筆，H20 減 0050 −2.55%（中位 −4.39，贏 35%，t −4.84），五段 −0.22／−3.40／−2.95／−2.02／−4.77；
+     減全部股票 −1.45（t −2.99）；H60 −5.26；週收盤跌破中軸才賣 −4.09（平均抱 60 天，贏 23%）。
+  H2 加大盤 20 日 > 120 日：−2.69（t −4.39），沒變好。
+  H3 加可轉債決議 180 天內：201 筆 −3.69（t −2.61），比沒可轉債的 H1（−2.45）更差，差 −1.2。
+  H4 可轉債發行時點（代收公告，2011–2026，828 檔次）：60 日減全部股票 +2.46（t 2.16），三段 +0.69／+3.05／+3.06 → 通過；
+     但減 0050 −1.20、中位數減全部 −2.25（少數大漲拉高平均）；20 日減全部 +2.90、減 0050 +0.95。公告前 20 日減 0050 +1.90（不是「打低」）。
+  → 網站：個股卡片加「剛發可轉債」提醒（發行日 60 個交易日內，依櫃買中心流通可轉債清單），說明只是比一般股票好、沒有贏 0050；不加週線轉強名單。
+
 """
 import json, os, sys, glob, warnings
 import numpy as np, pandas as pd
@@ -37,7 +47,7 @@ COST = 0.6
 
 def cb_dates():
     _, CB = SC.events(); CB = CB.copy()
-    N = pd.concat([pd.read_csv(f, dtype={"code": str, "date": str, "time": str}) for f in sorted(glob.glob(f"{REPO}/data/mopsnews/*.csv.gz"))]).drop_duplicates(["date", "time", "code", "subject"])
+    N = pd.concat([pd.read_csv(f, dtype={"code": str, "date": str, "time": str}) for f in sorted(glob.glob(f"{REPO}/data/mopsnews/*.csv.gz"))]).drop_duplicates(["date", "time", "code", "subject"]).reset_index(drop=True)
     s = N.subject.fillna("").str.replace(r"\s+", "", regex=True)
     k = N[s.str.contains("轉換公司債") & s.str.contains("代收") & ~s.str.contains("私募|海外|外國|子公司")].copy()
     k["n"] = s[k.index].str.extract(r"第([一二三四五六七八九十\d]+)次")[0].fillna("?")
@@ -55,7 +65,7 @@ def run(path, start, end, CB, ISS):
     hi52 = W.rolling(52, min_periods=40).max()
     turn = (mid > mid.shift(1)) & (mid.shift(4) < mid.shift(5))
     sigW = turn & (W >= up) & (W <= 0.85 * hi52)
-    sigW = sigW.fillna(False).values
+    sigW = sigW.fillna(False).values.astype(bool).copy()
     prior = pd.DataFrame(sigW.astype(float)).shift(1).rolling(26, min_periods=1).max().fillna(0).values > 0
     sigW &= ~prior
     below_mid = (W < mid).values  # 週收盤跌破中軸

@@ -550,6 +550,10 @@ try:
                      "cbc": int(round((1 - float(_z.out) / float(_z.iss)) * 100)) if _z.iss > 0 else None}
             _st = pd.to_datetime(str(_z["Conversion/ExchangePeriodStartDate"]), format="%Y%m%d", errors="coerce")
             if _st == _st and _st > _todays: _info["cbs"] = _st.strftime("%m/%d")
+            _isd = pd.to_datetime(str(_z.IssueDate), format="%Y%m%d", errors="coerce")  # 第 50 輪 H4：發行後 60 個交易日內，比一般股票好（但沒贏 0050）
+            if _isd == _isd:
+                _nd = int((pd.DatetimeIndex(days) > _isd).sum())
+                if _nd <= 60: _info["cbn"] = _nd
             _up = (_s > _cp).values
             for _i in range(len(_s) - 1, max(len(_s) - 30, 1) - 1, -1):
                 if _up[_i] and not _up[_i - 1]:
