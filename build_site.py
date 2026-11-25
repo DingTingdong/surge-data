@@ -45,8 +45,10 @@ _ok = _Cf.notna() & _m[60].notna()
 _sh = (_m[5] < _m[10]) & (_m[10] < _m[20]) & _ok
 _mk = P["MK"].ffill().iloc[-1]
 _tw = [c for c in C.columns if _mk.get(c) == "TWSE"]; _tp = [c for c in C.columns if _mk.get(c) == "TPEX"]
-bear = _sh[_tw].sum(axis=1)
-bear_tot = _ok[_tw].sum(axis=1)
+# 11/25 第六份覆核：歷史空頭家數改用「每天當時的市場別」（原本用最新市場別回填整段歷史），並排除臺灣存託憑證（91xx，TDR）
+_twd = (P["MK"].ffill() == "TWSE").reindex(index=C.index, columns=C.columns).fillna(False) & ~pd.Series(C.columns.str.match(r"^91\d\d$"), index=C.columns)
+bear = (_sh & _twd).sum(axis=1)
+bear_tot = (_ok & _twd).sum(axis=1)
 d20 = (C.iloc[-1] / C.iloc[-20:].max() - 1) * 100  # 離自己近20日最高收盤
 above10 = C.iloc[-1] >= C.iloc[-10:].mean()  # 收盤在10日線上（仍在動分頁只放這種、而且當天沒跌停）
 bear_meta = {"n": int(bear.iloc[-1]), "tot": int(bear_tot.iloc[-1]), "h": [int(x) for x in bear.iloc[-40:]], "dd": [x.strftime("%m/%d") for x in days[-40:]],
@@ -284,7 +286,7 @@ _mv = (ind["cap"] * P["rawC"].iloc[-1].reindex(ind.index) / 10) if len(ind) else
 # 11/20 改用每檔自己的漲勢與高點（research/panic_own_high.py；使用者指出安碁資訊這類恐慌中逆勢大漲的股票被漏掉）：
 #   自己這段漲勢＝近20日最高收盤 ÷ 前100～20日最低收盤 − 1，排分析範圍前30%，且近60日漲停過；從自己近20日最高收盤跌 ≥ 20%
 _hi20 = C.iloc[-20:].max()
-_run = (_hi20 / C.iloc[-100:-19].min() - 1).reindex(d.index) * 100
+_run = (_hi20 / C.iloc[-101:-19].min() - 1).reindex(d.index) * 100  # 11/25 與 research/panic_own_high.py 對齊：前 100～20 日＝i−100 到 i−20（原本少一天）
 _runr = _run.rank(pct=True)
 _lim60 = (f["ch"].iloc[-60:] >= 9.5).any()
 _dw = ((C.iloc[-1] / _hi20 - 1) * 100).reindex(d.index)
@@ -803,7 +805,7 @@ try:
     if _t0w is not None and pwave:
         if _t0w == len(days) - 1:
             _nm = "、".join(f"{n_}（{c_}）" for c_, n_ in pwave[0]["s"])
-            _nt.send(f"pick3-buy-{_td:%Y-%m-%d}", f"【撿跌深】{_tds} 上市空頭家數第一次到 {int(bear.iloc[-1])}（≥750）。前 3：{_nm}\n明天開盤買（開盤鎖漲停買不到就換撿跌深下一名），抱 20 個交易日。\n回測 2014–2026 這個時點 11 次都贏全部股票（平均多約 14%～20%），但挑法是看過這些恐慌才定的，用 2006–2019 驗證每次只多 2～5%；但單檔約 6 成賺錢、持有中最大回落平均 −11%，次數少，不要重壓。\n" + _url)
+            _nt.send(f"pick3-buy-{_td:%Y-%m-%d}", f"【撿跌深】{_tds} 上市空頭家數第一次到 {int(bear.iloc[-1])}（≥750）。前 3：{_nm}\n明天開盤買（開盤鎖漲停買不到就換撿跌深下一名），抱 20 個交易日。\n回測 2018–2026 這個時點 10 次都贏分析範圍平均（平均多約 15%），但挑法是看過這些恐慌才定的，次數少、集中在 2020/3、2021/5 兩次；但單檔約 6 成賺錢、持有中最大回落平均 −11%，次數少，不要重壓。\n" + _url)
         if _t0w + 19 == len(days) - 1:
             _nm = "、".join(n_ for c_, n_ in pwave[0]["s"])
             _nt.send(f"pick3-sell-{days[_t0w]:%Y-%m-%d}", f"【撿跌深】{days[_t0w]:%m/%d} 選的前 3（{_nm}）明天是第 20 個交易日，回測是在第 20 天收盤賣出。\n" + _url)
