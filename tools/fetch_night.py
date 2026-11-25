@@ -8,7 +8,7 @@ now = dt.datetime.utcnow() + dt.timedelta(hours=8); end = now.date(); start = en
 r = requests.post("https://www.taifex.com.tw/cht/3/futDataDown", data={"down_type": "1", "commodity_id": "TX", "queryStartDate": start.strftime("%Y/%m/%d"), "queryEndDate": end.strftime("%Y/%m/%d")},
                   headers={"User-Agent": "Mozilla/5.0"}, timeout=60)
 txt = r.content.decode("cp950", errors="replace")
-df = pd.read_csv(io.StringIO(txt), dtype=str); df.columns = [c.strip() for c in df.columns]
+df = pd.read_csv(io.StringIO(txt), dtype=str, index_col=False); df.columns = [c.strip() for c in df.columns]
 print("筆數", len(df), "交易時段", df["交易時段"].astype(str).str.strip().unique()[:5].tolist(), "契約", df["契約"].astype(str).str.strip().unique()[:5].tolist()); print(df.tail(4).to_string())
 df = df[(df["契約"].str.strip() == "TX") & ~df["到期月份(週別)"].str.contains("/", na=False)].copy()
 for c in ("收盤價", "漲跌價", "成交量"): df[c] = pd.to_numeric(df[c].str.replace(",", "").str.strip(), errors="coerce")
