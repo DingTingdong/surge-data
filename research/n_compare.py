@@ -39,13 +39,13 @@ def mix(T, mode):
     return pd.Series(out, index=T.index)
 if __name__ == "__main__":
     PK = "/tmp/model_v2/vs0050_dl_extra.pkl"; D = prep(PK, "2011-01-01", "2027-01-01"); D["cols"] = list(pd.read_pickle(PK)["cols"]); D = addraw(D, PK); res = {}
-    for n in (3, 5, 7, 9, 20):
+    for n in [int(x) for x in os.environ.get("NS", "3,5,7,9,20").split(",")]:   # 11/26 使用者要 5～10 全列：NS=5,6,7,8,9,10
         T, _ = sim(D, L=True, W=True, Xs=True, B=True, n=n, cap=500 if n < 20 else None)
         cap = []
         for a, cs in zip(T.index, T.codes):
             ie = D["POS"][a] + 1; cap.append(np.nansum([D["rawO"][ie, D["CJ"][c]] for c in cs.split(",") if c]) * 1000 / 1e4)
         k = "前20全買" if n == 20 else f"{n}檔"
-        res[k] = {"全部月選": summ(T.r, T.b), "每期1張所需資金中位(萬)": round(float(np.median(cap))), "近一年資金中位(萬)": round(float(np.median(cap[-12:])))}
+        res[k] = {"全部月選": summ(T.r, T.b), "每期1張所需資金中位(萬)": round(float(np.median(cap))), "近一年資金中位(萬)": round(float(np.median(cap[-12:]))), "近一年資金最高(萬)": round(float(np.max(cap[-12:]))), "近一年資金最低(萬)": round(float(np.min(cap[-12:])))}
         for md in ("每月調回", "每年1月調回", "放著不動"): res[k][f"一半0050｜{md}"] = summ(mix(T, md), T.b)
         print(k, json.dumps(res[k], ensure_ascii=False), flush=True)
-    res["0050"] = summ(T.b, T.b); json.dump(res, open(f"{REPO}/research/results/n_compare.json", "w"), ensure_ascii=False, indent=1)
+    res["0050"] = summ(T.b, T.b); json.dump(res, open(f"{REPO}/research/results/n_compare{os.environ.get('NS', '').replace(',', '_')}.json", "w"), ensure_ascii=False, indent=1)
