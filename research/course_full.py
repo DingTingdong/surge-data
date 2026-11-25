@@ -14,6 +14,12 @@
 進場：下一個交易日開盤（開盤一價漲停買不到就放棄）；出場：H20 主要，另報 H60、H120；扣 0.6%。比較 0050（含息）與同日全部股票平均。
 判斷（主要組合）：2014-04 起，H20 減 0050 在 2014–15、2016–19、2020–23、2024–26 四段都 > 0，以進場月份分群 NW t ≥ 2.9，贏 0050 ≥ 50%，
   減全部股票 > 0 → 網站加「課程選股（線型＋基本面）」觀察名單；否則照實報告。
+實作修正（跑出結果前）：季報欄位名稱 eq 和 pandas 方法衝突，改名 equity，規則不變。
+結果（11/25 17:10）：不通過。2014-04～2026，20 日減 0050／減全部股票：
+  T2 線型 8,104 筆 −2.04（t −5.75）／−0.05；T1 加低檔 −3.58／−1.29；T2＋年營收 −1.53／+0.28；T2＋ROE −1.66／+0.04；
+  主要 T2＋年營收＋ROE 2,816 筆 −1.39（t −3.66，贏 39%，四段 −0.62／−1.58／−0.45／−3.00）／+0.18；60 天 −3.37、120 天 −6.38；
+  ＋大盤強 −1.98／+0.03；T1＋年營收＋ROE 737 筆 −3.01／−1.28。→ 基本面讓它從「比一般股票略差」變「和一般股票差不多」，但仍明顯輸 0050；低檔、大盤濾網都讓它更差。
+
 """
 import json, os, sys, glob, warnings
 import numpy as np, pandas as pd
@@ -33,11 +39,11 @@ def roe_table():
         p = d.pivot_table(index="code", columns="field", values="value", aggfunc="first")
         pick = lambda names: p[[n for n in names if n in p.columns]].bfill(axis=1).iloc[:, 0] if any(n in p.columns for n in names) else pd.Series(np.nan, index=p.index)
         ni = pick(["淨利（淨損）歸屬於母公司業主", "本期淨利（淨損）", "本期稅後淨利（淨損）"]); eq = pick(["歸屬於母公司業主之權益合計", "權益總計", "權益總額"])
-        rows.append(pd.DataFrame({"code": p.index, "y": y, "s": s, "ni": ni.values, "eq": eq.values}))
+        rows.append(pd.DataFrame({"code": p.index, "y": y, "s": s, "ni": ni.values, "equity": eq.values}))
     Q = pd.concat(rows, ignore_index=True).sort_values(["code", "y", "s"])
     prev = Q.groupby(["code", "y"]).ni.shift(1); Q["ni_q"] = np.where(Q.s == 1, Q.ni, Q.ni - prev)   # 累計 → 單季
     Q["ttm"] = Q.groupby("code").ni_q.transform(lambda x: x.rolling(4, min_periods=4).sum())
-    Q["roe"] = Q.ttm / Q.eq * 100; Q.loc[Q.eq <= 0, "roe"] = np.nan
+    Q["roe"] = Q.ttm / Q.equity * 100; Q.loc[Q.equity <= 0, "roe"] = np.nan
     dl = {1: (5, 15), 2: (8, 14), 3: (11, 14), 4: (3, 31)}; Q["avail"] = [pd.Timestamp(y + (s == 4), *dl[s]) for y, s in zip(Q.y, Q.s)]
     return Q.dropna(subset=["roe"])[["code", "avail", "roe"]]
 
