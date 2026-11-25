@@ -37,7 +37,7 @@ def prep(path, a, b):
     e5 = E50.reindex(days); r = (e5.open / e5.close).where((e5.open > 0) & (e5.close > 0)).fillna(1.0).values; D["bO"] = np.asarray(D["bidx"], float) * r
     return D
 
-def sim(D, L=False, W=False, Xs=False, B=False, n=3, K=20):
+def sim(D, L=False, W=False, Xs=False, B=False, n=3, K=20, cap=None):   # cap：新買的股票進場開盤原始價 ≥ cap 就跳過（11/25 第 60 輪加；預設不變）
     O, Cff, lk, bidx, bO, POS, CJ, ND, pc, days = D["O"], D["Cff"], D["lockn"], D["bidx"], D["bO"], D["POS"], D["CJ"], D["ND"], D["prevc"], D["days"]
     G = {d: g for d, g in D["F"].groupby("date")}; rows, held, val = [], [], {}; cnt = {"停牌延後賣": 0, "開盤近漲停跳過": 0, "原鎖漲停跳過": 0}
     def locked(ie, j):
@@ -61,6 +61,7 @@ def sim(D, L=False, W=False, Xs=False, B=False, n=3, K=20):
             j = CJ[c]
             if not (O[ie, j] > 0): continue
             if locked(ie, j): cnt["開盤近漲停跳過" if L else "原鎖漲停跳過"] += 1; continue
+            if cap and "rawO" in D and np.isfinite(D["rawO"][ie, j]) and D["rawO"][ie, j] >= cap: continue
             new.append(c)
         sold = [c for c in held if c not in keep and c not in stuck]
         if not W:
@@ -85,7 +86,7 @@ def sim(D, L=False, W=False, Xs=False, B=False, n=3, K=20):
         val = {c: w[c] * (1 + rr.get(c, 0.0)) for c in w if c != "_cash"}
         held = [c for c in w if c != "_cash"]
         bb = (bO[ix] / bO[ie] - 1) * 100 if B else (bidx[ix - 1] / bidx[ie - 1] - 1) * 100
-        rows.append({"date": a, "r": R, "b": bb})
+        rows.append({"date": a, "r": R, "b": bb, "codes": ",".join(new + keep + stuck)})
     T = pd.DataFrame(rows).set_index("date"); T.index = pd.DatetimeIndex(T.index); return T, cnt
 
 def stats(T):
