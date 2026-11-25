@@ -25,10 +25,15 @@ rec = {"date": d.strftime("%Y-%m-%d"), "fetched": now.strftime("%Y-%m-%d %H:%M")
 print(rec)
 # Put/Call 比（前一個交易日；第 53 輪：只當參考數值）
 try:
-    pr = requests.post("https://www.taifex.com.tw/cht/3/pcRatioDown", data={"queryStartDate": (end - dt.timedelta(days=400)).strftime("%Y/%m/%d"), "queryEndDate": end.strftime("%Y/%m/%d")}, headers={"User-Agent": "Mozilla/5.0"}, timeout=60).content.decode("cp950", errors="replace")
+    pr = requests.post("https://www.taifex.com.tw/cht/3/pcRatioDown", data={"queryStartDate": (end - dt.timedelta(days=25)).strftime("%Y/%m/%d"), "queryEndDate": end.strftime("%Y/%m/%d")}, headers={"User-Agent": "Mozilla/5.0"}, timeout=60).content.decode("cp950", errors="replace")
     pc = pd.read_csv(io.StringIO(pr), dtype=str, index_col=False); pc.columns = [c.strip() for c in pc.columns]
     v = pd.to_numeric(pc["買賣權未平倉量比率%"].str.strip(), errors="coerce").dropna(); pc_d = pd.to_datetime(pc["日期"].str.strip())
-    s = pd.Series(v.values, index=pc_d[v.index]).sort_index().iloc[-250:]
+    s = pd.Series(v.values, index=pc_d[v.index]).sort_index()
+    if os.path.exists("data/taifex/pcratio.csv"):  # 一次只能查約一個月，百分位用存好的歷史（2007 起）補
+        H0 = pd.read_csv("data/taifex/pcratio.csv", dtype=str); H0.columns = [c.strip() for c in H0.columns]
+        h0 = pd.Series(pd.to_numeric(H0["買賣權未平倉量比率%"].str.strip(), errors="coerce").values, index=pd.to_datetime(H0["日期"].str.strip())).dropna()
+        s = pd.concat([h0[h0.index < s.index[0]], s]).sort_index()
+    s = s[~s.index.duplicated(keep="last")].iloc[-250:]
     rec["pc"] = round(float(s.iloc[-1]), 1); rec["pc_date"] = s.index[-1].strftime("%m/%d"); rec["pc_pct"] = int(round((s.iloc[:-1] < s.iloc[-1]).mean() * 100))
 except Exception as e: print("pc skipped", e)
 json.dump(rec, open("docs/night.json", "w", encoding="utf-8"), ensure_ascii=False)
