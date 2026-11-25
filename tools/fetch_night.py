@@ -5,10 +5,19 @@ import requests, pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import notify as nt
 now = dt.datetime.utcnow() + dt.timedelta(hours=8); end = now.date(); start = end - dt.timedelta(days=10)
-r = requests.post("https://www.taifex.com.tw/cht/3/futDataDown", data={"down_type": "1", "commodity_id": "TX", "queryStartDate": start.strftime("%Y/%m/%d"), "queryEndDate": end.strftime("%Y/%m/%d")},
-                  headers={"User-Agent": "Mozilla/5.0"}, timeout=60)
-txt = r.content.decode("cp950", errors="replace")
-df = pd.read_csv(io.StringIO(txt), dtype=str, index_col=False); df.columns = [c.strip() for c in df.columns]
+import time
+df = None
+for k in range(4):  # 期交所偶爾回 HTML（忙碌／維護）而不是 CSV：等一下再試
+    try:
+        r = requests.post("https://www.taifex.com.tw/cht/3/futDataDown", data={"down_type": "1", "commodity_id": "TX", "queryStartDate": start.strftime("%Y/%m/%d"), "queryEndDate": end.strftime("%Y/%m/%d")},
+                          headers={"User-Agent": "Mozilla/5.0"}, timeout=60)
+        txt = r.content.decode("cp950", errors="replace")
+        if "交易日期" in txt.split("\n", 1)[0]:
+            df = pd.read_csv(io.StringIO(txt), dtype=str, index_col=False); df.columns = [c.strip() for c in df.columns]; break
+        print(f"第 {k+1} 次：期交所回應不是 CSV（HTTP {r.status_code}）", txt[:300].replace("\n", " "))
+    except Exception as e: print(f"第 {k+1} 次失敗", e)
+    time.sleep(40)
+if df is None: print("沒有夜盤資料（期交所回應異常，重試 4 次都失敗）"); sys.exit(0)
 print("筆數", len(df), "交易時段", df["交易時段"].astype(str).str.strip().unique()[:5].tolist(), "契約", df["契約"].astype(str).str.strip().unique()[:5].tolist()); print(df.tail(4).to_string())
 df = df[(df["契約"].str.strip() == "TX") & ~df["到期月份(週別)"].str.contains("/", na=False)].copy()
 for c in ("收盤價", "漲跌價", "成交量"): df[c] = pd.to_numeric(df[c].str.replace(",", "").str.strip(), errors="coerce")
