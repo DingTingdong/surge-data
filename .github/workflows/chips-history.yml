@@ -17,8 +17,8 @@ jobs:
       matrix:
         year: [2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install requests
@@ -29,7 +29,7 @@ jobs:
           mkdir -p out
           if [[ "$S" > "$E" ]]; then echo "nothing"; exit 0; fi
           python fetch_chips.py "$S" "$E" "out/${{ matrix.year }}.csv.gz"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: chips-${{ matrix.year }}
           path: out/
@@ -40,8 +40,8 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: data-writes
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
         with:
           path: incoming
           merge-multiple: true

@@ -17,14 +17,14 @@ jobs:
       matrix:
         job: [prices-2015, prices-2016, prices-2017, prices-2018, prices-2019, chips-2015, chips-2016, chips-2017, chips-2018, chips-2019, misc]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install requests pandas
       - run: |
           J="${{ matrix.job }}"; python tools/old_era.py ${J%%-*} $( [[ "$J" == *-* ]] && echo ${J##*-} )
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: old-${{ matrix.job }}
           path: out/
@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: data-writes
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
         with:
           path: incoming
           merge-multiple: true
