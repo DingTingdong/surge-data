@@ -6,7 +6,7 @@ on:
     - cron: "20 21 * * 1-5"   # 台灣 05:20（週二～週六早上）
 permissions:
   contents: write
-concurrency: data-writes
+concurrency: night
 jobs:
   night:
     runs-on: ubuntu-latest
