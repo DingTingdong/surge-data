@@ -65,3 +65,11 @@ jobs:
           git config user.email actions@github.com
           git add data docs
           if ! git diff --cached --quiet; then git commit -m "update prices" && git pull --rebase -q && git push; fi
+      - name: 失敗通知（18:20、20:25 兩個時段失敗才發，避免備援時段重複）
+        if: failure() && (github.event.schedule == '20 10 * * 1-5' || github.event.schedule == '25 12 * * 1-5')
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python -c "import os, datetime as d, notify; t=(d.datetime.utcnow()+d.timedelta(hours=8)); notify.send(f'fail-{t:%Y%m%d-%H}', f'【雷達】{t:%m/%d %H:%M} 自動更新失敗，網站名單可能還是舊的（不是「今天沒有股票」）。紀錄：' + os.environ['RUN_URL'])"
