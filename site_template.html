@@ -649,7 +649,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></details>
 </main></section>
 <section class="pg" id="p4"><main>
-<div class="doc" id="m3track"></div>
+<div class="doc" id="m3calc"></div><div class="doc" id="m3track"></div>
 <div class="doc" id="ptrack" hidden></div>
 <div class="doc"><h2>持有追蹤（近20個交易日的今日發動）</h2>
 <p>假設每檔都在訊號隔天開盤買進，照移動停損規則：收盤比買進後最高收盤低10%就隔天開盤賣，最多抱20個交易日。價格已依除權息調整。</p>
@@ -701,7 +701,7 @@ function chips(){grps();const PRI=["M","F","ALL"],SEC=Object.keys(RL).filter(k=>
 $("rules").innerHTML=`<div class="seg">${PRI.map(btn).join("")}</div>`+(SEC.length?`<div class="obs"><span class="ol">觀察</span>${SEC.map(btn).join("")}</div>`:"");
 const M20=META.m20,sg1=v=>v==null?"—":(v>0?"+":"")+v+"%";const CHG=M20&&M20.chg?((M20.chg.sell.length?"賣 "+M20.chg.sell.join("、")+"；":"")+(M20.chg.buy.length?"買 "+M20.chg.buy.join("、"):"")+(M20.chg.keep.length?"；續抱 "+M20.chg.keep.join("、"):"")):"";
 const TD=META.date?META.date.slice(5).replace("-","/"):"";
-const nt={M:M20?[(!M20.entry&&CHG?`<b>明天開盤換股</b>：${CHG}。<br>`:(M20.entry===TD&&CHG?`<b>今天開盤換股</b>：${CHG}。<br>`:""))+(M20.entry?`本期買標「本期買」的 ${M20.np||5} 檔（${M20.form} 選出、${M20.entry} 開盤買，到 ${M20.next} 換股）：平均 ${sg1(M20.avg3)}，0050 ${sg1(M20.b)}`+(M20.late?"（補算，不計入紀錄）":"")+"。":`本期 ${M20.form} 收盤後選出，下個交易日開盤買標「本期買」的 ${M20.np||5} 檔；開盤價比前一天收盤漲 9.5% 以上就不買，往下一名遞補。`)+(M20.fwd3?`正式紀錄 ${M20.fwd3.n} 期累計 ${sg1(M20.fwd3.r)}，0050 ${sg1(M20.fwd3.b)}。`:"")+`<br>「第幾名」是 ${M20.form} 的分數名次；「本期買」不是前幾名，是前 20 名裡近 20 日波動最低的 ${M20.np||5} 檔。換股日收盤 500 元以上（一張 50 萬以上）的股票會自動跳過，改挑下一檔（回測：等金額每月比 0050 +2.24%，原 +2.35%）。`+(PANIC?"大跌中照常抱到換股日：中途賣掉換 0050，歷史上更差。":""),
+const nt={M:M20?[(!M20.entry&&CHG?`<b>明天開盤換股</b>：${CHG}。<br>`:(M20.entry===TD&&CHG?`<b>今天開盤換股</b>：${CHG}。<br>`:""))+(M20.entry?`本期買標「本期買」的 ${M20.np||5} 檔（${M20.form} 選出、${M20.entry} 開盤買，到 ${M20.next} 換股）：平均 ${sg1(M20.avg3)}，0050 ${sg1(M20.b)}`+(M20.late?"（補算，不計入紀錄）":"")+"。":`本期 ${M20.form} 收盤後選出，下個交易日開盤買標「本期買」的 ${M20.np||5} 檔；開盤價比前一天收盤漲 9.5% 以上就不買，往下一名遞補。每檔買幾張、幾股零股：下方「追蹤」頁最上面的「下單計算」，輸入金額就會算。`)+(M20.fwd3?`正式紀錄 ${M20.fwd3.n} 期累計 ${sg1(M20.fwd3.r)}，0050 ${sg1(M20.fwd3.b)}。`:"")+`<br>「第幾名」是 ${M20.form} 的分數名次；「本期買」不是前幾名，是前 20 名裡近 20 日波動最低的 ${M20.np||5} 檔。換股日收盤 500 元以上（一張 50 萬以上）的股票會自動跳過，改挑下一檔（回測：等金額每月比 0050 +2.24%，原 +2.35%）。`+(PANIC?"大跌中照常抱到換股日：中途賣掉換 0050，歷史上更差。":""),
 "每月營收期限日（10 日；遇週末、假日順延到下一個交易日）的下一個交易日收盤後，用「趨勢＋營收」分數排出前 20 名，買其中近 20 日波動最低的 5 檔（隔天開盤買；開盤比前收漲 9.5% 以上就換下一檔）。下次換股日，手上的還在前 20 名就續抱，掉出前 20 才換。"+(M20.nx?`本期 ${M20.nx} 檔開盤漲停買不到。`:"")+"回測 2011–2026（成本 0.6%）：每月平均比 0050 多 2.4%，2006–09、2011–15、2016–19、2020–23、2024–26 五段都贏；年化約 49%（0050 約 16%），最大回落 −23%（0050 −30%）。換股日晚 1～4 個交易日：每月 +1.05～1.67%，2024–26 有兩天輸 0050（−0.04、−0.61）。<b>11/25 第 59 輪</b>：鎖漲停改只用開盤價判斷、續抱不再每月重新等權、停牌股留在帳上、0050 改開盤到開盤後，每月 +1.79%（t 3.36），2024–26 −0.28%，影響很小。<b>11/25 第 58 輪</b>：換股日改為營收期限日（10 日起第一個交易日，遇假日順延）的下一個交易日，修正偷看未來後每月 +1.80%（t 3.34），五段 3.01／2.45／1.57／2.79／<b>−0.39</b>，最大回落 −27%；前 20 名等權 +1.80%、2024–26 −0.01%。下面是修正前的數字。<b>11/25 獨立覆核</b>：從原始資料重算，+2.35 重現得出來、沒有偷看未來；但它是 5 個換股日裡最好的，5 天平均每月 +1.49%（t 3.2）、2024–26 +0.52%；用每日市值算最大回落 2011 起 −29.5%、2006–09 −61%（0050 −56%）；2010 年（被排除）每月 −1.6%。挑低波動在報酬上和前 20 名隨機挑 3 檔差不多，好處是回落較淺。參數有點敏感：前 10、15 名結果相近（每月 +1.9～2.2%），但改用 60 日波動或擴大到前 30 名以上，2024–26 就變成輸 0050，所以以正式紀錄為準。成交清淡的股票比較多（一半日均成交值不到 5 千萬），滑價多算 1% 每月仍多 1.5%。買法差別（第 48 輪）：上面是 3 檔金額一樣；如果每檔各買 1 張（高價股占比大，常一檔超過一半），每月比 0050 +3.1%、但最大回落 −34%（0050 −30%），報酬多是運氣成分、風險明顯變大。1 張買法下改用其他挑法（分數前 3、前 10 名、60 日波動、股價×波動）或剔除高價股（≤100／150／200 元、最高價 ≤ 最低價 2 倍）都沒有比較好：高價股多半是漲上去的強勢股，剔除後報酬反而掉、回落也沒變淺（第 49 輪）。但一張買不起的千元股可以跳過換下一檔：本期買出現千元股的只有 2.5% 的月份（都在 2024 年後），跳過後等金額每月 +2.23%（原 +2.35%）、每檔 1 張 +3.17%（原 +3.25%），回落 −28%（原 −34%）；從前 20 名隨機挑 3 檔各 1 張，回落中位數 −60%。能用零股湊近等金額比較穩，但零股價差大、成交慢，請掛限價。直接買分數最高 3 檔長期多賺約 1%／月，但最大回落 −49%～−67%、最近兩年很看換股日運氣。下方「候補」是前 20 名的其他股票：用來遞補，也用來確認手上的還在不在前 20 名。大跌時（穩健版 2006–2026）：持有期間碰到恐慌的 52 期，照常抱平均比 0050 多 2.1%；一碰到恐慌就賣掉換 0050，反而比 0050 少 1.0%。"]:"",
 P:!PANIC?["上方只列「營收強＋分數高」的今日發動（回測較好但還沒達標，11/24 起用新資料往前記錄驗證）；其他今日發動收在下方。平常時期今日發動平均是賠的，只當「誰開始動」的觀察；標「趨勢營收弱」「借券放空多」「封單過強」的避開。盤中顯示的是「目前漲 9% 以上、前 10 天沒漲停過」的股票，收盤後才是正式名單。"+PKF(),"隔天開盤買、抱 20 天、扣成本：平均每筆 −1.6%～+0.1%、中位數 −2.8%～−4.6%，約 4 成會賺，比 0050 少 1.6–4.0%（2011–2026 四段都一樣）。隔天開越高越差。「趨勢營收弱」比 0050 少 3.5–5.7%。「封單過強」（收盤鎖漲停、封單 ÷ 成交量在近一年前 1/3，只有上市有資料）：隔天平均開高 2.6% 後回落，2006–2026 五段每筆都比封單弱的少 1～5%。「借券放空多」（借券賣出餘額 ÷ 20 日均量在前 20%）：2011–2026 四段每筆比其他今日發動再少 1～4%，2024–26 −6.9%。「營收強＋分數高」（營收年增 ≥ 20% 且創 12 個月新高、趨勢營收分數 ≥ 0.8）：2006–2026 五段的逐筆平均都比 0050 高，全期平均 +1.7%，但中位數 −1.6%、一半以上還是輸 0050（贏的比例 46%），統計上還差一點（t 2.5，門檻 2.9），一年約 90 筆。"]
 :["上方只列「營收強＋分數高」的今日發動，其他（含再發動）收在下方。恐慌期間今日發動不要單靠開盤價判斷：2006–2019 年驗證，開平或開低買進平均也是賠的；要買的話優先「族群仍弱」。"+PKF(),"2020–2026 年恐慌期間，隔天開平或開低 3% 內買進，20 天平均 +9.7%（75% 賺錢），但主要來自 2025 年 4 月的急彈。拿 2006–2019 年驗證就不成立：2006–2009 平均 −3.8%（41% 賺錢）、2010–2019 平均 −0.7%（42%），都輸全部股票平均。開低 3% 以上：2020–2026 平均 +20%（幾乎都在 2025 年 4 月），但 2006–2009 平均 −2.9%、2010–2019 平均 −2.2%，約 4 成賺錢。「族群仍弱」（同產業還在跌）比「族群已反彈」好，18 次恐慌中 16 次如此。"],
@@ -733,6 +733,21 @@ function spark(a){if(a.length<2)return"";const lo=Math.min(...a),hi=Math.max(...
 const pts=a.map((v,i)=>(i*w/(a.length-1)).toFixed(1)+","+(h-(v-lo)*k).toFixed(1)).join(" ");const c=a[a.length-1]>=a[0]?"var(--up)":"var(--dn)";
 return `<svg class="sp" viewBox="0 -2 100 34" preserveAspectRatio="none" aria-label="近30日收盤走勢"><polyline points="${pts}" style="stroke:${c}"/></svg>`}
 function rs(v){return v==null?"—":`<b class="${cl(v)}">${sg(v)}%</b>`}
+
+// 11/26 使用者要求：輸入可用金額，算每檔買幾張＋幾股零股（等金額，對應回測的等金額假設）。金額只存在這支手機（localStorage），不會上傳。
+function m3calc(){const el=$("m3calc");if(!el)return;const M=META.m20;let st={};try{st=JSON.parse(localStorage.getItem("m3calc")||"{}")}catch(e){}
+const P=D.filter(s=>s.m3).sort((a,b)=>(a.m20||99)-(b.m20||99));const buyC=new Set(((M&&M.chg&&M.chg.buy)||[]).map(x=>(x.match(/（(\w+)）/)||[])[1]).filter(Boolean));
+const first=st.first!==false,amt=+st.amt||0,buf=1.03;
+const L=first?P:P.filter(s=>buyC.has(s.t));const per=L.length?amt/L.length:0;
+const rows=L.map(s=>{const px=s.c*buf;let sh=Math.floor(per/px);const lots=Math.floor(sh/1000),odd=sh-lots*1000;return{s,lots,odd,sh,cost:sh*s.c}});
+const tot=rows.reduce((a,r)=>a+r.cost,0);const fm=v=>Math.round(v).toLocaleString();
+el.innerHTML=`<h2>下單計算</h2><p class="n">輸入${first?"這次要投入的總金額":"這次可用的錢（賣掉的股票＋現金）"}，平均分給${first?"本期買的 "+P.length+" 檔":"這次要「買」的 "+L.length+" 檔（續抱的不動）"}。用最新收盤價加 3% 緩衝算（開盤可能跳空），整張以外的用零股補。金額只存在這支手機。</p>
+<p><label><input type="checkbox" id="m3first" ${first?"checked":""}> 第一次買（買齊全部 ${P.length} 檔）</label></p>
+<p><input id="m3amt" type="number" inputmode="numeric" placeholder="例如 650000" value="${amt||""}" style="width:12em;font-size:16px;padding:6px"> 元</p>`+
+(amt&&L.length?`<table class="tb n"><tr><th>股票</th><th>收盤</th><th>張</th><th>零股</th><th>約</th></tr>${rows.map(r=>`<tr><td>${r.s.n} ${r.s.t}</td><td>${r.s.c}</td><td>${r.lots}</td><td>${r.odd}</td><td>${fm(r.cost)}</td></tr>`).join("")}</table>
+<p class="n">合計約 ${fm(tot)} 元，剩約 ${fm(amt-tot)} 元（緩衝）。${rows.some(r=>r.sh===0)?"<b>有股票連 1 股都買不到，金額太少。</b>":""}整張用一般盤開盤前掛限價；零股是盤中零股（9:10 起每分鐘撮合），成交價會和開盤價有些差，請掛限價。零股手續費有最低收費（看券商），金額很小時比例會偏高。</p>`:(!L.length&&!first?`<p class="n">這次沒有要新買的股票。</p>`:""));
+const re_=()=>{st={first:$("m3first").checked,amt:+$("m3amt").value||0};try{localStorage.setItem("m3calc",JSON.stringify(st))}catch(e){};m3calc()};
+$("m3first").onchange=re_;$("m3amt").onchange=re_;}
 function m3box(){const M=META.m20,H=(M&&M.hist)||[],f=v=>v==null?"—":(v>0?"+":"")+v+"%";const R=H.filter(h=>h.r3!=null);
 $("m3track").innerHTML=`<h2>月選本期買正式紀錄（11/26 起 5 檔）</h2><p>每期換股日隔天開盤買、下次換股日隔天開盤賣（進行中的算到最新收盤），扣 0.6%×換股比例；0050 含息。補算的期別（*）不計入正式紀錄。</p>`+(M&&M.fwd3?`<p class="n">正式紀錄 ${M.fwd3.n} 期累計 ${f(M.fwd3.r)}，0050 ${f(M.fwd3.b)}</p>`:`<p>第一期正式紀錄從 12/11 換股開始。</p>`)+(R.length?`<table class="tb n"><tr><th>換股日</th><th>本期買</th><th>0050</th><th></th></tr>${R.slice().reverse().map(h=>`<tr><td>${h.f}${h.late?"*":""}</td><td>${f(h.r3)}</td><td>${f(h.b)}</td><td>${h.done?"":"進行中"}</td></tr>`).join("")}</table>`:"")}
 function live(){const dd=(META.date||"").replace(/\//g,"-");fetch("live.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(L=>{if(!L||!L.q||!(L.d>dd))return;
@@ -782,7 +797,7 @@ $("sub").innerHTML="<b>"+td+"</b>收盤，"+D.length.toLocaleString()+" 檔"+(ME
 $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span>${META.bear?`<span class="bn">上市空頭 <b class="n">${META.bear.n}</b></span>`:""}<span class="m5">近5日<span class="xl">中位數</span> <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span><button class="mxb" data-mx="1" aria-label="展開大盤">▾</button></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
 ${META.bear?bearbox(META.bear):""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
-chips();list();track();holds();ptrackbox();m3box();live();
+chips();list();track();holds();ptrackbox();m3box();m3calc();live();
 setInterval(()=>{if(document.visibilityState!=="visible")return;const n=new Date(Date.now()+8*3600e3),hm=n.getUTCHours()*100+n.getUTCMinutes(),wd=n.getUTCDay();if(wd>=1&&wd<=5&&hm>=900&&hm<=1400)live()},180000);
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));
