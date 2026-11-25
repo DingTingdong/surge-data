@@ -9,6 +9,14 @@
   F6 出場日一價跌停（開＝高＝低＝收、跌幅 ≥ 9%（2015/6 前 6.5%））賣不掉 → 順延到第一個沒鎖跌停的交易日開盤賣；出場日沒成交（停牌、下市）→ 順延到下一個有成交的開盤，找不到記為 −100%（下市）。報影響筆數。
   F7 去重規則完整寫出：抓得到「第 N 次」照公司＋次數；抓不到的同公司 90 天內一次；兩者合併後同公司 30 天內只留一筆。
 其餘規則同第 56 輪 B／第 57 輪。兩段：2006–2010（第 57 輪考題）、2011–2026（第 56 輪）。
+實作補充（跑出結果前）：第一次跑發現 2011–2026 有 106 筆 0050 開盤缺值（2026 年個股日線不在 history 目錄），改由 data/etf.csv 補，補後剩 2 筆。
+結果（11/25 19:30）：修正後結論不變。
+  2011–2026 843 筆：10 日減 0050 每筆 +1.56、每月平均 +1.92（t 4.17，6 個月區塊重抽 95% +1.04～+2.81），中位 +0.29，贏 51%；5 日 +1.05（t 3.23）、20 日 +1.09（t 1.99）。
+    週末假日公告 7 筆；出場鎖跌停、沒成交、下市都是 0 筆。
+  2006–2010 78 筆（與第 57 輪相同）：10 日每筆 +1.40、每月平均 +1.92（t 1.71，95% −0.59～+4.27）。（若用第 56 輪舊的「需 60 天資料」只剩 72 筆、t 2.31，但那不是事先登錄的版本，不採用。）
+  → 第 57 輪「未通過」維持；效果方向、大小在兩段一致，平均靠少數大漲，約一半的筆數輸 0050。
+附註：第 56 輪 A、第 57 輪的 2026 年事件 0050 也是用收盤近似開盤（同一缺值），影響每筆約 0.03%～0.1%，不改結論。
+
 """
 import json, os, sys, glob, warnings
 import numpy as np, pandas as pd
@@ -20,6 +28,8 @@ COST, BCOST = 0.6, 0.18
 fs = sorted(glob.glob(f"{REPO}/data/*/history/*.csv.gz") + glob.glob(f"{REPO}/data/history/*.csv.gz"))
 E50 = pd.concat([pd.read_csv(f, dtype={"code": str}, usecols=["date", "code", "open", "close"]).query("code in ['50','0050']") for f in fs]).drop_duplicates("date")
 E50["date"] = pd.to_datetime(E50.date); E50 = E50.set_index("date")
+_etf = pd.read_csv(f"{REPO}/data/etf.csv", dtype={"code": str}).query("code == '0050'"); _etf["date"] = pd.to_datetime(_etf.date)   # 2026 年個股日線不在 history，0050 開盤改由 etf.csv 補（跑出結果前發現 106 筆缺值後加）
+E50 = E50[["open", "close"]].combine_first(_etf.set_index("date")[["open", "close"]])
 
 def run(path, a, b_, EV, fixed):
     X = pd.read_pickle(path); days = pd.DatetimeIndex(X["days"]); N = len(days); cj = {c: j for j, c in enumerate(X["cols"])}

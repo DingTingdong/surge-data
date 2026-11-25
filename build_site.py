@@ -741,13 +741,18 @@ try:
             _lc[_c] = _d; _kp.append((_d, _c, _nm))
         _o50, _c50 = _etf("0050"); _N = len(days); _rs = []
         for _d, _c, _nm in _kp:
-            i = int(days.searchsorted(_d)); ie = i + 1
+            i = int(days.searchsorted(_d)); ie = i if (i < _N and days[i] != _d) else i + 1   # 週末假日公告：之後第一個交易日開盤買
             if ie >= _N or _c not in C.columns or not (O.iloc[ie][_c] > 0): _rs.append({"d": _d.strftime("%m/%d"), "c": _c, "n": _nm}); continue
-            x = min(ie + 9, _N - 1); r = (C.iloc[x][_c] / O.iloc[ie][_c] - 1) * 100 - 0.6; bb = (_c50.iloc[x] / _o50.iloc[ie] - 1) * 100 - 0.18
-            _rs.append({"d": _d.strftime("%m/%d"), "c": _c, "n": _nm, "r": round(float(r), 1), "x": round(float(r - bb), 1), "done": int(ie + 9 <= _N - 1)})
-        _dn = [z for z in _rs if z.get("done")]
-        cbf = {"n": len(_rs), "done": len(_dn), "ex": round(float(np.mean([z["x"] for z in _dn])), 2) if _dn else None,
-               "win": int(round(np.mean([z["x"] > 0 for z in _dn]) * 100)) if _dn else None, "last": _rs[-5:]}
+            z = {"d": _d.strftime("%m/%d"), "c": _c, "n": _nm}
+            for H in (5, 10, 20):
+                x = min(ie + H - 1, _N - 1); r = (C.iloc[x][_c] / O.iloc[ie][_c] - 1) * 100 - 0.6; bb = (_c50.iloc[x] / _o50.iloc[ie] - 1) * 100 - 0.18
+                z[f"x{H}"] = round(float(r - bb), 1); z[f"done{H}"] = int(ie + H - 1 <= _N - 1)
+            z["x"], z["done"] = z["x10"], z["done10"]; _rs.append(z)
+        cbf = {"n": len(_rs), "last": _rs[-5:]}
+        for H in (5, 10, 20):
+            _dn = [z for z in _rs if z.get(f"done{H}")]
+            cbf[f"h{H}"] = {"done": len(_dn), "ex": round(float(np.mean([z[f"x{H}"] for z in _dn])), 2) if _dn else None, "win": int(round(np.mean([z[f"x{H}"] > 0 for z in _dn]) * 100)) if _dn else None}
+        cbf["done"], cbf["ex"], cbf["win"] = cbf["h10"]["done"], cbf["h10"]["ex"], cbf["h10"]["win"]
 except Exception as _e:
     print("cb forward skipped:", _e)
 
