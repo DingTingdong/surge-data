@@ -1,0 +1,26 @@
+name: night
+# 每天早上抓台指期夜盤收盤（由 Claude 排程在 05:10 觸發；GitHub 自己的排程只當備援）
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 21 * * 1-5"   # 台灣 05:20（週二～週六早上）
+permissions:
+  contents: write
+concurrency: data-writes
+jobs:
+  night:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests pandas
+      - run: python tools/fetch_night.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - run: |
+          git config user.name github-actions; git config user.email actions@github.com
+          git add docs/night.json data/night.csv data/notify_log.csv 2>/dev/null || true
+          if ! git diff --cached --quiet; then git commit -q -m "夜盤 $(date +%F)" && git pull --rebase -q --autostash && git push; fi
