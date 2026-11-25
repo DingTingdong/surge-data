@@ -14,6 +14,7 @@ SEED_DAYS = 40               # 第一次建立紀錄時往回補算的交易日�
 HOLD = 5                     # 隔日開盤買、第5個交易日收盤賣
 COST = 1.1                   # 手續費＋稅＋滑價，約1.1%
 LOCK = 0.095                 # 一價到底且漲跌幅達此比例 → 視為漲跌停鎖死
+NPICK = 5                    # 月選本期買幾檔（11/26 使用者選 5 檔：第 60 輪，回落 −21%；原 3 檔）
 SIG, DAYS = "data/signals.csv", "data/days.csv"
 
 p = load_prices(years_back=1)
@@ -414,7 +415,7 @@ try:
         _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
         if _e5 is not None: _e5 = _e5[_e5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
         _aj5 = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj5 = _aj5[_aj5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
-        # 只買 3 檔：上期持有的還在前 20 續抱，不足的由前 20 名裡波動最低、開盤買得到的遞補
+        # 只買 NPICK 檔：上期持有的還在前 20 續抱，不足的由前 20 名裡波動最低、開盤買得到的遞補。開盤買不到只看開盤價（比前收漲 ≥ 9.5%，第 59 輪；不用整天的高低價）
         for _k, _f0 in enumerate(_fl):
             _t0 = pd.Timestamp(_f0)
             if _t0 not in days or days.get_loc(_t0) + 1 >= len(days): continue
@@ -424,22 +425,22 @@ try:
             for c in _codes:
                 if c not in C.columns: continue
                 _o = O.iloc[_i0][c]; _pc = C.iloc[_i0 - 1][c]
-                if c not in _prev and (not (_o == _o and _o > 0) or (_o == H.iloc[_i0][c] == L.iloc[_i0][c] and _pc == _pc and _o / _pc - 1 >= LOCK)): continue
+                if c not in _prev and (not (_o == _o and _o > 0) or (_pc == _pc and _pc > 0 and _o / _pc - 1 >= LOCK)): continue
                 _x = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
                 _rr.append((float(_x) / float(_o if _o == _o and _o > 0 else _pc) - 1) * 100)
             _keep3 = [c for c in _h3 if c in _codes]; _new3 = []
             for c in _calm(_codes, _i0):
-                if len(_keep3) + len(_new3) >= 3: break
+                if len(_keep3) + len(_new3) >= NPICK: break
                 if c in _keep3 or c not in C.columns: continue
                 _o3 = O.iloc[_i0][c]; _pc3 = C.iloc[_i0 - 1][c]
-                if not (_o3 == _o3 and _o3 > 0) or (_o3 == H.iloc[_i0][c] == L.iloc[_i0][c] and _pc3 == _pc3 and _o3 / _pc3 - 1 >= LOCK): continue
+                if not (_o3 == _o3 and _o3 > 0) or (_pc3 == _pc3 and _pc3 > 0 and _o3 / _pc3 - 1 >= LOCK): continue
                 _new3.append(c)
             _sel3 = _keep3 + _new3; _rr3 = []
             for c in _sel3:
                 _o3 = O.iloc[_i0][c]; _pc3 = C.iloc[_i0 - 1][c]
                 _x3 = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
                 _rr3.append((float(_x3) / float(_o3 if _o3 == _o3 and _o3 > 0 else _pc3) - 1) * 100)
-            _to3 = 1.0 if not _h3 else len(_new3) / 3; _h3 = _sel3; _sels.append(_sel3)
+            _to3 = 1.0 if not _h3 else len(_new3) / NPICK; _h3 = _sel3; _sels.append(_sel3)
             _to = 1.0 if not _prev else len(set(_codes) - _prev) / 20; _prev = set(_codes)
             _bb = None
             if _e5 is not None and days[_i0] in _e5.index:
@@ -454,8 +455,8 @@ try:
     for h in _hist:
         _sx = h.pop("s3", None)
         if h["f"] == _form.strftime("%y/%m/%d"): _s3 = _sx
-    if _s3 is None:  # 換股日當晚（還沒到買進日）：上期 3 檔還在前 20 的續抱，其餘依名次補（開盤漲停買不到就再往下補）
-        _cc = _cur.code.tolist(); _s3 = [c for c in _h3 if c in _cc]; _s3 += [c for c in _calm(_cc, days.get_loc(_form) + 1) if c not in _s3][:3 - len(_s3)]
+    if _s3 is None:  # 換股日當晚（還沒到買進日）：上期 NPICK 檔還在前 20 的續抱，其餘依名次補（開盤漲停買不到就再往下補）
+        _cc = _cur.code.tolist(); _s3 = [c for c in _h3 if c in _cc]; _s3 += [c for c in _calm(_cc, days.get_loc(_form) + 1) if c not in _s3][:NPICK - len(_s3)]
     for c in _s3:
         if c in m20: m20[c]["m3"] = 1
     # 換股提醒：上一期的 3 檔 → 這一期的 3 檔
@@ -464,7 +465,7 @@ try:
     _nm = lambda c: f"{name.get(c, c)}（{c}）"
     m20_meta["chg"] = {"sell": [_nm(c) for c in _prev3 if c not in _s3], "buy": [_nm(c) for c in _s3 if c not in _prev3], "keep": [_nm(c) for c in _s3 if c in _prev3]}
     _r3 = [m20[c]["m20r"] for c in _s3 if c in m20 and "m20r" in m20[c]]
-    m20_meta["avg3"] = round(float(np.mean(_r3)), 1) if _r3 else None
+    m20_meta["avg3"] = round(float(np.mean(_r3)), 1) if _r3 else None; m20_meta["np"] = NPICK
     m20_meta["hist"] = _hist
     _ok = [h for h in _hist if h["r"] is not None and h["b"] is not None and not h["late"]]
     m20_meta["fwd"] = {"n": len(_ok), "r": round((np.prod([1 + h["r"] / 100 for h in _ok]) - 1) * 100, 1), "b": round((np.prod([1 + h["b"] / 100 for h in _ok]) - 1) * 100, 1)} if _ok else None
@@ -814,7 +815,7 @@ try:
         if _h3w and m20_meta.get("entry"):
             _ln = "、".join(f"{x['n']} {('+' if (x.get('m20r') or 0) >= 0 else '')}{x.get('m20r')}%" for x in _h3w)
             _f3 = m20_meta.get("fwd3"); _rec = f"\n正式紀錄 {_f3['n']} 期累計 {_f3['r']:+.1f}%，0050 {_f3['b']:+.1f}%。" if _f3 else "\n正式紀錄從 12/11 換股那期開始累計。"
-            _nt.send(f"weekly-{_td:%Y-%m-%d}", f"【月選週報】{_tds}\n本期（{m20_meta.get('entry')} 進場）：{_ln}\n3 檔平均 {m20_meta.get('avg3'):+.1f}%，同期 0050 {m20_meta.get('b'):+.1f}%。{_rec}\n下次換股：{m20_meta.get('next')} 收盤後出名單。\n" + _url)
+            _nt.send(f"weekly-{_td:%Y-%m-%d}", f"【月選週報】{_tds}\n本期（{m20_meta.get('entry')} 進場）：{_ln}\n{NPICK} 檔平均 {m20_meta.get('avg3'):+.1f}%，同期 0050 {m20_meta.get('b'):+.1f}%。{_rec}\n下次換股：{m20_meta.get('next')} 收盤後出名單。\n" + _url)
     # 月選本期買的「爆雷」資訊提醒（11/24 使用者要求；不是賣出訊號：回測裡大跌時賣掉換 0050 反而較差）
     _h3 = {c: v for c, v in m20.items() if v.get("m3")}
     if _h3 and os.path.exists("data/disposal.csv"):
