@@ -401,7 +401,7 @@ try:
     while _nx.weekday() >= 5 or (_nx.month == 10 and _nx.day == 10): _nx += pd.Timedelta(days=1)
     m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
                 "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
-    # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 1.1% × 換股比例；0050 同段含息
+    # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 0.6% × 換股比例（11/25 改，與研究同）；0050 同段含息
     _hist = []; _h3 = []; _sels = []
     def _calm(codes, i0):  # 穩健版：前 20 名依換股日（i0 − 1）收盤前 20 日波動由低到高排（第 24 輪，使用者 11/23 選定）
         cs_ = [c for c in codes if c in C.columns]; w_ = C[cs_].iloc[max(0, i0 - 21):i0].pct_change(fill_method=None)
@@ -447,8 +447,8 @@ try:
                 _px1 = float(_e5.open.get(_xe, np.nan)) if _i1 is not None else float(_e5.close.loc[:_xe].iloc[-1])
                 _dv = float(_aj5[(_aj5.date > days[_i0]) & (_aj5.date <= _xe)].ratio.prod()) if len(_aj5) else 1.0
                 if _px1 == _px1: _bb = round((_px1 / float(_e5.open[days[_i0]]) / _dv - 1) * 100, 1)
-            _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 1.1 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
-                          "r3": round(float(np.mean(_rr3)) - 1.1 * _to3, 1) if _rr3 else None, "s3": _sel3,
+            _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 0.6 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
+                          "r3": round(float(np.mean(_rr3)) - 0.6 * _to3, 1) if _rr3 else None, "s3": _sel3,
                           "late": str(_tl[_tl.date == _f0].logged.iloc[0]) > _f0})
     _s3 = None
     for h in _hist:
