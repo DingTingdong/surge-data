@@ -172,9 +172,10 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 .tag.nh{border-color:var(--up);color:var(--up);font-weight:700}
 .m20d{margin:10px 0}.m20d>summary{padding:10px 4px;color:var(--mu);font-size:14px;cursor:pointer;list-style:none;border-top:1px solid var(--ln)}.m20d>summary::after{content:" ▾"}.m20d[open]>summary::after{content:" ▴"}.m20d>summary::-webkit-details-marker{display:none}
 .tag.m20{border-color:var(--sig);color:var(--sig);background:var(--sigs);font-weight:700}
+#night{font-size:13px;margin:2px 0 6px;color:var(--mu)}#night b.up{color:var(--up)}#night b.dn{color:var(--dn)}#night.big{color:inherit;font-weight:600}
 </style>
 </head><body>
-<header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div id="rules"></div></header>
+<header><div class="top"><h1><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11.5" fill="none" stroke="var(--ln)" stroke-width="1.5"/><circle cx="13" cy="13" r="7" fill="none" stroke="var(--ln)" stroke-width="1.5"/><g class="sweep"><path d="M13 13 L13 1.5 A11.5 11.5 0 0 1 23.2 7.6 Z" fill="var(--sig)" opacity=".28"/><line x1="13" y1="13" x2="13" y2="1.5" stroke="var(--sig)" stroke-width="2" stroke-linecap="round"/></g><circle cx="17.6" cy="6.4" r="2" fill="var(--up)"/><circle cx="13" cy="13" r="1.8" fill="var(--sig)"/></svg>強勢股雷達</h1><div class="sub" id="sub"></div></div><div id="night" hidden></div><div id="rules"></div></header>
 <section class="pg on" id="p1">
 <div class="bar"><input id="q" type="search" placeholder="搜尋代號、名稱或產業" aria-label="搜尋"></div>
 <div style="padding:0 16px"><div class="tabnote" id="tabnote" hidden></div></div>
@@ -763,6 +764,8 @@ $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><d
 <div class="dt n">${x.it.length?'<div class="ti"><small>股票</small><small>5日｜移動停損</small></div>'+x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span><span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}｜${i.x==null?`<small>${i.xs}</small>`:rs(i.x)+(i.xs!=="完成"?`<small>${i.xs}</small>`:`<small>${i.xd}天</small>`)}</span></div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 // 往下滑收起上方分頁和底部導覽，往上滑或回到頂端就出現
 {let ly=scrollY;addEventListener("scroll",()=>{const y=scrollY,d=y-ly,b=document.body.classList;if(y<60){b.remove("hd");ly=y}else if(d>10){b.add("hd");ly=y}else if(d<-10){b.remove("hd");ly=y}},{passive:true})}
+// 夜盤：每天早上 05:20 抓台指期夜盤收盤（docs/night.json）；當天 13:45 前顯示，漲跌超過 2% 加粗
+fetch("night.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(N=>{if(!N)return;const t=new Date(Date.now()+8*3600e3),td=t.toISOString().slice(0,10),hm=t.getUTCHours()*100+t.getUTCMinutes();if(N.date!==td||hm>=1345)return;const e=$("night"),u=N.pct>=0;e.innerHTML=`夜盤 台指期 ${N.close.toLocaleString()}　<b class="${u?"up":"dn"}">${u?"+":""}${N.chg.toLocaleString()}（${u?"+":""}${N.pct.toFixed(2)}%）</b>`;if(Math.abs(N.pct)>=2)e.classList.add("big");e.hidden=false}).catch(()=>{});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
 if(t.dataset.r){st.rule=t.dataset.r;st.lim=150;chips();list()}else if(t.dataset.more){st.lim+=150;list()}else if(t.dataset.gx){st.gx=!st.gx;grps()}else if(t.dataset.mx){st.mx=!st.mx;chips()}
 else if(t.dataset.p){document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));$("rules").style.display=t.dataset.p==="p1"?"":"none";document.querySelectorAll("nav button").forEach(b=>b===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));scrollTo(0,0)}
