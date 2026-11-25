@@ -186,7 +186,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li><b>單檔一個月贏 0050 的機率只有約一半</b>：月選賺錢靠贏的漲得多、輸的跌得少，不是每檔都贏。</li>
 <li><b>今日發動在平常時期是賠的</b>（每筆比 0050 少 1.6–4.0%）。標「營收強＋分數高」的五段都贏 0050（+1.7%）但統計上還沒達標；標「趨勢營收弱」「借券放空多」的要避開。恐慌期間的今日發動 2016 年後很強，但 2011–15 不成立。</li>
 <li><b>新高突破</b>贏一般股票，但不穩定贏 0050。</li>
-<li><b>可轉債</b>：發可轉債或現增公告後，股價中位數 60 天落後 0050 約 5～6%；月選跳過剛發可轉債／現增的股票沒有變好。「放量站上轉換價」因為歷史轉換價只有約 4 成查得到，無法無偏差回測；可轉債分頁 11/24 拿掉。只看低基期放量突破、不看可轉債的版本是輸 0050 的。</li>
+<li><b>可轉債</b>：發可轉債或現增公告後，股價中位數 60 天落後 0050 約 5～6%；月選跳過剛發可轉債／現增的股票沒有變好。「放量站上轉換價」因為歷史轉換價只有約 4 成查得到，無法無偏差回測；可轉債分頁 11/24 拿掉。只看低基期放量突破、不看可轉債的版本是輸 0050 的。<br><b>可轉債代收公告後 10 天</b>（第 56、57 輪）：2011–2026 隔天開盤買、抱 10 天，比 0050 多 1.8%（t 4.5，三段都正）；拿沒用過的 2006–2010 驗證，78 筆多 1.4%、中位數 +0.8%，方向一樣但筆數太少（t 1.7，門檻 2.0），所以不提醒、不當買進理由，11/25 起往後記錄。<span id="cbf"></span></li>
 <li><b>上市空頭家數 ≥ 800 很接近底部</b>：2020 年以來 5 次，之後 20 天平均 +5.7%；樣本很少。</li>
 <li>2024–26 前 20 檔版的月選輸 0050，是因為漲幅集中在台積電（2024 年起 +252%），一般股票平均只 +18%。</li>
 <li><b>漲停封單越強，隔天開盤買反而越差</b>：封單強的隔天平均開高 2.6% 後回落，五段期間都一樣；今日發動加「封單過強」提醒。收盤前買也沒比較好（84% 鎖死買不到）。</li>
@@ -764,6 +764,8 @@ $("tlist").innerHTML=T.map(x=>`<div class="row"><button aria-expanded="false"><d
 <div class="dt n">${x.it.length?'<div class="ti"><small>股票</small><small>5日｜移動停損</small></div>'+x.it.map(i=>`<div class="ti"><span>${i.n} <small>${i.t}</small></span><span>${i.r==null?`<small>${i.s}</small>`:rs(i.r)}｜${i.x==null?`<small>${i.xs}</small>`:rs(i.x)+(i.xs!=="完成"?`<small>${i.xs}</small>`:`<small>${i.xd}天</small>`)}</span></div>`).join(""):"<p>這天沒有今日發動。</p>"}</div></div>`).join("")||'<div class="empty">還沒有紀錄。</div>'}
 // 往下滑收起上方分頁和底部導覽，往上滑或回到頂端就出現
 {let ly=scrollY;addEventListener("scroll",()=>{const y=scrollY,d=y-ly,b=document.body.classList;if(y<60){b.remove("hd");ly=y}else if(d>10){b.add("hd");ly=y}else if(d<-10){b.remove("hd");ly=y}},{passive:true})}
+// 可轉債 10 天往後記錄（第 57 輪）
+(()=>{const F=META.cbf,e=$("cbf");if(!e)return;const f=v=>v==null?"—":(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(1)+"%";if(!F||!F.n){e.innerHTML="<br>往後記錄：還沒有新的代收公告。";return}e.innerHTML=`<br>往後記錄（11/25 起）：${F.n} 筆，滿 10 天 ${F.done} 筆`+(F.done?`，平均比 0050 ${f(F.ex)}（贏 ${F.win}%）`:"")+"。最近："+F.last.map(z=>`${z.d} ${z.n||z.c}`+(z.x!=null?`（比 0050 ${f(z.x)}${z.done?"":"，未滿 10 天"}）`:"（隔天開盤買）")).join("、")+"。至少累積 100 筆再判斷。"})();
 // 夜盤：每天早上 05:20 抓台指期夜盤收盤（docs/night.json）；當天 13:45 前顯示，漲跌超過 2% 加粗
 fetch("night.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(N=>{if(!N)return;const t=new Date(Date.now()+8*3600e3),td=t.toISOString().slice(0,10),hm=t.getUTCHours()*100+t.getUTCMinutes();if(N.date!==td||hm>=1345)return;const e=$("night"),u=N.pct>=0;e.innerHTML=`夜盤 台指期 ${N.close.toLocaleString()}　<b class="${u?"up":"dn"}">${u?"+":""}${N.chg.toLocaleString()}（${u?"+":""}${N.pct.toFixed(2)}%）</b>`;if(N.pc!=null)e.innerHTML+=`<br>選擇權 P/C 未平倉比 ${N.pc}%（${N.pc_date}，一年中第 ${N.pc_pct} 百分位；回測只是參考）`;if(Math.abs(N.pct)>=2)e.classList.add("big");e.hidden=false}).catch(()=>{});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;

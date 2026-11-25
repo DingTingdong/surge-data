@@ -724,9 +724,36 @@ try:
 except Exception as _e:
     print("gs log skipped:", _e)
 
+# 可轉債代收公告後 10 天（第 57 輪往後記錄，11/25 起）：公告日隔天開盤買、抱 10 個交易日收盤，扣 0.6%；0050 同一天開盤買、扣 0.18%。
+# 去重同 research/cb_holdout.py：抓得到「第 N 次」照次數，抓不到的同公司 90 天內一次；同公司 30 天內只留一筆。只記錄，不提醒（2006–2010 驗證 t 1.71 未過 2.0）。
+cbf = None
+try:
+    if os.path.exists("data/cb_live.csv"):
+        _k = pd.read_csv("data/cb_live.csv", dtype=str); _k["d"] = pd.to_datetime(_k.date.map(lambda s: f"{int(s.split('/')[0]) + 1911}-{s.split('/')[1]}-{s.split('/')[2]}" if "/" in s else s), errors="coerce")
+        _k = _k.dropna(subset=["d"]); _k = _k[_k.d >= "2026-11-25"].sort_values("d"); _k["n"] = _k.subject.str.replace(r"\s+", "", regex=True).str.extract(r"第([一二三四五六七八九十\d]+)次")[0]
+        _a = _k[_k.n.notna()].drop_duplicates(["code", "n"]); _rw, _ls = [], {}
+        for _d, _c, _nm in zip(_k[_k.n.isna()].d, _k[_k.n.isna()].code, _k[_k.n.isna()].name):
+            if _c in _ls and (_d - _ls[_c]).days < 90: continue
+            _ls[_c] = _d; _rw.append((_d, _c, _nm))
+        _ev = pd.concat([_a[["d", "code", "name"]], pd.DataFrame(_rw, columns=["d", "code", "name"])]).sort_values("d"); _kp, _lc = [], {}
+        for _d, _c, _nm in zip(_ev.d, _ev.code, _ev.name):
+            if _c in _lc and (_d - _lc[_c]).days < 30: continue
+            _lc[_c] = _d; _kp.append((_d, _c, _nm))
+        _o50, _c50 = _etf("0050"); _N = len(days); _rs = []
+        for _d, _c, _nm in _kp:
+            i = int(days.searchsorted(_d)); ie = i + 1
+            if ie >= _N or _c not in C.columns or not (O.iloc[ie][_c] > 0): _rs.append({"d": _d.strftime("%m/%d"), "c": _c, "n": _nm}); continue
+            x = min(ie + 9, _N - 1); r = (C.iloc[x][_c] / O.iloc[ie][_c] - 1) * 100 - 0.6; bb = (_c50.iloc[x] / _o50.iloc[ie] - 1) * 100 - 0.18
+            _rs.append({"d": _d.strftime("%m/%d"), "c": _c, "n": _nm, "r": round(float(r), 1), "x": round(float(r - bb), 1), "done": int(ie + 9 <= _N - 1)})
+        _dn = [z for z in _rs if z.get("done")]
+        cbf = {"n": len(_rs), "done": len(_dn), "ex": round(float(np.mean([z["x"] for z in _dn])), 2) if _dn else None,
+               "win": int(round(np.mean([z["x"] > 0 for z in _dn]) * 100)) if _dn else None, "last": _rs[-5:]}
+except Exception as _e:
+    print("cb forward skipped:", _e)
+
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pkf": pkf, "m20": m20_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pkf": pkf, "cbf": cbf, "m20": m20_meta,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
