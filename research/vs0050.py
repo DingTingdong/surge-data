@@ -31,6 +31,8 @@ OLDEST = os.environ.get("INCLUDE_OLDEST") == "1"  # 11/22 加：多讀 data/olde
 if OLDEST: CACHE = CACHE.replace(".pkl", "_oldest.pkl")
 OLDEST_ONLY = os.environ.get("OLDEST_ONLY") == "1"  # 11/23 加：只讀 2005–2010（data/oldest＋data/older 的 2010），整段 2005–2026 會超過記憶體
 if OLDEST_ONLY: OLDEST = True; CACHE = "/tmp/model_v2/vs0050_oldestonly.pkl"
+FD_RULE = os.environ.get("FD_RULE")  # 11/25 加：deadline＝營收法定期限遇假日順延（10 日起第一個交易日為期限日），換股日改為期限日的下一個交易日；不設時結果完全不變
+if FD_RULE == "deadline": CACHE = CACHE.replace(".pkl", "_dl.pkl")
 PER = ("2011-15", "2016-19", "2020-23", "2024-26")
 
 def make_root():
@@ -96,6 +98,9 @@ def build():
     recent = pd.DataFrame(isath.astype(float)).shift(1).rolling(60, min_periods=1).max().fillna(0).values > 0
     nhm = isath & ~recent & inb & (ch.values < lim.values[:, None])
     dser = pd.Series(days); _gm = dser[dser.dt.day >= 11].groupby(dser.dt.to_period("M")); fd = set(_gm.first()); fdx = set(fd)
+    if FD_RULE == "deadline":
+        _dl = dser[dser.dt.day >= 10].groupby(dser.dt.to_period("M")).first(); _ix = np.searchsorted(dser.values, _dl.values) + 1
+        fd = set(dser.iloc[_ix[_ix < len(dser)]]); fdx = set(fd)
     if FDX:
         for _k in [int(x) for x in FDX.split(",") if int(x) > 0]: fdx |= set(_gm.nth(_k))
     dpos = {d: i for i, d in enumerate(days)}; cpos = {c: j for j, c in enumerate(cols)}
