@@ -337,6 +337,26 @@ try:
 except Exception as _e:
     print("new-high skipped:", _e)
 NH_LOG = "data/newhigh_log.csv"
+# 11/26 使用者：新高突破分頁隱藏，只在背景記錄績效。11/27 起的每一次新高突破：隔天開盤買、抱 60 個交易日（研究用的天數），對照同日開盤買 0050。
+nhf = None
+try:
+    _st = pd.Timestamp("2026-11-27"); _k = int((days >= _st).sum())
+    if _k > 0:
+        _e2 = _nh.events(_k + 1); _e2 = _e2[_e2.date >= _st]; _rows = []
+        _e50 = pd.read_csv("data/etf.csv", dtype={"code": str}).query("code == '0050'"); _e50["date"] = pd.to_datetime(_e50.date); _e50 = _e50.set_index("date").reindex(days)
+        for r in _e2.itertuples():
+            if (r.date, r.code) not in _bs or r.code not in C.columns: continue
+            i = days.get_loc(r.date); ie = i + 1
+            if ie >= len(days): continue
+            o = float(P["O"][r.code].iloc[ie] * P["rawC"][r.code].iloc[ie] / P["C"][r.code].iloc[ie]) if P["C"][r.code].iloc[ie] > 0 else float("nan")
+            if not o > 0: continue
+            x = min(ie + 59, len(days) - 1); rr = (float(P["rawC"][r.code].iloc[x]) / o - 1) * 100 - 0.6
+            bb = (float(_e50.close.iloc[x]) / float(_e50.open.iloc[ie]) - 1) * 100 - 0.18
+            _rows.append({"d": r.date.strftime("%m/%d"), "c": r.code, "n": name.get(r.code, ""), "x": round(rr - bb, 1), "done": int(ie + 59 <= len(days) - 1)})
+        _dn = [z for z in _rows if z["done"]]
+        nhf = {"n": len(_rows), "done": len(_dn), "ex": round(float(np.mean([z["x"] for z in _rows])), 2) if _rows else None, "exd": round(float(np.mean([z["x"] for z in _dn])), 2) if _dn else None, "last": _rows[-5:]}
+except Exception as _e:
+    print("new-high forward skipped:", _e)
 _nl = pd.read_csv(NH_LOG, dtype={"code": str}) if os.path.exists(NH_LOG) else None
 _nt = [(c, v) for c, v in nhev.items() if v[0] == days[-1]]
 if _nt and (_nl is None or days[-1].strftime("%Y-%m-%d") not in set(_nl.date)):
@@ -858,7 +878,7 @@ except Exception as _e:
 
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pday": pday, "tdays": [x.strftime("%Y-%m-%d") for x in days[-80:]], "pkf": pkf, "cbf": cbf, "m20": m20_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pday": pday, "nhf": nhf, "tdays": [x.strftime("%Y-%m-%d") for x in days[-80:]], "pkf": pkf, "cbf": cbf, "m20": m20_meta,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
@@ -900,7 +920,7 @@ try:
         _nt.send(f"pk-{_td:%Y-%m-%d}", f"【今日發動・營收強＋分數高】{_tds}：" + "、".join(f"{_x['n']}（{_x['t']}）" for _x in _gs) + "\n回測五段都贏 0050（每筆 +1.7%），但還沒達標，只當參考。\n" + _url)
     # 撿跌深（第 43～45 輪）：上市空頭家數「第一次」到 750（前 20 日都在 750 下）那天收盤後通知前 3；第 19 個交易日晚上提醒隔天收盤賣（回測抱到第 20 天收盤）
     _t0w = globals().get("_t0")
-    if _t0w is not None and pwave:
+    if _t0w is not None and pwave and os.environ.get("NOTIFY_PANIC") == "1":   # 11/26 使用者：撿跌深運氣成分太高，分頁隱藏、買賣通知預設關閉，只在背景記錄（設 NOTIFY_PANIC=1 恢復）
         if _t0w == len(days) - 1:
             _nm = "、".join(f"{n_}（{c_}）" for c_, n_ in pwave[0]["s"])
             _nt.send(f"pick3-buy-{_td:%Y-%m-%d}", f"【撿跌深】{_tds} 上市空頭家數第一次到 {int(bear.iloc[-1])}（≥750）。前 3：{_nm}\n明天開盤買（開盤鎖漲停買不到就換撿跌深下一名），抱 20 個交易日。\n回測 2018–2026 這個時點 10 次都贏分析範圍平均（平均多約 15%），但挑法是看過這些恐慌才定的，次數少、集中在 2020/3、2021/5 兩次；但單檔約 6 成賺錢、持有中最大回落平均 −11%，次數少，不要重壓。\n" + _url)
