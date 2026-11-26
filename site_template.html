@@ -705,7 +705,7 @@ const MV=s=>s.cap!=null&&s.c!=null?s.cap*s.c/10:null; // 市值（億）＝股�
 const PMAX=META.bear?Math.max(...META.bear.h.slice(-10)):0,PANIC=PMAX>=750,DEEPP=PMAX>=800; /* 近10天上市空頭家數最高值：≥750 初步恐慌、≥800 深度恐慌 */const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
 const HOT=s=>!!s.h,PK=s=>!!s.e,fx=(v,d)=>v==null?"—":v.toFixed(d);const DEEP=s=>s.d20!=null&&s.d20<=-20;
-const RL={M:["月選",s=>!!s.m20],T:["今日分數",s=>!!s.tdr],F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
+const RL={M:["月選",s=>!!s.m20],T:["今日分數",s=>!!s.tdr],...(META.pday&&META.pday.ok?{D:["撿跌深",s=>!!s.ts]}:{}),F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
 let FAV=new Set();try{FAV=new Set(JSON.parse(localStorage.getItem("fav")||"[]"))}catch(e){}
 function saveFav(){try{localStorage.setItem("fav",JSON.stringify([...FAV]))}catch(e){}}
 const kurl=s=>"https://tw.stock.yahoo.com/quote/"+s.t+(s.mk==="櫃"?".TWO":".TW")+"/technical-analysis";
@@ -848,7 +848,7 @@ $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
 ${META.bear?bearbox(META.bear):""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
 chips();list();track();holds();ptrackbox();m3box();m3calc();myhold();(()=>{const e=$("pkfbox");if(!e)return;const N=META.nhf,f=v=>v==null?"—":(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(1)+"%";
-e.innerHTML=`<h2>背景記錄（不在雷達上顯示）</h2><p class="n">沒有證據的方法從雷達隱藏、Telegram 不通知，只在這裡記錄往後的實際績效，半年後再決定要不要恢復。</p>
+e.innerHTML=`<h2>背景記錄（不在雷達上顯示）</h2><p class="n">沒有證據的方法從雷達隱藏，只在這裡記錄往後的實際績效，半年後再決定要不要恢復。撿跌深例外：新一波恐慌的第 1～5 天會自動出現在雷達上，Telegram 也會在第 1、5、19 天通知。</p>
 <h3>撿跌深</h3>${PDAY()}<p class="n">${PWV()}</p>
 <h3>新高突破</h3><p class="n">11/27 起每次新高突破：隔天開盤買、抱 60 天，比同日開盤買的 0050。${N&&N.n?`目前 ${N.n} 筆，平均比 0050 ${f(N.ex)}（滿 60 天 ${N.done} 筆${N.done?"，平均 "+f(N.exd):""}）。最近：${N.last.map(z=>z.d+" "+z.n+"（"+f(z.x)+(z.done?"":"，進行中")+"）").join("、")}`:"還沒有新的事件。"}回測：抱 60 天比 0050 +1.1%（不顯著），2024–26 −3.4%。</p>
 <h3>今日發動</h3><p class="n">平常時期抱 20 天比 0050 少 1.6～4.0%，四段都負。${PKF().replace(/^<br>/,"")}</p>`})();live();
