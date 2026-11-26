@@ -747,6 +747,15 @@ try:
         pwave = [_pack(_t0, "第一天")] + ([_pack(_s2, "第二次碰到 750")] if _s2 is not None else [])
 except Exception as _e:
     print("pwave skipped:", _e)
+# 恐慌第幾天（11/26 使用者：記不得恐慌幾天、該抱幾天）：第一次到 750 那天算第 1 天；研究支持的選股日是第 1～5 天（第 44 輪），第 10 天後明顯變弱
+pday = None
+try:
+    if pwave is not None and _t0 is not None:
+        _n = _N - _t0; _ie = _t0 + 1; _ex = _ie + 19
+        _exd = days[_ex].strftime("%m/%d") if _ex < _N else (days[-1] + pd.offsets.BDay(_ex - (_N - 1))).strftime("%m/%d")
+        pday = {"t0": days[_t0].strftime("%m/%d"), "n": int(_n), "ok": bool(_n <= 5), "exit": _exd, "exit_est": bool(_ex >= _N), "bear": int(bear.iloc[-1])}
+except Exception as _e:
+    print("pday skipped:", _e)
 
 # ---- 今日發動「營收強＋分數高」往前記錄（11/24 起，只增不改；不再回測，用新資料驗證）----
 # 每天收盤記下全部今日發動與是否符合（分數 ≥ 0.8、營收年增 ≥ 20% 且創 12 個月新高、借券餘額比不在前 20%）；
@@ -838,7 +847,7 @@ except Exception as _e:
 
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pkf": pkf, "cbf": cbf, "m20": m20_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pday": pday, "tdays": [x.strftime("%Y-%m-%d") for x in days[-80:]], "pkf": pkf, "cbf": cbf, "m20": m20_meta,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
@@ -884,6 +893,9 @@ try:
         if _t0w == len(days) - 1:
             _nm = "、".join(f"{n_}（{c_}）" for c_, n_ in pwave[0]["s"])
             _nt.send(f"pick3-buy-{_td:%Y-%m-%d}", f"【撿跌深】{_tds} 上市空頭家數第一次到 {int(bear.iloc[-1])}（≥750）。前 3：{_nm}\n明天開盤買（開盤鎖漲停買不到就換撿跌深下一名），抱 20 個交易日。\n回測 2018–2026 這個時點 10 次都贏分析範圍平均（平均多約 15%），但挑法是看過這些恐慌才定的，次數少、集中在 2020/3、2021/5 兩次；但單檔約 6 成賺錢、持有中最大回落平均 −11%，次數少，不要重壓。\n" + _url)
+        if _t0w + 4 == len(days) - 1:   # 11/26：恐慌第 5 天提醒（研究支持的最後選股日）
+            _d3 = "、".join(f"{s_['n']}（{s_['t']}）" for s_ in sorted([x for x in data if x.get("ts")], key=lambda z: -(z.get("pr") if z.get("pr") is not None else -1e9))[:3])
+            _nt.send(f"pick3-day5-{_td:%Y-%m-%d}", f"【撿跌深】{_tds} 恐慌第 5 天（{days[_t0w]:%m/%d} 第一次到 750）。今天收盤是研究支持的最後選股日（第 1～5 天有效、第 10 天後幾乎沒效果）；明天起名單只供觀察。\n今天的前 3：{_d3}\n" + _url)
         if _t0w + 19 == len(days) - 1:
             _nm = "、".join(n_ for c_, n_ in pwave[0]["s"])
             _nt.send(f"pick3-sell-{days[_t0w]:%Y-%m-%d}", f"【撿跌深】{days[_t0w]:%m/%d} 選的前 3（{_nm}）明天是第 20 個交易日，回測是在第 20 天收盤賣出。\n" + _url)
