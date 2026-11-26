@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install requests pandas numpy scikit-learn==1.9.1 lxml
+      - run: pip install requests pandas numpy scikit-learn==1.9.1 lxml cryptography
       - run: python fetch_prices.py
       - run: python fetch_disposal.py || echo 'disposal fetch failed, continuing'
       - run: python fetch_adjust.py || echo 'adjust fetch failed, continuing'
@@ -59,6 +59,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - run: python tools/encrypt_site.py   # 11/27：網站加密（密碼在 secret SITE_PASSWORD）
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
       - name: commit
         run: |
           git config user.name github-actions

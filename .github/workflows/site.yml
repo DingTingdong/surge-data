@@ -1,0 +1,33 @@
+name: build-site
+# 11/27：網站程式或版面改了就重建＋加密（本機建的版本沒有密碼，不能直接上傳）
+on:
+  push:
+    branches: [main]
+    paths: [site_template.html, build_site.py, composite_score.py, radar_core.py, new_high.py, tools/encrypt_site.py, .github/workflows/site.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    concurrency: data-writes
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas numpy scikit-learn==1.9.1 lxml cryptography
+      - run: python build_site.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - run: python tools/encrypt_site.py
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+      - name: commit
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add data docs
+          if ! git diff --cached --quiet; then git commit -m "build site" && git pull --rebase -q && git push; fi
