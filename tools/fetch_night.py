@@ -46,11 +46,16 @@ try:
     rec["pc"] = round(float(s.iloc[-1]), 1); rec["pc_date"] = s.index[-1].strftime("%m/%d"); rec["pc_pct"] = int(round((s.iloc[:-1] < s.iloc[-1]).mean() * 100))
 except Exception as e: print("pc skipped", e)
 json.dump(rec, open("docs/night.json", "w", encoding="utf-8"), ensure_ascii=False)
-newf = not os.path.exists("data/night.csv"); seen = set() if newf else set(pd.read_csv("data/night.csv", dtype=str).date)
+COLS = ["date", "fetched", "month", "close", "chg", "pct", "base", "vol", "pc", "pc_date", "pc_pct"]  # 固定欄位（pc 沒抓到就留空）
+rows = list(csv.reader(open("data/night.csv", encoding="utf-8"))) if os.path.exists("data/night.csv") else []
+seen = {r[0] for r in rows[1:] if r}
+if rows and rows[0] != COLS:  # 舊檔只有 8 欄表頭：升級表頭，舊資料列補空欄
+    with open("data/night.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f); w.writerow(COLS); [w.writerow((r + [""] * len(COLS))[:len(COLS)]) for r in rows[1:] if r]
 if rec["date"] not in seen:
     with open("data/night.csv", "a", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=list(rec)); 
-        if newf: w.writeheader()
+        w = csv.DictWriter(f, fieldnames=COLS, restval="", extrasaction="ignore")
+        if not rows: w.writeheader()
         w.writerow(rec)
 flag = "⚠️ 大於 2%｜" if abs(pct) >= 2 else ""
 nt.send(f"night-{rec['date']}", f"【夜盤】{flag}台指期（{rec['month']}）夜盤收 {close:,.0f}，{'+' if chg >= 0 else ''}{chg:,.0f} 點（{'+' if pct >= 0 else ''}{pct:.2f}%），相對前一天日盤收盤 {base:,.0f}。\n夜盤算在 {d:%m/%d} 這個交易日。\nhttps://dingtingdong.github.io/surge-data/")
