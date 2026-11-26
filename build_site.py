@@ -350,6 +350,15 @@ try:
     if _pk_today: cscore = _cs.scores(P, f, S, days[-1], _pk_today)
 except Exception as _e:
     print("composite scoring skipped:", _e)
+# 11/26 使用者：月選分頁只顯示換股日的排名，想看「今天」重新算的分數排名（非換股日，只供參考）
+tscore, ttop, tlow = {}, [], set()
+try:
+    _bt = S[(S.date == days[-1]) & S.base].code.tolist(); tscore = _cs.scores(P, f, S, days[-1], _bt)
+    ttop = [c for c, _ in sorted(tscore.items(), key=lambda kv: (-kv[1], kv[0]))[:20]]
+    _w = P["C"][ttop].iloc[-21:].pct_change(fill_method=None); _v = _w.std().where(_w.notna().sum() >= 15).sort_values()
+    tlow = set([c for c in _v.index if float(P["rawC"][c].iloc[-1]) < 500][:NPICK])
+except Exception as _e:
+    print("today score skipped:", _e)
 CL = "data/score_log.csv"
 _cl = pd.read_csv(CL, dtype={"code": str}) if os.path.exists(CL) else None
 if cscore and set(cscore) & set(S[(S.date == days[-1]) & S.pk].code) and (_cl is None or days[-1].strftime("%Y-%m-%d") not in set(_cl.date)):
@@ -652,6 +661,8 @@ for code, r in d.iterrows():
     if code in relaunch: x["rl"] = 1
     if code in mscore: x["ms"] = mscore[code][1]
     if code in cscore: x["cs"] = round(cscore[code], 2)
+    if code in ttop: x["tdr"] = ttop.index(code) + 1; x["tsc"] = round(float(tscore[code]), 3)
+    if code in tlow: x["tl"] = 1
     if code in m20: x.update(m20[code])
     if code in cbinfo: x.update(cbinfo[code])
     if code in sbr: x["sbr"] = sbr[code]
