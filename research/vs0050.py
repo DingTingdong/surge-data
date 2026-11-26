@@ -27,6 +27,7 @@ COMP = ["r20", "mom6_1", "d_hi250", "m60", "am", "yoy1", "yoy3", "rev_acc", "rev
 LOCK = 0.095; CACHE = "/tmp/model_v2/vs0050.pkl"
 FDX = os.environ.get("FD_OFFSETS")  # 11/22 加：例如 "0,2,4"＝每月 11 日後第 1、3、5 個交易日都存快照（給 top20_goal 第 4 輪用）；不設時結果完全不變
 if FDX: CACHE = CACHE.replace(".pkl", "_fdx.pkl")
+if os.environ.get("FD_TAG"): CACHE = CACHE.replace(".pkl", "_" + os.environ["FD_TAG"] + ".pkl")   # 11/26 加：另存一份不覆蓋既有快照
 OLDEST = os.environ.get("INCLUDE_OLDEST") == "1"  # 11/22 加：多讀 data/oldest（2005–2009，給 oos_2006.py）；不設時結果完全不變
 if OLDEST: CACHE = CACHE.replace(".pkl", "_oldest.pkl")
 OLDEST_ONLY = os.environ.get("OLDEST_ONLY") == "1"  # 11/23 加：只讀 2005–2010（data/oldest＋data/older 的 2010），整段 2005–2026 會超過記憶體
