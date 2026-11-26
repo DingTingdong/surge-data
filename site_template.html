@@ -667,7 +667,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></details>
 </main></section>
 <section class="pg" id="p4"><main>
-<div class="doc" id="myhold"></div><div class="doc" id="m3calc"></div><div class="doc" id="m3track"></div>
+<div class="doc" id="myhold"></div><div class="doc" id="pkfbox"></div><div class="doc" id="m3calc"></div><div class="doc" id="m3track"></div>
 <div class="doc" id="ptrack" hidden></div>
 <div class="doc"><h2>持有追蹤（近20個交易日的今日發動）</h2>
 <p>假設每檔都在訊號隔天開盤買進，照移動停損規則：收盤比買進後最高收盤低10%就隔天開盤賣，最多抱20個交易日。價格已依除權息調整。</p>
@@ -704,7 +704,7 @@ const MV=s=>s.cap!=null&&s.c!=null?s.cap*s.c/10:null; // 市值（億）＝股�
 const PMAX=META.bear?Math.max(...META.bear.h.slice(-10)):0,PANIC=PMAX>=750,DEEPP=PMAX>=800; /* 近10天上市空頭家數最高值：≥750 初步恐慌、≥800 深度恐慌 */const $=i=>document.getElementById(i);
 const sg=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2),cl=v=>v>0?"up":v<0?"dn":"";
 const HOT=s=>!!s.h,PK=s=>!!s.e,fx=(v,d)=>v==null?"—":v.toFixed(d);const DEEP=s=>s.d20!=null&&s.d20<=-20;
-const RL={M:["月選",s=>!!s.m20],P:["今日發動",s=>PK(s)||(PANIC&&!!s.rl)],N:["新高突破",s=>!!s.nh],T:["今日分數",s=>!!s.tdr],...(PANIC?{D:["撿跌深",s=>!!s.ts]}:{}),F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
+const RL={M:["月選",s=>!!s.m20],N:["新高突破",s=>!!s.nh],T:["今日分數",s=>!!s.tdr],...(PANIC?{D:["撿跌深",s=>!!s.ts]}:{}),F:["自選",s=>FAV.has(s.t)],ALL:["全部",s=>true]};
 let FAV=new Set();try{FAV=new Set(JSON.parse(localStorage.getItem("fav")||"[]"))}catch(e){}
 function saveFav(){try{localStorage.setItem("fav",JSON.stringify([...FAV]))}catch(e){}}
 const kurl=s=>"https://tw.stock.yahoo.com/quote/"+s.t+(s.mk==="櫃"?".TWO":".TW")+"/technical-analysis";
@@ -843,7 +843,7 @@ $("sub").innerHTML="<b>"+td+"</b>收盤，"+D.length.toLocaleString()+" 檔"+(ME
 $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span>${META.bear?`<span class="bn">上市空頭 <b class="n">${META.bear.n}</b></span>`:""}<span class="m5">近5日<span class="xl">中位數</span> <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span><button class="mxb" data-mx="1" aria-label="展開大盤">▾</button></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
 ${META.bear?bearbox(META.bear):""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
-chips();list();track();holds();ptrackbox();m3box();m3calc();myhold();live();
+chips();list();track();holds();ptrackbox();m3box();m3calc();myhold();(()=>{const e=$("pkfbox");if(e)e.innerHTML="<h2>今日發動：只在背景記錄</h2><p class=\"n\">11/26 起從雷達拿掉（平常時期抱 20 天比 0050 少 1.6～4.0%，四段都負），Telegram 也不再通知；只把「營收強＋分數高」和其他今日發動往後記錄，半年後再看。"+PKF().replace(/^<br>/,"")+"</p>"})();live();
 setInterval(()=>{if(document.visibilityState!=="visible")return;const n=new Date(Date.now()+8*3600e3),hm=n.getUTCHours()*100+n.getUTCMinutes(),wd=n.getUTCDay();if(wd>=1&&wd<=5&&hm>=900&&hm<=1400)live()},180000);
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));
