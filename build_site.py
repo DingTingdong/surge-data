@@ -413,7 +413,11 @@ try:
     detect["BD"] = [c for c in detect["B"] if c in _D]
     DL = "data/detect_log.csv"; _dl = pd.read_csv(DL, dtype={"code": str}) if os.path.exists(DL) else None
     _ds = days[-1].strftime("%Y-%m-%d"); _ver = int(_cs.margin_ok(days[-1]))   # 11/27：暫定（融資未到）與正式分開存，記生成時間
-    if _dl is not None and "ver" not in _dl.columns: _dl["ver"] = 1; _dl["made"] = "補算"
+    # 11/27 第十五份覆核：狀態分三種：補算（11/27 前寫入、或生成時間晚於隔天開盤）、暫定（ver 0）、正式（ver 1），各自去重
+    if _dl is not None:
+        if "ver" not in _dl.columns: _dl["ver"] = "補算"; _dl["made"] = "補算"
+        _dl["ver"] = _dl.ver.astype(str).str.replace(r"\.0$", "", regex=True); _dl.loc[_dl.made.astype(str) == "補算", "ver"] = "補算"
+    _ver = str(_ver)
     if _dl is None or not ((_dl.date == _ds) & (_dl.ver == _ver)).any():
         _mk = (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")
         _rows = [{"date": _ds, "code": c, "name": name.get(c, ""), "sig": k, "rank": (ttop.index(c) + 1) if c in ttop else None, "close": round(float(P["rawC"].iloc[-1][c]), 2), "ver": _ver, "made": _mk} for k in ("B", "C", "D") for c in detect[k]]

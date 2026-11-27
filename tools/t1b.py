@@ -11,15 +11,16 @@
 """
 import json, os
 import numpy as np, pandas as pd
-START = "2026-11-30"; STATE = "data/t1b_state.json"; LOG = "data/t1b_log.csv"; FEE = 0.003; ECOST = 0.0009; H = 10; K = 5
+START = "2026-11-30"; STATE = "data/t1b_state.json"; LOG = "data/t1b_log.csv"; TRD = "data/t1b_trades.csv"; FEE = 0.003; ECOST = 0.0009; H = 10; K = 5
 
-def _ranks(date):
-    """前一天的正式排名（mg_ok=1）；沒有正式版就用暫定版並標記。"""
+def _ranks(date, before):
+    """前一天的正式排名（融資到齊 mg_ok=1），而且生成時間要早於 before（買進日 09:00）。沒有就回傳 None：該批不交易（11/27 第十五份覆核）。"""
     fn = f"data/tscore/{date[:4]}.csv.gz"
-    if not os.path.exists(fn): return None, None
-    t = pd.read_csv(fn, dtype={"code": str}, usecols=["date", "code", "rank", "mg_ok"]); t = t[t.date == date]
-    if not len(t): return None, None
-    ok = int(t.mg_ok.max()); t = t[t.mg_ok == ok]; return t.set_index("code")["rank"].sort_values(), ok
+    if not os.path.exists(fn): return None, "沒有排名檔"
+    t = pd.read_csv(fn, dtype={"code": str}); t = t[(t.date == date) & (t.mg_ok == 1)]
+    if not len(t): return None, "沒有正式排名"
+    if "made" not in t.columns or str(t.made.iloc[0]) in ("", "nan") or str(t.made.iloc[0]) >= before: return None, f"正式排名太晚（{t['made'].iloc[0] if 'made' in t.columns else '無時間'}）"
+    return t.set_index("code")["rank"].sort_values(), "ok"
 
 def run(P, days):
     raw = P["rawC"]; rawO = P["O"] * (P["rawC"] / P["C"])
@@ -47,28 +48,31 @@ def run(P, days):
         op = lambda c: float(rawO.at[d, c]) if c in rawO.columns and rawO.at[d, c] == rawO.at[d, c] and rawO.at[d, c] > 0 else None
         cl = lambda c: float(raw[c].loc[:d].dropna().iloc[-1]) if c in raw.columns and raw[c].loc[:d].notna().any() else 0.0
         eo, ec = float(e.open.get(d, np.nan)), float(e.close.get(d, np.nan))
-        trades = []
+        if not (eo == eo and eo > 0 and ec == ec and ec > 0): print(f"t1b：{dstr} 0050 行情不完整，先不處理"); break   # 不寫入，下次更新再試
+        trades = []; tl = []
+        def rec(q, side, c, px, sh):
+            amt = sh * px; tl.append({"date": dstr, "batch": st["tr"].index(q) + 1, "side": side, "code": c, "price": round(px, 2), "shares": round(sh, 6), "amount": round(amt, 6), "fee": round(amt * FEE, 6)})
         # 停牌延後要賣的
         for q in st["tr"]:
             keep = []
             for p in q["pos"]:
                 if p.get("sell") and op(p["c"]):
-                    v = p["sh"] * op(p["c"]) * (1 - FEE); q["etf"] += v * (1 - ECOST) / eo; trades.append(f"賣{p['c']}")
+                    v = p["sh"] * op(p["c"]) * (1 - FEE); q["etf"] += v * (1 - ECOST) / eo; trades.append(f"賣{p['c']}"); rec(q, "賣（停牌後）", p["c"], op(p["c"]), p["sh"])
                 else: keep.append(p)
             q["pos"] = keep
         st["day"] = st.get("day", 0) + (0 if st["last"] is None else 1)
-        rk, ok = _ranks(prev)
+        rk, ok = _ranks(prev, dstr + " 09:00")
         top = list(rk[rk <= K].index) if rk is not None else []
         for q in st["tr"]:
             if q["due"] != st["day"]: continue
             q["due"] += H
-            if rk is None: continue   # 沒有前一天排名（例如資料缺）：這批維持原狀
+            if rk is None: trades.append(f"第{st['tr'].index(q) + 1}批不交易：{ok}"); continue   # 開盤前沒有正式排名：這批維持原狀
             sold = 0.0; keep = []
             for p in q["pos"]:
                 if p["c"] in top: keep.append(p); continue
                 o = op(p["c"])
                 if o is None: p["sell"] = True; keep.append(p); continue
-                sold += p["sh"] * o * (1 - FEE); trades.append(f"賣{p['c']}")
+                sold += p["sh"] * o * (1 - FEE); trades.append(f"賣{p['c']}"); rec(q, "賣", p["c"], o, p["sh"])
             q["pos"] = keep
             held = {p["c"] for x in st["tr"] for p in x["pos"]}
             ev = q["etf"] * eo; tot = sold + ev + sum(p["sh"] * (op(p["c"]) or cl(p["c"])) for p in keep); each = tot / K
@@ -80,13 +84,17 @@ def run(P, days):
                 if o is None or (pc == pc and pc > 0 and o / pc - 1 >= 0.095 - 1e-9): continue
                 amt = min(each, avail - spent)
                 if amt <= 0: break
-                q["pos"].append({"c": c, "sh": amt * (1 - FEE) / o, "buy": dstr}); spent += amt; held.add(c); trades.append(f"買{c}")
+                q["pos"].append({"c": c, "sh": amt * (1 - FEE) / o, "buy": dstr}); spent += amt; held.add(c); trades.append(f"買{c}"); rec(q, "買", c, o, amt * (1 - FEE) / o)
             net = sold - spent
             q["etf"] = (ev + (net * (1 - ECOST) if net >= 0 else net / (1 - ECOST))) / eo
+            if abs(net) > 1e-12: tl.append({"date": dstr, "batch": st["tr"].index(q) + 1, "side": "0050 買" if net >= 0 else "0050 賣", "code": "0050", "price": eo, "shares": round(abs(net) / eo, 6), "amount": round(abs(net), 6), "fee": round(abs(net) * ECOST, 6)})
         sv = sum(p["sh"] * cl(p["c"]) for q in st["tr"] for p in q["pos"]); etv = sum(q["etf"] for q in st["tr"]) * ec
         rows.append({"date": dstr, "nav": round(sv + etv, 6), "stock": round(sv / (sv + etv), 4) if sv + etv > 0 else 0, "n": sum(len(q["pos"]) for q in st["tr"]),
-                     "rank_ok": ok, "trades": " ".join(trades), "made": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")})
+                     "rank": ok, "trades": " ".join(trades), "made": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")})
         st["last"] = dstr
+        if tl:
+            old = pd.read_csv(TRD) if os.path.exists(TRD) else None; new = pd.DataFrame(tl)
+            (pd.concat([old, new], ignore_index=True) if old is not None else new).to_csv(TRD, index=False)
     if rows:
         new = pd.DataFrame(rows); (pd.concat([log, new], ignore_index=True) if log is not None else new).to_csv(LOG, index=False)
         json.dump(st, open(STATE, "w", encoding="utf-8"), ensure_ascii=False)
