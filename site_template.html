@@ -668,7 +668,7 @@ details.old>summary{cursor:pointer;color:var(--mu);font-size:14px;padding:12px 4
 <li>只有15週、一段行情。我沒有找到其他穩定有效的特徵。我先前憑感覺設的「突破20日高點、放量2倍」，資料不支持：大漲股反而多半離高點較遠。</li></ul></div></details>
 </main></section>
 <section class="pg" id="p4"><main>
-<div class="doc" id="myhold"></div><div class="doc" id="pkfbox"></div><div class="doc" id="m3calc"></div><div class="doc" id="m3track"></div>
+<div class="doc" id="detbox"></div><div class="doc" id="myhold"></div><div class="doc" id="pkfbox"></div><div class="doc" id="m3calc"></div><div class="doc" id="m3track"></div>
 <div class="doc" id="ptrack" hidden></div>
 <div class="doc"><h2>持有追蹤（近20個交易日的今日發動）</h2>
 <p>假設每檔都在訊號隔天開盤買進，照移動停損規則：收盤比買進後最高收盤低10%就隔天開盤賣，最多抱20個交易日。價格已依除權息調整。</p>
@@ -847,11 +847,14 @@ $("sub").innerHTML="<b>"+td+"</b>收盤，"+D.length.toLocaleString()+" 檔"+(ME
 $("mkt").innerHTML=`<div class="hd"><span class="st">大盤${META.weak?'<i class="weak">偏弱</i>':'<i class="strong">偏多</i>'}</span>${META.bear?`<span class="bn">上市空頭 <b class="n">${META.bear.n}</b></span>`:""}<span class="m5">近5日<span class="xl">中位數</span> <b class="n ${cl(META.m5)}">${sg(META.m5)}%</b></span><button class="mxb" data-mx="1" aria-label="展開大盤">▾</button></div>
 <div class="gauge" role="img" aria-label="站上20日均線的股票 ${META.above}%"><b style="left:${Math.max(1,Math.min(99,META.above))}%"></b></div><div class="gl n"><span>0%</span><span>站上20日線 ${META.above}%</span><span>100%</span></div>
 ${META.bear?bearbox(META.bear):""}<p>${META.weak?"等權指數在60日線下，今天的今日發動屬於<b>逆勢發動</b>。":"等權指數在60日線上。"}名單是剛發動或還在動的股票，不是買進訊號。</p>`;
-chips();list();track();holds();ptrackbox();m3box();m3calc();myhold();(()=>{const e=$("pkfbox");if(!e)return;const N=META.nhf,f=v=>v==null?"—":(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(1)+"%";
+chips();list();track();holds();ptrackbox();m3box();m3calc();myhold();(()=>{const e=$("detbox"),X=META.detect;if(!e||!X)return;const L=(k,a,n)=>`<h3>${k}（${a.length}）</h3><p class="n">${n}${a.length?"<br>"+a.join("、"):"<br>今天沒有。"}</p>`;
+const Tb=META.t1b,g=v=>(v>0?"+":v<0?"−":"")+Math.abs(v*100-100).toFixed(1)+"%";
+e.innerHTML=`<h2>偵測觀察池</h2><p class="n">誰開始動了（11/27 起每天記錄）。只是觀察，不是買進訊號：回測照買抱 20 天，中位數都輸 0050。</p>`+L("高分又剛大漲",X.BD,"第一根大漲，而且第一次進今日分數前 20。")+L("第一次進今日分數前 20",X.D,"前 20 個交易日都不在前 20。")+L("第一根大漲",X.B,"漲 ≥9%、前 10 天沒有，不論成交值（宣德這種會進來）。")+L("第一根量不足、今天放量",X.C,"第一根沒到 2,000 萬，之後放量而且收盤站回第一根。")+
+(Tb&&Tb.n?`<h3>今日分數前 5 名・續抱版（前瞻模擬）</h3><p class="n">${Tb.start} 起自動換股。淨值 ${g(Tb.nav)}，同期 0050 ${g(Tb.b)}；個股占 ${Math.round(Tb.stock*100)}%${Tb.hold&&Tb.hold.length?"："+Tb.hold.join("、"):""}。</p>`:`<h3>今日分數前 5 名・續抱版（前瞻模擬）</h3><p class="n">11/30 開盤開始，每天自動照規則換股並記錄淨值。</p>`)})();(()=>{const e=$("pkfbox");if(!e)return;const N=META.nhf,f=v=>v==null?"—":(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(1)+"%";
 e.innerHTML=`<h2>背景記錄（不在雷達上顯示）</h2><p class="n">沒有證據的方法從雷達隱藏，只在這裡記錄往後的實際績效，半年後再決定要不要恢復。撿跌深例外：新一波恐慌的第 1～5 天會自動出現在雷達上，Telegram 也會在第 1、5、19 天通知。</p>
 <h3>撿跌深</h3>${PDAY()}<p class="n">${PWV()}</p>
 <h3>新高突破</h3><p class="n">11/27 起每次新高突破：隔天開盤買、抱 60 天，比同日開盤買的 0050。${N&&N.n?`目前 ${N.n} 筆，平均比 0050 ${f(N.ex)}（滿 60 天 ${N.done} 筆${N.done?"，平均 "+f(N.exd):""}）。最近：${N.last.map(z=>z.d+" "+z.n+"（"+f(z.x)+(z.done?"":"，進行中")+"）").join("、")}`:"還沒有新的事件。"}回測：抱 60 天比 0050 +1.1%（不顯著），2024–26 −3.4%。</p>
-<h3>今日發動</h3><p class="n">平常時期抱 20 天比 0050 少 1.6～4.0%，四段都負。${PKF().replace(/^<br>/,"")}</p>`+(()=>{const X=META.detect;if(!X)return"";const L=(k,a)=>a&&a.length?`<b>${k}</b>（${a.length}）：${a.slice(0,12).join("、")}${a.length>12?"…":""}<br>`:"";const Tb=META.t1b,g=v=>(v>0?"+":v<0?"−":"")+Math.abs(v*100-100).toFixed(1)+"%";const tb=Tb&&Tb.n?`<h3>今日分數前 5 名・續抱版（前瞻模擬）</h3><p class="n">${Tb.start} 起，照第 73 輪規則每天自動換股（分 10 批、抱 10 天、仍在前 5 就續抱，其餘放 0050）。目前淨值 ${g(Tb.nav)}，同期 0050 ${g(Tb.b)}；個股占 ${Math.round(Tb.stock*100)}%${Tb.hold&&Tb.hold.length?"："+Tb.hold.join("、"):""}。紀錄在 data/t1b_log.csv。</p>`:`<h3>今日分數前 5 名・續抱版（前瞻模擬）</h3><p class="n">11/30 開盤開始，每天自動照規則換股並記錄淨值。</p>`;return tb+`<h3>偵測觀察池（11/27 起記錄）</h3><p class="n">用來知道「誰開始動了」，不是買進訊號：回測照買 20 天，中位數都輸 0050。${L("高分又剛大漲",X.BD)}${L("第一次進今日分數前 20",X.D)}${L("第一根大漲（不論成交值）",X.B)}${L("第一根量不足、今天放量",X.C)}</p>`})()})();live();
+<h3>今日發動</h3><p class="n">平常時期抱 20 天比 0050 少 1.6～4.0%，四段都負。${PKF().replace(/^<br>/,"")}</p>`})();live();
 setInterval(()=>{if(document.visibilityState!=="visible")return;const n=new Date(Date.now()+8*3600e3),hm=n.getUTCHours()*100+n.getUTCMinutes(),wd=n.getUTCDay();if(wd>=1&&wd<=5&&hm>=900&&hm<=1400)live()},180000);
 (function(){const now=new Date(Date.now()+8*36e5),h=now.getUTCHours()+now.getUTCMinutes()/60;let e=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
 const wk=d=>d.getUTCDay()%6!==0,back=d=>{do{d=new Date(d-864e5)}while(!wk(d));return d};if(!wk(e)||h<19)e=back(wk(e)?e:new Date(+e+864e5));
