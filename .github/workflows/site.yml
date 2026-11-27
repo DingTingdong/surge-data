@@ -30,4 +30,5 @@ jobs:
           git config user.name github-actions
           git config user.email actions@github.com
           git add data docs
-          if ! git diff --cached --quiet; then git commit -m "build site" && git pull --rebase -q && git push; fi
+          # 11/27：同時有別的工作流程推送時重試；衝突時以這次剛建好的版本為準（-X theirs＝這次的 commit）
+          if ! git diff --cached --quiet; then git commit -m "build site" && for i in 1 2 3 4; do git pull --rebase -X theirs -q && git push && break; sleep 15; done; fi

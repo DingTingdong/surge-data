@@ -67,7 +67,8 @@ jobs:
           git config user.name github-actions
           git config user.email actions@github.com
           git add data docs
-          if ! git diff --cached --quiet; then git commit -m "update prices" && git pull --rebase -q && git push; fi
+          # 11/27：同時有別的工作流程推送時重試；衝突時以這次剛建好的版本為準（-X theirs＝這次的 commit）
+          if ! git diff --cached --quiet; then git commit -m "update prices" && for i in 1 2 3 4; do git pull --rebase -X theirs -q && git push && break; sleep 15; done; fi
       - name: 失敗通知（18:20、20:25 兩個時段失敗才發，避免備援時段重複）
         if: failure() && (github.event.schedule == '20 10 * * 1-5' || github.event.schedule == '25 12 * * 1-5')
         env:
