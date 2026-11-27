@@ -29,7 +29,9 @@ if __name__ == "__main__":
     tw = set(p.loc[p.market == "TWSE", "date"]); p = p[(p.market == "TWSE") | p.date.isin(tw)]
     pv = lambda c: p.pivot(index="date", columns="code", values=c).sort_index()
     C, O, H, L, A = pv("close"), pv("open"), pv("high"), pv("low"), pv("amount")
-    adj = pd.read_csv("data/adjust.csv", dtype={"code": str}); adj["date"] = pd.to_datetime(adj.date)
+    # 11/27 第 69b 輪（第十一份覆核）：原本只讀根目錄 adjust.csv（2020 起），2011–2019 沒有還原 → 改成合併 older／old／根目錄
+    ADJ = pd.concat([pd.read_csv(f, dtype={"code": str}) for f in ("data/older/adjust.csv", "data/old/adjust.csv", "data/adjust.csv") if os.path.exists(f)], ignore_index=True).drop_duplicates()
+    adj = ADJ.copy(); adj["date"] = pd.to_datetime(adj.date)
     adj = adj[adj.code.isin(C.columns) & adj.date.isin(C.index) & (adj.ratio > 0.05) & (adj.ratio < 20)]
     fac = adj.groupby(["date", "code"]).ratio.prod().unstack().reindex(index=C.index, columns=C.columns).fillna(1.0)
     Mx = fac.iloc[::-1].cumprod().iloc[::-1].shift(-1).fillna(1.0); Ca, Oa = C * Mx, O * Mx
@@ -40,7 +42,7 @@ if __name__ == "__main__":
     ev = up & ~prior & (a20p >= 3e6)
     e5 = E50.reindex(days); bidx = (e5.close / e5.close.shift(1)).fillna(1.0)
     # 0050 含息：用 adjust.csv 的 0050 比例
-    a50 = pd.read_csv("data/adjust.csv", dtype={"code": str}); a50 = a50[a50.code == "0050"]; a50["date"] = pd.to_datetime(a50.date)
+    a50 = ADJ[ADJ.code.isin(["0050", "50"])].copy(); a50["date"] = pd.to_datetime(a50.date)
     f50 = a50.groupby("date").ratio.prod().reindex(days).fillna(1.0); f50 = f50.iloc[::-1].cumprod().iloc[::-1].shift(-1).fillna(1.0)
     c5, o5 = e5.close * f50, e5.open * f50
     Cv, Ov, Ocv = Ca.values, Oa.values, O.values; pcv = C.shift(1).values; N = len(days); rows = []
@@ -63,6 +65,12 @@ if __name__ == "__main__":
                        "每筆平均減0050": round(float(y.x.mean()), 2), "中位數": round(float(y.x.median()), 2), "贏0050%": round(float((y.x > 0).mean() * 100)),
                        "月份t": round(nw_t(m.reset_index(drop=True), 3), 2), "四段": [round(float(y.x[sg == q].mean()), 2) for q in SEG4]}
         print(g, json.dumps(res[str(g)], ensure_ascii=False), flush=True)
+    # 第 69b 輪另報（描述性）：累積門檻的整體名單 A ≥2,000 萬、B ≥1,000 萬、C ≥500 萬、D 不設
+    for lab, th in (("累積A ≥2,000萬", 2e7), ("累積B ≥1,000萬", 1e7), ("累積C ≥500萬", 5e6), ("累積D 不設", 0)):
+        z = E[E.amt >= th]; y = z.dropna(subset=["x"]); m = y.groupby(y.date.dt.to_period("M")).x.mean(); m.index = m.index.to_timestamp(); sg = RS.seg(y.date)
+        res[lab] = {"筆數": len(z), "每筆平均減0050": round(float(y.x.mean()), 2), "中位數": round(float(y.x.median()), 2), "贏0050%": round(float((y.x > 0).mean() * 100)),
+                    "月份t": round(nw_t(m.reset_index(drop=True), 3), 2), "四段": [round(float(y.x[sg == q].mean()), 2) for q in SEG4], "隔天買不到%": round(float(z.miss.mean() * 100))}
+        print(lab, json.dumps(res[lab], ensure_ascii=False), flush=True)
     a, b = res["1,000～2,000萬"], res["≥2,000萬（現行）"]
     ok = [a["每筆平均減0050"] >= b["每筆平均減0050"], a["中位數"] >= b["中位數"], sum(x >= y for x, y in zip(a["四段"], b["四段"])) >= 3]
     res["判斷"] = {"各條件": ok, "門檻降到1,000萬": all(ok)}; print(res["判斷"])
