@@ -390,6 +390,35 @@ try:
         pd.concat([_old, _tt], ignore_index=True).to_csv(_tsf, index=False) if _old is not None else _tt.to_csv(_tsf, index=False)
 except Exception as _e:
     print("today score skipped:", _e)
+# 11/27 第 72／73 輪：偵測觀察池（只記錄、不當買進訊號）。B 第一根大漲（不設當天成交值）、C 第一根量不足後放量、D 第一次進今日分數前 20、BD 同時。
+detect = None
+try:
+    _ch, _snp, _a1, _a20p, _cc = f["ch"], f["snp"], f["a1"], f["a20p"], f["c"]
+    _okc = [c for c in _ch.columns if not str(c).startswith("0") and not str(c).startswith("91")]
+    _t = len(days) - 1; _lo = lambda t: (_ch.iloc[t][_okc] >= 9) & (_snp.iloc[t][_okc] > 10) & (_a20p.iloc[t][_okc] >= 3)
+    _B = set(_lo(_t)[lambda z: z].index)
+    _C = set()
+    for _u in range(max(0, _t - 10), _t):
+        for c in _lo(_u)[lambda z: z].index:
+            if float(_a1.iloc[_u][c]) < 20 and float(_a1.iloc[_t][c]) >= 20 and float(_cc.iloc[_t][c]) >= float(_cc.iloc[_u][c]):
+                if not any(float(_a1.iloc[k][c]) >= 20 and float(_cc.iloc[k][c]) >= float(_cc.iloc[_u][c]) for k in range(_u + 1, _t)): _C.add(c)
+    _D = set()
+    if ttop and os.path.exists(f"data/tscore/{days[-1].year}.csv.gz"):
+        _th = pd.concat([pd.read_csv(x, dtype={"code": str}, usecols=["date", "code", "rank"]) for x in sorted(glob.glob("data/tscore/*.csv.gz"))[-2:]]
+                        + ([pd.read_csv("data/tscore_backfill.csv", dtype={"code": str})] if os.path.exists("data/tscore_backfill.csv") else []), ignore_index=True)   # backfill＝11/27 補算 10/28～11/25
+        _pd = [x.strftime("%Y-%m-%d") for x in days[-21:-1]]; _was = set(_th[_th.date.isin(_pd) & (_th["rank"] <= 20)].code)
+        if len(set(_th.date) & set(_pd)) >= 15: _D = set(ttop) - _was
+    detect = {"B": sorted(_B, key=lambda c: tscore.get(c, -1), reverse=True), "C": sorted(_C), "D": sorted(_D, key=lambda c: ttop.index(c)), "since": "11/27",
+              }
+    detect["BD"] = [c for c in detect["B"] if c in _D]
+    DL = "data/detect_log.csv"; _dl = pd.read_csv(DL, dtype={"code": str}) if os.path.exists(DL) else None
+    _ds = days[-1].strftime("%Y-%m-%d")
+    if _dl is None or _ds not in set(_dl.date):
+        _rows = [{"date": _ds, "code": c, "name": name.get(c, ""), "sig": k, "rank": (ttop.index(c) + 1) if c in ttop else None, "close": round(float(P["rawC"].iloc[-1][c]), 2)} for k in ("B", "C", "D") for c in detect[k]]
+        if _rows: pd.concat([_dl, pd.DataFrame(_rows)], ignore_index=True).to_csv(DL, index=False) if _dl is not None else pd.DataFrame(_rows).to_csv(DL, index=False)
+    detect = {k: ([f"{name.get(c, c)}（{c}）" for c in v] if isinstance(v, list) else v) for k, v in detect.items()}
+except Exception as _e:
+    print("detect skipped:", _e)
 CL = "data/score_log.csv"
 _cl = pd.read_csv(CL, dtype={"code": str}) if os.path.exists(CL) else None
 if cscore and set(cscore) & set(S[(S.date == days[-1]) & S.pk].code) and (_cl is None or days[-1].strftime("%Y-%m-%d") not in set(_cl.date)):
@@ -929,7 +958,7 @@ except Exception as _e:
 
 meta = {"date": last.strftime("%Y/%m/%d"), "m5": round(float(allc.r5.median()), 2),
         "above": int(round(allc.a.mean() * 100)), "fwd": FORWARD_START, "ver": RULE_VERSION, "hold": HOLD,
-        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pday": pday, "nhf": nhf, "tdays": [x.strftime("%Y-%m-%d") for x in days[-80:]], "pkf": pkf, "cbf": cbf, "m20": m20_meta,
+        "hv": round(float(d[d.rc >= 0.9].v.median()), 1), "hrg": round(float(d[d.rc >= 0.9].rg.median()), 1), "sum": summary, "holds": holds, "weak": bool(weak.iloc[-1]), "chip": chip_meta, "grp": grp[:8], "drop": drop_meta, "bear": bear_meta, "rvm": rev_ym, "ptrack": ptrack, "bounce": bounce_meta, "wave": wave_start, "pwave": pwave, "pday": pday, "nhf": nhf, "detect": detect, "tdays": [x.strftime("%Y-%m-%d") for x in days[-80:]], "pkf": pkf, "cbf": cbf, "m20": m20_meta,
         "built": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%m/%d %H:%M")}
 html = open("site_template.html", encoding="utf-8").read()
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
