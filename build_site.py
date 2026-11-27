@@ -427,7 +427,7 @@ try:
         _prov = not (_chip_ok and len(_cur) == 20)
         _nowt = pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)
         if _prov and len(_cur) == 20 and (_nowt.strftime("%Y-%m-%d") == _fs or _nowt.hour < 9):
-            # 11/27 第九份覆核：正式名單若晚於買進日 09:00 才出來，帳戶改用開盤前最後一版暫定名單（data/top20_prov.csv）
+            # 暫定名單只存下來研究用（第 70 輪：不照暫定名單買）
             _pv = pd.read_csv(PROV_LOG, dtype={"code": str}) if os.path.exists(PROV_LOG) else None
             _cur2 = _cur.assign(logged=_nowt.strftime("%Y-%m-%d %H:%M"))
             pd.concat([_pv[_pv.date != _fs], _cur2], ignore_index=True).to_csv(PROV_LOG, index=False) if _pv is not None else _cur2.to_csv(PROV_LOG, index=False)
@@ -466,7 +466,6 @@ try:
         return sorted(cs_, key=lambda c: (v_.get(c) if v_.get(c) == v_.get(c) else 9e9, rk_[c]))
     if os.path.exists(T20_LOG):
         _tl = pd.read_csv(T20_LOG, dtype={"code": str}); _fl = sorted(_tl.date.unique()); _prev = set()
-        _pvl = pd.read_csv(PROV_LOG, dtype={"code": str}) if os.path.exists(PROV_LOG) else None
         _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
         if _e5 is not None: _e5 = _e5[_e5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
         _aj5 = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj5 = _aj5[_aj5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
@@ -477,10 +476,14 @@ try:
             _i0 = days.get_loc(_t0) + 1; _i1 = None
             if _k + 1 < len(_fl) and pd.Timestamp(_fl[_k + 1]) in days and days.get_loc(pd.Timestamp(_fl[_k + 1])) + 1 < len(days): _i1 = days.get_loc(pd.Timestamp(_fl[_k + 1])) + 1
             _codes = _tl[_tl.date == _f0].code.tolist(); _rr = []
-            _lt = _late(_tl[_tl.date == _f0].logged.iloc[0], _f0, days[_i0].strftime("%Y-%m-%d")); _pu = False
-            if _lt and _pvl is not None and (_pvl.date == _f0).any():
-                _pz = _pvl[_pvl.date == _f0]
-                if str(_pz.logged.iloc[0]) < days[_i0].strftime("%Y-%m-%d") + " 09:00": _codes = _pz.sort_values("rank").code.tolist(); _lt = False; _pu = True
+            _lg = str(_tl[_tl.date == _f0].logged.iloc[0]); _lt = _late(_lg, _f0, days[_i0].strftime("%Y-%m-%d")); _pu = False
+            # 11/27 第 70 輪：暫定名單（前一天融資）買的話每期平均少 0.54%（t −2.36）→ 不用暫定名單。
+            #   正式名單晚於買進日 09:00 才出來 → 照實際能買的時間，延到名單出來後的第一個開盤才買（只適用記到分鐘的新紀錄）。
+            if _lt and len(_lg) > 10:
+                _ok_d = pd.Timestamp(_lg[:10]) + (pd.Timedelta(0) if _lg[11:16] < "09:00" else pd.Timedelta(days=1))
+                _ni = int(days.searchsorted(_ok_d))
+                if _ni >= len(days) or (_i1 is not None and _ni >= _i1): continue
+                _i0 = _ni; _pu = True; _lt = False
             for c in _codes:
                 if c not in C.columns: continue
                 _o = O.iloc[_i0][c]; _pc = C.iloc[_i0 - 1][c]
@@ -510,7 +513,7 @@ try:
                 if _px1 == _px1: _bb = round((_px1 / float(_e5.open[days[_i0]]) / _dv - 1) * 100, 1)
             _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 0.6 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
                           "r3": round(float(np.mean(_rr3)) - 0.6 * _to3, 1) if _rr3 else None, "s3": _sel3,
-                          "late": _lt, "prov": _pu})
+                          "late": _lt, "delay": _pu})
     _s3 = None
     for h in _hist:
         _sx = h.pop("s3", None)
@@ -941,7 +944,7 @@ try:
         if _ac and _ac.get("trades") and _ac["trades"][-1].get("est"):
             _tr = _ac["trades"][-1]
             _msg += f"\n\n70 萬基準（估算，用今天收盤＋3% 緩衝）：" + "".join(f"\n賣 {x['n']} {_fmt(x['sh'])}" for x in _tr["sell"]) + "".join(f"\n買 {x['n']} {_fmt(x['sh'])}（約 {x['sh'] * x['px'] / 1e4:.1f} 萬）" for x in _tr["buy"]) + "".join(f"\n續抱 {x['n']} {_fmt(x['sh'])}" for x in _tr["keep"]) + "".join(f"\n減碼 {x['n']} {_fmt(x['sh'])}（超過 30%）" for x in _tr.get("trim", [])) + "".join(f"\n加碼 {x['n']} {_fmt(x['sh'])}" for x in _tr.get("add", []))
-        _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（開盤前掛限價單；開盤比昨收漲 9.5% 以上就不買、換候補下一檔）\n" + _url)
+        _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（8:55 看試撮價：比昨收漲 9.5% 以上就不買、改買候補；其他掛限價＝昨收 ×1.094，開盤就會用開盤價成交。沒成交的先刪單再買候補）\n" + _url)
     # 月選週報（11/25 使用者要求）：每週最後一個交易日收盤後（週五；週五休市就看下週一前最後一天）傳一次
     if days[-1].weekday() == 4:
         _h3w = [x for x in data if x.get("m3")]

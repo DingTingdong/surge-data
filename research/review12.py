@@ -13,6 +13,13 @@
     報：P、N 與 F 的前 20 名重疊、5 檔重疊（平均、最低、完全相同的比例）；
       同一期「5 檔等權、隔天開盤買到下次換股隔天開盤」報酬，P−F、N−F 的每期差（平均、t、四段）。
     判斷（事先寫下）：P 的 5 檔平均重疊 ≥ 4 檔、且 P−F 平均 ≥ −0.3 且 t > −2 → 正式名單來不及時可以買暫定名單；否則等正式名單。
+結果（11/27 13:10）：
+  第一部分：現行 +1.87（t 3.82），2024–26 +0.73，每日回落 −29.6%；跌 ≥10% 事件 31 次、≥20% 9 次，最長 506 個交易日才回到高點；
+    任一交易日起 250 個交易日內碰到 −20% 的重疊視窗比例 46%（不是校準過的機率），中位數 −17.0%。
+    停損真的空手重選後：−10% +1.87（t 3.89）、2024–26 +0.99、回落 −27.7%（13 次）；−15% +1.74、−33.6%；−20% +1.81、−33.2% → 都不採用（回落沒有淺 5 點）。
+  第二部分（190 期）：P 前一天融資：前 20 重疊 18.9、5 檔重疊 4.45（54% 完全相同），但每期報酬 P−F −0.54（t −2.36，四段 0.15／−0.53／−1.11／−0.98）；
+    N 融資 0.5：5 檔重疊 3.50，P−F −0.37（t −1.10）。→ 判斷：不可以買暫定名單，等正式名單。
+    網站：暫定名單標「不要照這份買」；正式名單晚於買進日 09:00 時，帳戶延到名單出來後的第一個開盤才買。
 """
 import glob, json, os, sys
 import numpy as np, pandas as pd
@@ -104,7 +111,7 @@ if __name__ == "__main__":
         else:
             ok = [r["每月減0050"] >= base["每月減0050"] - 0.2, r["t"] >= 2.9, r["2024–26"] >= base["2024–26"] - 0.2, r["每日回落"] >= base["每日回落"] + 5]
             r["判斷"] = {"各條件": ok, "採用": all(ok)}
-        res[lab] = r; print(lab, json.dumps({k: v for k, v in r.items() if k != "回落事件"}, ensure_ascii=False), flush=True)
+        res[lab] = r; print(lab, json.dumps({k: v for k, v in r.items() if k != "回落事件"}, ensure_ascii=False, default=int), flush=True)
     # 第二部分
     fs = sorted(glob.glob(f"{REPO}/data/older/chips/*.csv*") + glob.glob(f"{REPO}/data/old/chips/*.csv*") + glob.glob(f"{REPO}/data/chips/*.csv*"))
     ch = pd.concat([pd.read_csv(f, dtype={"code": str}, usecols=["date", "code", "margin"]) for f in fs], ignore_index=True)
@@ -150,5 +157,5 @@ if __name__ == "__main__":
                   "5檔完全相同%": round(float((W[f"{k}5檔重疊"] == 5).mean() * 100)), "每期報酬差平均": round(float(dx.mean()), 2), "t": round(nw_t(dx.reset_index(drop=True), 3), 2),
                   "四段": [round(float(dx[sg[W.index.isin(dx.index)] == q].mean()), 2) for q in R7.SEG4]}
     p = out["P"]; out["判斷"] = {"各條件": [p["5檔重疊平均"] >= 4, p["每期報酬差平均"] >= -0.3 and p["t"] > -2], "可以買暫定名單": p["5檔重疊平均"] >= 4 and p["每期報酬差平均"] >= -0.3 and p["t"] > -2}
-    res["第二部分 暫定名單"] = out; print("第二部分", json.dumps(out, ensure_ascii=False), flush=True)
+    res["第二部分 暫定名單"] = out; print("第二部分", json.dumps(out, ensure_ascii=False, default=int), flush=True)
     json.dump(res, open(f"{REPO}/research/results/review12.json", "w"), ensure_ascii=False, indent=1, default=str)
