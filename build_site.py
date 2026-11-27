@@ -376,7 +376,7 @@ try:
     _bt = [c for c in S[(S.date == days[-1]) & S.base].code if not _cs.is_tdr([c])[0]]; tscore = _cs.scores(P, f, S, days[-1], _bt)
     ttop = [c for c, _ in sorted(tscore.items(), key=lambda kv: (-kv[1], kv[0]))[:20]]
     _w = P["C"][ttop].iloc[-21:].pct_change(fill_method=None); _v = _w.std().where(_w.notna().sum() >= 15).sort_values()
-    tlow = set([c for c in _v.index if float(P["rawC"][c].iloc[-1]) < 500][:NPICK])
+    tlow = set(list(_v.index)[:NPICK])   # 11/27 第 64 輪：不再跳過 500 元以上
     tvol = {c: round(float(v) * 100, 2) for c, v in _v.items() if v == v}
 except Exception as _e:
     print("today score skipped:", _e)
@@ -440,7 +440,8 @@ try:
         v_ = w_.std().where(w_.notna().sum() >= 15); rk_ = {c: k for k, c in enumerate(codes)}
         # 11/25 使用者要求：換股日收盤實際股價 ≥ 500 元（一張太貴買不起）直接跳過、排到最後（回測影響很小：research/results/README.md「千元股」）
         _px = P["rawC"].iloc[i0 - 1] if i0 - 1 < len(P["rawC"]) else P["rawC"].iloc[-1]
-        return sorted(cs_, key=lambda c: (1 if float(_px.get(c, 0) or 0) >= 500 else 0, v_.get(c) if v_.get(c) == v_.get(c) else 9e9, rk_[c]))
+        # 11/27 第 64 輪（使用者決定）：取消 500 元上限，70 萬帳戶本來就用零股；回測每月 +1.72 → +1.89，回落不變
+        return sorted(cs_, key=lambda c: (v_.get(c) if v_.get(c) == v_.get(c) else 9e9, rk_[c]))
     if os.path.exists(T20_LOG):
         _tl = pd.read_csv(T20_LOG, dtype={"code": str}); _fl = sorted(_tl.date.unique()); _prev = set()
         _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
