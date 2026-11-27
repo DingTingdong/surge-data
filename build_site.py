@@ -380,13 +380,14 @@ try:
     tvol = {c: round(float(v) * 100, 2) for c, v in _v.items() if v == v}
     # 11/27 第八份覆核：每天保存整個分析範圍的分數與 12 個百分位（往後紀錄）。融資到齊（mg_ok=1）的版本會取代同一天未到齊的版本，其他不改。
     _tsf = f"data/tscore/{days[-1].year}.csv.gz"; os.makedirs("data/tscore", exist_ok=True)
-    _tt = _cs.table(P, f, S, days[-1], _bt).round(4); _tt.index.name = "code"; _tt = _tt.reset_index()
-    _tt.insert(0, "date", days[-1].strftime("%Y-%m-%d")); _tt["mg_ok"] = int(_cs.margin_ok(days[-1])); _tt["rank"] = _tt.score.rank(ascending=False, method="first").astype(int)
+    # 11/27 第九份覆核：暫定（融資未到）與正式兩個版本都保存；排名用完整精度；記生成時間與程式版本
+    _tt = _cs.table(P, f, S, days[-1], _bt); _tt["rank"] = _tt.score.rank(ascending=False, method="first").astype(int)
+    _tt = _tt.round({**{k: 4 for k in _cs.FEATS}, "score": 6, **{k + "_v": 5 for k in _cs.FEATS}}); _tt.index.name = "code"; _tt = _tt.reset_index()
+    _tt.insert(0, "date", days[-1].strftime("%Y-%m-%d")); _tt["mg_ok"] = int(_cs.margin_ok(days[-1]))
+    _tt["made"] = (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d %H:%M"); _tt["sha"] = os.environ.get("GITHUB_SHA", "local")[:7]
     _old = pd.read_csv(_tsf, dtype={"code": str}) if os.path.exists(_tsf) else None
-    _have = None if _old is None else _old[_old.date == _tt.date.iloc[0]]
-    if _have is None or not len(_have) or (int(_have.mg_ok.max()) == 0 and int(_tt.mg_ok.iloc[0]) == 1):
-        _keep = _old[_old.date != _tt.date.iloc[0]] if _old is not None else None
-        pd.concat([_keep, _tt], ignore_index=True).to_csv(_tsf, index=False) if _keep is not None else _tt.to_csv(_tsf, index=False)
+    if _old is None or not ((_old.date == _tt.date.iloc[0]) & (_old.mg_ok == _tt.mg_ok.iloc[0])).any():
+        pd.concat([_old, _tt], ignore_index=True).to_csv(_tsf, index=False) if _old is not None else _tt.to_csv(_tsf, index=False)
 except Exception as _e:
     print("today score skipped:", _e)
 CL = "data/score_log.csv"
@@ -400,7 +401,7 @@ if cscore and set(cscore) & set(S[(S.date == days[-1]) & S.pk].code) and (_cl is
 # ---- 每月前20（research/top20_goal.py 的基準規則；research/top20_exact.py 回測）----
 # 每月營收期限日（10 日起第一個交易日）的下一個交易日收盤後，分析範圍內「趨勢＋營收」分數最高的 20 檔，隔天開盤買；下次換股日還在前 20 的續抱。
 # 名單第一次算出（而且當天融資資料已更新）就記到 data/top20_log.csv，只增不改；之後的報酬才是真正的前瞻驗證。
-T20_LOG = "data/top20_log.csv"; m20 = {}; m20_meta = None
+T20_LOG = "data/top20_log.csv"; PROV_LOG = "data/top20_prov.csv"; m20 = {}; m20_meta = None
 OFFICIAL = pd.Timestamp("2026-12-11")   # 正式紀錄第一期（11/27 第八份覆核：這期空手起算，不繼承事後補算的持股）
 def _late(logged, fdate, entry):
     logged = str(logged)
@@ -424,6 +425,12 @@ try:
         _logged = (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")   # 11/27 起記到分鐘
         _cur = pd.DataFrame([{"date": _fs, "rank": i + 1, "code": c, "name": name.get(c, ""), "score": round(v, 4), "logged": _logged} for i, (c, v) in enumerate(_top)])
         _prov = not (_chip_ok and len(_cur) == 20)
+        _nowt = pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)
+        if _prov and len(_cur) == 20 and (_nowt.strftime("%Y-%m-%d") == _fs or _nowt.hour < 9):
+            # 11/27 第九份覆核：正式名單若晚於買進日 09:00 才出來，帳戶改用開盤前最後一版暫定名單（data/top20_prov.csv）
+            _pv = pd.read_csv(PROV_LOG, dtype={"code": str}) if os.path.exists(PROV_LOG) else None
+            _cur2 = _cur.assign(logged=_nowt.strftime("%Y-%m-%d %H:%M"))
+            pd.concat([_pv[_pv.date != _fs], _cur2], ignore_index=True).to_csv(PROV_LOG, index=False) if _pv is not None else _cur2.to_csv(PROV_LOG, index=False)
         if not _prov:
             pd.concat([_t20, _cur], ignore_index=True).to_csv(T20_LOG, index=False) if _t20 is not None else _cur.to_csv(T20_LOG, index=False)
     _ie = days.get_loc(_form) + 1; _rets = []
@@ -459,6 +466,7 @@ try:
         return sorted(cs_, key=lambda c: (v_.get(c) if v_.get(c) == v_.get(c) else 9e9, rk_[c]))
     if os.path.exists(T20_LOG):
         _tl = pd.read_csv(T20_LOG, dtype={"code": str}); _fl = sorted(_tl.date.unique()); _prev = set()
+        _pvl = pd.read_csv(PROV_LOG, dtype={"code": str}) if os.path.exists(PROV_LOG) else None
         _e5 = pd.read_csv("data/etf.csv", dtype={"code": str}) if os.path.exists("data/etf.csv") else None
         if _e5 is not None: _e5 = _e5[_e5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
         _aj5 = pd.read_csv("data/adjust.csv", dtype={"code": str}); _aj5 = _aj5[_aj5.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date))
@@ -469,6 +477,10 @@ try:
             _i0 = days.get_loc(_t0) + 1; _i1 = None
             if _k + 1 < len(_fl) and pd.Timestamp(_fl[_k + 1]) in days and days.get_loc(pd.Timestamp(_fl[_k + 1])) + 1 < len(days): _i1 = days.get_loc(pd.Timestamp(_fl[_k + 1])) + 1
             _codes = _tl[_tl.date == _f0].code.tolist(); _rr = []
+            _lt = _late(_tl[_tl.date == _f0].logged.iloc[0], _f0, days[_i0].strftime("%Y-%m-%d")); _pu = False
+            if _lt and _pvl is not None and (_pvl.date == _f0).any():
+                _pz = _pvl[_pvl.date == _f0]
+                if str(_pz.logged.iloc[0]) < days[_i0].strftime("%Y-%m-%d") + " 09:00": _codes = _pz.sort_values("rank").code.tolist(); _lt = False; _pu = True
             for c in _codes:
                 if c not in C.columns: continue
                 _o = O.iloc[_i0][c]; _pc = C.iloc[_i0 - 1][c]
@@ -498,7 +510,7 @@ try:
                 if _px1 == _px1: _bb = round((_px1 / float(_e5.open[days[_i0]]) / _dv - 1) * 100, 1)
             _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 0.6 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
                           "r3": round(float(np.mean(_rr3)) - 0.6 * _to3, 1) if _rr3 else None, "s3": _sel3,
-                          "late": _late(_tl[_tl.date == _f0].logged.iloc[0], _f0, days[_i0].strftime("%Y-%m-%d"))})
+                          "late": _lt, "prov": _pu})
     _s3 = None
     for h in _hist:
         _sx = h.pop("s3", None)

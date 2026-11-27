@@ -57,17 +57,23 @@ def is_tdr(codes):
     """91xx 臺灣存託憑證（第 64 輪：月選與今日分數都排除）。"""
     return pd.Index(codes).astype(str).str.match(r"^91\d\d$")
 
-def margin_ok(date, frac=0.9):
-    """當天的融資餘額是否到齊：上市、上櫃各自有值的檔數 ≥ 前一個有資料日子的 90%（11/27 第八份覆核：只看檔案日期不夠）。"""
+def margin_ok(date, cover=0.98):
+    """當天的融資餘額是否到齊（11/27 第八、九份覆核）：去重後，上市、上櫃兩個市場都要有資料，
+    而且「前一個兩市場都有資料的交易日」有融資的股票，今天各市場至少 98% 也有融資。"""
     fns = sorted(glob.glob("data/chips/*.csv*"), key=lambda x: (os.path.basename(x)[:4], x.endswith(".csv")))[-2:]
     if not fns: return False
     ch = pd.concat([pd.read_csv(fn, dtype={"code": str}, usecols=["date", "market", "code", "margin"]) for fn in fns], ignore_index=True)
-    ch["date"] = pd.to_datetime(ch.date); n = ch[ch.margin.notna()].groupby(["date", "market"]).size().unstack(fill_value=0)
-    d = pd.Timestamp(date)
-    if d not in n.index: return False
-    prev = n[n.index < d]
-    if not len(prev): return bool((n.loc[d] > 0).all())
-    p = prev.iloc[-1]; return bool(all(n.loc[d].get(m, 0) >= frac * p[m] for m in p.index if p[m] > 0))
+    ch["date"] = pd.to_datetime(ch.date); ch = ch[ch.margin.notna()].drop_duplicates(["date", "market", "code"], keep="last")
+    d = pd.Timestamp(date); mk = ("TWSE", "TPEX")
+    have = ch.groupby("date").market.agg(lambda z: set(z)); both = [x for x, v in have.items() if all(m in v for m in mk)]
+    if d not in both: return False
+    prev = [x for x in both if x < d]
+    if not prev: return True
+    p = prev[-1]
+    for m in mk:
+        a, b = set(ch[(ch.date == p) & (ch.market == m)].code), set(ch[(ch.date == d) & (ch.market == m)].code)
+        if not a or len(a & b) / len(a) < cover: return False
+    return True
 
 def table(P, f, S, date, codes):
     """codes 的 12 個百分位與綜合分數（DataFrame）。百分位＝平均名次 ÷ 檔數，同值取平均（與研究端 pandas rank(pct=True) 相同；11/27 第八份覆核）。"""
@@ -83,7 +89,9 @@ def table(P, f, S, date, codes):
                 lo, hi = np.searchsorted(r, v, side="left"), np.searchsorted(r, v, side="right")
                 ps[k] = float((lo + (hi - lo + 1) / 2) / len(r)) if hi > lo else float(lo / len(r))
         rows[c] = ps
-    T = pd.DataFrame.from_dict(rows, orient="index", columns=FEATS); T["score"] = T[FEATS].mean(axis=1); return T
+    T = pd.DataFrame.from_dict(rows, orient="index", columns=FEATS); T["score"] = T[FEATS].mean(axis=1)
+    for k in FEATS: T[k + "_v"] = X.loc[T.index, k].astype(float).values   # 原始值（11/27 第九份覆核）
+    return T
 
 def scores(P, f, S, date, codes):
     """codes 的綜合分數：每個特性在「當天分析範圍內全部股票」的百分位（缺值 0.5）等權平均。"""
