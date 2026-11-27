@@ -511,7 +511,12 @@ try:
                 _px1 = float(_e5.open.get(_xe, np.nan)) if _i1 is not None else float(_e5.close.loc[:_xe].iloc[-1])
                 _dv = float(_aj5[(_aj5.date > days[_i0]) & (_aj5.date <= _xe)].ratio.prod()) if len(_aj5) else 1.0
                 if _px1 == _px1: _bb = round((_px1 / float(_e5.open[days[_i0]]) / _dv - 1) * 100, 1)
-            _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 0.6 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
+            # 11/27 第十一份覆核：加「分析範圍等權」當第二比較基準（區分市場風格與選股）
+            _uc = [c for c in S[(S.date == _t0) & S.base].code if c in C.columns and not str(c).startswith("91")]; _uu = None
+            if _uc:
+                _uo = O.iloc[_i0][_uc]; _ux = (O.iloc[_i1][_uc].where(O.iloc[_i1][_uc] > 0) if _i1 is not None else C[_uc].iloc[:len(days)].ffill().iloc[-1])
+                _ur = (_ux / _uo - 1).where(_uo > 0).dropna(); _uu = round(float(_ur.mean() * 100), 1) if len(_ur) else None
+            _hist.append({"f": _t0.strftime("%y/%m/%d"), "u": _uu, "r": round(float(np.mean(_rr)) - 0.6 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
                           "r3": round(float(np.mean(_rr3)) - 0.6 * _to3, 1) if _rr3 else None, "s3": _sel3,
                           "late": _lt, "delay": _pu})
     _s3 = None
