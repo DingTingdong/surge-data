@@ -27,7 +27,10 @@ def factors_on(P, f, S, date):
         ch = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in fns], ignore_index=True)
         ch["date"] = pd.to_datetime(ch.date); ch = ch.drop_duplicates(["date", "code"], keep="last")
         mg = ch.pivot(index="date", columns="code", values="margin").reindex(index=days, columns=cols)
-        out["mg20"] = at(mg) / at(mg, 20) - 1
+        # 11/27：融資餘額晚上約 21:30～22:00 才公布；當天還沒有時先用最近一天有資料的融資（之後到齊會自動換成當天）
+        tm = t
+        while tm > 0 and not mg.iloc[tm].notna().any(): tm -= 1
+        out["mg20"] = (mg.iloc[tm] / mg.iloc[tm - 20] - 1) if tm >= 20 else np.nan
         rv = pd.concat([pd.read_csv(fn, dtype={"code": str}) for fn in sorted(glob.glob("data/revenue/*.csv*"))[-3:]], ignore_index=True)
         rv["pub"] = pd.to_datetime(rv.ym + "-01") + pd.DateOffset(months=1) + pd.Timedelta(days=10)
         rv = rv[rv.pub <= date]
@@ -50,9 +53,13 @@ def factors_on(P, f, S, date):
     out["base"] = out.index.isin(Sd.index[Sd.base])
     return out
 
+def is_tdr(codes):
+    """91xx 臺灣存託憑證（第 64 輪：月選與今日分數都排除）。"""
+    return pd.Index(codes).astype(str).str.match(r"^91\d\d$")
+
 def scores(P, f, S, date, codes):
     """codes 的綜合分數：每個特性在「當天分析範圍內全部股票」的百分位（缺值 0.5）等權平均。"""
-    X = factors_on(P, f, S, date); ref = X[X.base]; res = {}
+    X = factors_on(P, f, S, date); ref = X[X.base & ~is_tdr(X.index)]; res = {}   # 11/27 第 64 輪：TDR 不列入百分位基準
     for c in codes:
         if c not in X.index: continue
         ps = []

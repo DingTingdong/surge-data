@@ -373,7 +373,7 @@ except Exception as _e:
 # 11/26 使用者：月選分頁只顯示換股日的排名，想看「今天」重新算的分數排名（非換股日，只供參考）
 tscore, ttop, tlow, tvol = {}, [], set(), {}
 try:
-    _bt = S[(S.date == days[-1]) & S.base].code.tolist(); tscore = _cs.scores(P, f, S, days[-1], _bt)
+    _bt = [c for c in S[(S.date == days[-1]) & S.base].code if not _cs.is_tdr([c])[0]]; tscore = _cs.scores(P, f, S, days[-1], _bt)
     ttop = [c for c, _ in sorted(tscore.items(), key=lambda kv: (-kv[1], kv[0]))[:20]]
     _w = P["C"][ttop].iloc[-21:].pct_change(fill_method=None); _v = _w.std().where(_w.notna().sum() >= 15).sort_values()
     tlow = set([c for c in _v.index if float(P["rawC"][c].iloc[-1]) < 500][:NPICK])
@@ -404,7 +404,7 @@ try:
     if _t20 is not None and _fs in set(_t20.date):
         _cur = _t20[_t20.date == _fs].sort_values("rank"); _logged = str(_cur.logged.iloc[0])
     else:
-        _bs = S[(S.date == _form) & S.base].code.tolist()
+        _bs = [c for c in S[(S.date == _form) & S.base].code if not _cs2.is_tdr([c])[0]]   # 11/27 第 64 輪：排除 TDR
         _sc = _cs2.scores(P, f, S, _form, _bs)
         _top = sorted(_sc.items(), key=lambda kv: (-kv[1], kv[0]))[:20]
         _logged = (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d")
@@ -527,6 +527,17 @@ try:
                     p_ = px(c) * bufx; k = int(per // (p_ * (1 + FEE)))
                     if k > 0: sh[c] = k; cash -= k * px(c) * (1 + FEE)
                     tr["buy"].append({"c": c, "n": name.get(c, ""), "sh": k, "px": round(px(c), 2)})
+                # 11/27 第 64 輪：單檔市值 > 30% 就減到 25%，減出來的錢平均加碼其他持股（回測 16 年只發生 5 次）
+                _tot = cash + sum(k * px(c) for c, k in sh.items()); _ov = [c for c in sh if sh[c] * px(c) > 0.30 * _tot]
+                if _ov:
+                    _fr = 0.0; tr["trim"], tr["add"] = [], []
+                    for c in _ov:
+                        k = sh[c] - int(0.25 * _tot // px(c))
+                        if k > 0: _fr += k * px(c) * (1 - FEE - TAX); cash += k * px(c) * (1 - FEE - TAX); sh[c] -= k; tr["trim"].append({"c": c, "n": name.get(c, ""), "sh": k, "px": round(px(c), 2)})
+                    _ot = [c for c in sh if c not in _ov]
+                    for c in _ot:
+                        k = int((_fr / len(_ot)) // (px(c) * bufx * (1 + FEE)))
+                        if k > 0: sh[c] += k; cash -= k * px(c) * (1 + FEE); tr["add"].append({"c": c, "n": name.get(c, ""), "sh": k, "px": round(px(c), 2)})
                 tr["keep"] = [{"c": c, "n": name.get(c, ""), "sh": sh[c]} for c in sh if c not in new]
                 trades.append(tr); last_i = _i
                 if _ie is None: break
@@ -899,7 +910,7 @@ try:
         _ac = m20_meta.get("acct"); _fmt = lambda k: (f"{k // 1000} 張" if k >= 1000 else "") + (f"{'＋' if k >= 1000 and k % 1000 else ''}{k % 1000} 股" if k % 1000 else "")
         if _ac and _ac.get("trades") and _ac["trades"][-1].get("est"):
             _tr = _ac["trades"][-1]
-            _msg += f"\n\n70 萬基準（估算，用今天收盤＋3% 緩衝）：" + "".join(f"\n賣 {x['n']} {_fmt(x['sh'])}" for x in _tr["sell"]) + "".join(f"\n買 {x['n']} {_fmt(x['sh'])}（約 {x['sh'] * x['px'] / 1e4:.1f} 萬）" for x in _tr["buy"]) + "".join(f"\n續抱 {x['n']} {_fmt(x['sh'])}" for x in _tr["keep"])
+            _msg += f"\n\n70 萬基準（估算，用今天收盤＋3% 緩衝）：" + "".join(f"\n賣 {x['n']} {_fmt(x['sh'])}" for x in _tr["sell"]) + "".join(f"\n買 {x['n']} {_fmt(x['sh'])}（約 {x['sh'] * x['px'] / 1e4:.1f} 萬）" for x in _tr["buy"]) + "".join(f"\n續抱 {x['n']} {_fmt(x['sh'])}" for x in _tr["keep"]) + "".join(f"\n減碼 {x['n']} {_fmt(x['sh'])}（超過 30%）" for x in _tr.get("trim", [])) + "".join(f"\n加碼 {x['n']} {_fmt(x['sh'])}" for x in _tr.get("add", []))
         _nt.send(f"m20-{_td:%Y-%m-%d}", _msg + "\n（開盤前掛限價單；開盤比昨收漲 9.5% 以上就不買、換候補下一檔）\n" + _url)
     # 月選週報（11/25 使用者要求）：每週最後一個交易日收盤後（週五；週五休市就看下週一前最後一天）傳一次
     if days[-1].weekday() == 4:
