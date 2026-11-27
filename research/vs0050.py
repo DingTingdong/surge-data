@@ -102,6 +102,8 @@ def build():
     if FD_RULE == "deadline":
         _dl = dser[dser.dt.day >= 10].groupby(dser.dt.to_period("M")).first(); _ix = np.searchsorted(dser.values, _dl.values) + 1
         fd = set(dser.iloc[_ix[_ix < len(dser)]]); fdx = set(fd)
+        for _k in [int(x) for x in os.environ.get("FD_DLOFF", "").split(",") if x.strip()]:   # 11/27 第 65 輪：換股日之後第 k 個交易日也存快照；不設時不變
+            fdx |= set(dser.iloc[(_ix + _k)[(_ix + _k) < len(dser)]])
     if FDX:
         for _k in [int(x) for x in FDX.split(",") if int(x) > 0]: fdx |= set(_gm.nth(_k))
     dpos = {d: i for i, d in enumerate(days)}; cpos = {c: j for j, c in enumerate(cols)}

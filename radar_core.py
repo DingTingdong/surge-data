@@ -7,6 +7,7 @@
 import glob, os, numpy as np, pandas as pd
 
 AM_MIN = 2.0          # 舊版精選（v1）用
+MIN_AMT = float(os.environ.get("RADAR_MIN_AMT", "10"))   # 分析範圍：20 日均額門檻（百萬）。11/27 第 65 輪研究用環境變數改；網站固定 10（1,000 萬）
 RULE_VERSION = "v2.0"
 
 def load_prices(years_back=None):
@@ -83,7 +84,7 @@ def tiers(f, MK, since=None):
     S.index.names = ["date", "code"]
     S = S.dropna(subset=["c", "n60"])
     S = S[S.n60 >= 55]
-    base = S[["v", "rg", "atr", "lu", "mx", "am", "bk"]].notna().all(axis=1) & (S.amt >= 10)
+    base = S[["v", "rg", "atr", "lu", "mx", "am", "bk"]].notna().all(axis=1) & (S.amt >= MIN_AMT)
     early = (S.ch >= 9) & (S.snp > 10) & (S.a1 >= 20) & (S.a20p >= 3)
     S = S[base | early].assign(base=base[base | early]).reset_index()
     S["mk"] = MK.stack().reindex(pd.MultiIndex.from_frame(S[["date", "code"]])).map({"TPEX": "櫃", "TWSE": "市"}).values

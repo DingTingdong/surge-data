@@ -54,9 +54,9 @@ def rescore(D, feats=COMP, keep=None):
     for c in feats: F["p_" + c] = F.groupby("date")[c].rank(pct=True).fillna(0.5)
     F["cs"] = F[["p_" + c for c in feats]].mean(axis=1); D["F"] = F; return D
 
-def sim_cap(D, wcap=None, **kw):
+def sim_cap(D, wcap=None, xcost=None, **kw):   # xcost（11/27 第 65 輪加）：callable(date, 新買代號, 權重) → 額外成本 %；不設時不變
     """mp_exec.sim 的權重上限版本（只在 W=True 時有作用）：先照原規則換股，再把 > wcap 的持股減到 0.25。"""
-    if wcap is None: return M.sim(D, **kw)
+    if wcap is None and xcost is None: return M.sim(D, **kw)
     orig = M.sim
     # 直接重寫一份：和 mp_exec.sim 相同，只在算完 w 之後加上限
     O, Cff, bO, POS, CJ, ND, pc, days = D["O"], D["Cff"], D["bO"], D["POS"], D["CJ"], D["ND"], D["prevc"], D["days"]
@@ -88,7 +88,7 @@ def sim_cap(D, wcap=None, **kw):
             for c in new: w[c] = sv / len(new)
             to = sv
             if not new and sv > 0: w["_cash"] = sv
-        over = [c for c in w if c != "_cash" and w[c] > wcap]
+        over = [c for c in w if c != "_cash" and wcap is not None and w[c] > wcap]
         if over:
             ex = sum(w[c] - 0.25 for c in over); trims += len(over)
             for c in over: w[c] = 0.25
@@ -102,7 +102,7 @@ def sim_cap(D, wcap=None, **kw):
             j = CJ[c]; o = O[ie, j] if O[ie, j] > 0 else Cff[ie - 1, j]; exn = O[ix, j] if O[ix, j] > 0 else np.nan
             if not np.isfinite(exn): exn = Cff[ix, j] if np.isfinite(Cff[ix, j]) else Cff[ix - 1, j]
             rr[c] = (exn / o - 1) if (np.isfinite(exn) and o > 0) else 0.0
-        R = sum(w[c] * (rr.get(c, 0.0) if c != "_cash" else 0.0) for c in w) * 100 - M.COST * to
+        R = sum(w[c] * (rr.get(c, 0.0) if c != "_cash" else 0.0) for c in w) * 100 - M.COST * to - (xcost(a, new, w) if xcost else 0.0)
         val = {c: w[c] * (1 + rr.get(c, 0.0)) for c in w if c != "_cash"}
         held = [c for c in w if c != "_cash"]
         rows.append({"date": a, "r": R, "b": (bO[ix] / bO[ie] - 1) * 100, "codes": ",".join(new + keep + stuck)})
