@@ -34,21 +34,21 @@ def run(P, days):
     if st is None:
         d0 = ds[0]; px = float(e.open.get(d0, np.nan))
         if not px == px: return {"start": START, "n": 0}
-        st = {"last": None, "tr": [{"due": k + 1, "etf": (1.0 / H) * (1 - ECOST) / px, "pos": []} for k in range(H)], "pend": [], "day": 0}
+        st = {"last": None, "tr": [{"due": k, "etf": (1.0 / H) * (1 - ECOST) / px, "pos": []} for k in range(H)], "pend": [], "day": 0}   # 11/27：第 1 批起始日就換股（同第 73 輪）
         st["d0"] = d0.strftime("%Y-%m-%d")
     rows = []
     for d in ds:
         dstr = d.strftime("%Y-%m-%d")
         if st["last"] is not None and dstr <= st["last"]: continue
         i = days.get_loc(d); prev = days[i - 1].strftime("%Y-%m-%d")
+        eo, ec = float(e.open.get(d, np.nan)), float(e.close.get(d, np.nan))
+        if not (eo == eo and eo > 0 and ec == ec and ec > 0): print(f"t1b：{dstr} 0050 行情不完整，先不處理"); break   # 不寫入，下次更新再試
         # 除權息：股數放大（ratio＝參考價÷前收，<1）
         for q in st["tr"]:
             r50 = adj.get((d, "0050"), 1.0); q["etf"] /= r50
             for p in q["pos"]: p["sh"] /= adj.get((d, p["c"]), 1.0)
         op = lambda c: float(rawO.at[d, c]) if c in rawO.columns and rawO.at[d, c] == rawO.at[d, c] and rawO.at[d, c] > 0 else None
         cl = lambda c: float(raw[c].loc[:d].dropna().iloc[-1]) if c in raw.columns and raw[c].loc[:d].notna().any() else 0.0
-        eo, ec = float(e.open.get(d, np.nan)), float(e.close.get(d, np.nan))
-        if not (eo == eo and eo > 0 and ec == ec and ec > 0): print(f"t1b：{dstr} 0050 行情不完整，先不處理"); break   # 不寫入，下次更新再試
         trades = []; tl = []
         def rec(q, side, c, px, sh):
             amt = sh * px; tl.append({"date": dstr, "batch": st["tr"].index(q) + 1, "side": side, "code": c, "price": round(px, 2), "shares": round(sh, 6), "amount": round(amt, 6), "fee": round(amt * FEE, 6)})

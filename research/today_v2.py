@@ -45,7 +45,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE);
 import vs0050 as V
 from vs0050 import COMP, nw_t
 import robust_select as RS
-CACHE = "/tmp/model_v2/daily_v2.pkl"; SEG4 = ["2011-15", "2016-19", "2020-23", "2024-26"]
+CACHE = "/tmp/model_v2/daily_v2.pkl"; SER = []; SEG4 = ["2011-15", "2016-19", "2020-23", "2024-26"]
 
 def build():
     if os.path.exists(CACHE): return pd.read_pickle(CACHE)
@@ -205,6 +205,7 @@ if __name__ == "__main__":
         Mr = s.resample("ME").last().pct_change() * 100; Mb = bb.resample("ME").last().pct_change() * 100
         Mr.iloc[0] = (s.resample("ME").last().iloc[0] / 1.0 - 1) * 100; Mb.iloc[0] = (bb.resample("ME").last().iloc[0] / bb.iloc[0] - 1) * 100
         x = (Mr - Mb).dropna(); sg = RS.seg(x.index); v = s.values
+        SER.append(x)   # 11/27 第 74 輪：DSR／PBO 用（DUMP_SERIES 時存檔；不影響結果）
         return {"每月減0050": round(float(x.mean()), 2), "t": round(nw_t(x, 3), 2), "四段": [round(float(x[sg == q].mean()), 2) for q in SEG4],
                 "2024–26": round(float(x[x.index >= "2024-01-01"].mean()), 2), "每日回落": round(float((v / np.maximum.accumulate(v) - 1).min() * 100), 1),
                 "年化%": round(float(v[-1] ** (252 / len(v)) - 1) * 100, 1), "平均持股比例%": round(float(np.mean(expo)) * 100)}
@@ -217,4 +218,5 @@ if __name__ == "__main__":
         a, c = out["H10 成本0.6"], out["H10 成本1.1"]
         ok = [a["每月減0050"] > 0 and a["t"] >= 2.9, all(v > 0 for v in a["四段"]), c["每月減0050"] > 0 and c["t"] >= 2, a["每日回落"] >= res["0050"]["每日回落"] - 5]
         out["判斷"] = {"各條件": ok, "通過": all(ok)}; res[name] = out; print(name, out["判斷"], flush=True)
+    if os.environ.get("DUMP_SERIES"): pd.to_pickle(SER, os.environ["DUMP_SERIES"]); sys.exit(0)
     json.dump(res, open(f"{REPO}/research/results/today_v2.json", "w"), ensure_ascii=False, indent=1, default=float)

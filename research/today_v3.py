@@ -29,6 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE);
 from today_v2 import build, e50_open, SEG4
 from vs0050 import nw_t
 import robust_select as RS
+SER = []
 
 if __name__ == "__main__":
     D = build(); days, cols = D["days"], D["cols"]; N, J = len(days), len(cols)
@@ -95,6 +96,7 @@ if __name__ == "__main__":
         me = s.resample("ME").last(); mb = bb.resample("ME").last()
         Mr = me.pct_change() * 100; Mb = mb.pct_change() * 100; Mr.iloc[0] = (me.iloc[0] - 1) * 100; Mb.iloc[0] = (mb.iloc[0] / bb.iloc[0] - 1) * 100
         x = (Mr - Mb).dropna(); sg = RS.seg(x.index); v = np.r_[1.0, s.values]
+        SER.append(x)   # 11/27 第 74 輪：DSR／PBO 用（DUMP_SERIES 時存檔；不影響結果）
         yrs = len(s) / 252
         return {"每月減0050": round(float(x.mean()), 2), "t": round(nw_t(x, 3), 2), "四段": [round(float(x[sg == q].mean()), 2) for q in SEG4],
                 "2024–26": round(float(x[x.index >= "2024-01-01"].mean()), 2), "每日回落": round(float((v / np.maximum.accumulate(v) - 1).min() * 100), 1),
@@ -156,4 +158,5 @@ if __name__ == "__main__":
     a, c = res["T1-B 仍在前5續抱"]["成本0.6"], res["T1-B 仍在前5續抱"]["成本1.1"]
     ok = [a["每月減0050"] > 0 and a["t"] >= 2.9, all(v > 0 for v in a["四段"]), c["每月減0050"] > 0 and c["t"] >= 2, a["每日回落"] >= res["0050"]["每日回落"] - 5]
     res["T1-B 判斷"] = {"各條件": ok, "通過": all(ok)}; print(res["T1-B 判斷"], res["0050"])
+    if os.environ.get("DUMP_SERIES"): pd.to_pickle(SER, os.environ["DUMP_SERIES"]); sys.exit(0)
     json.dump(res, open(f"{REPO}/research/results/today_v3.json", "w"), ensure_ascii=False, indent=1, default=float)
