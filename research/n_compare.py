@@ -27,7 +27,7 @@ def yearly(r): return r.groupby(r.index.year).apply(lambda z: ((1 + z / 100).pro
 def summ(r, b):
     x = r - b; c = (1 + r / 100).cumprod(); yr, yb = yearly(r), yearly(b)
     return {"每月減0050": round(float(x.mean()), 2), "t": round(nw_t(x, 3), 2), "2024–26每月減0050": round(float(x[x.index >= "2024-01-01"].mean()), 2),
-            "年化%": round(float(c.iloc[-1] ** (12 / len(c)) - 1) * 100, 1), "最大回落%": round(float((c / c.cummax() - 1).min() * 100)),
+            "年化%": round(float(c.iloc[-1] ** (12 / len(c)) - 1) * 100, 1), "最大回落%": round(float((lambda v: (v / np.maximum.accumulate(v) - 1).min())(np.r_[1.0, c.values]) * 100)),   # 11/27：含起點 1
             "輸0050年": f"{int((yr < yb).sum())}/{len(yr)}", "2024": round(float(yr.get(2024)), 1), "2025": round(float(yr.get(2025)), 1), "2026": round(float(yr.get(2026)), 1)}
 def mix(T, mode):
     r, b = T.r / 100, T.b / 100

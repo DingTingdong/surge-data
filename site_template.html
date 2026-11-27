@@ -727,7 +727,7 @@ function PDM(){const M=M20;if(!M)return"";const yr=(META.date||"").slice(0,4),dt
 const pill=v=>v==null?"—":`<b class="n ${v>0?"up":v<0?"dn":""}">${v>0?"+":v<0?"−":""}${Math.abs(v).toFixed(1)}%</b>`;
 const lst=(k,a)=>a.length?`<div><span class="k">${k}</span><span>${a.join("、")}</span></div>`:"";
 const how=`<div class="pdx">本期買＝前 20 名（不含 TDR）裡波動最低的 ${M.np||5} 檔（高價股用零股買），開盤漲 9.5% 以上換下一名。${PANIC?"大跌照常抱到換股日。":""}<button class="pdl" onclick="document.querySelector('[data-p=&quot;p4&quot;]').click();scrollTo(0,0)">算每檔買幾股</button></div>`;
-if(!M.entry||(M.entry===TD&&M.chg)){const c=M.chg||{sell:[],buy:[],keep:[]};return `<div class="pd"><div class="pdh"><span>${M.entry?"今天開盤換股":"明天開盤換股"}</span><span class="n">${M.form} 收盤選出</span></div><div class="pdc">${lst("賣",c.sell)}${lst("買",c.buy)}${lst("續抱",c.keep)}</div>${how}</div>`}
+if(!M.entry||(M.entry===TD&&M.chg)){const c=M.chg||{sell:[],buy:[],keep:[]};return `<div class="pd"><div class="pdh"><span>${M.entry?"今天開盤換股":"明天開盤換股"}${M.prov?"（暫定：融資資料還沒到，晚上約 10 點後確定）":""}</span><span class="n">${M.form} 收盤選出</span></div><div class="pdc">${lst("賣",c.sell)}${lst("買",c.buy)}${lst("續抱",c.keep)}</div>${how}</div>`}
 const n=dt(TD),a=dt(M.entry),b=dt(M.next);if(a&&n&&a>n)a.setFullYear(a.getFullYear()-1);if(a&&b&&b<a)b.setFullYear(b.getFullYear()+1);const f=a&&b&&n&&b>a?Math.min(1,Math.max(0,(n-a)/(b-a))):0;
 const left=b&&n?Math.max(0,Math.round((b-n)/864e5)):null;
 return `<div class="pd"><div class="pdh"><span>本期</span><span class="n">${M.entry} 買進　${M.next} 換股</span></div>

@@ -92,7 +92,7 @@ def sim(D, L=False, W=False, Xs=False, B=False, n=3, K=20, cap=None):   # cap：
 def stats(T):
     x = T.r - T.b; sg = RS.seg(T.index); m = T.index >= "2011-01-01"; w = (1 + T.r[m] / 100).cumprod()
     return {"2011–2026": round(float(x[m].mean()), 2), "t(落後1)": round(nw_t(x[m], 1), 2), "t(落後3)": round(nw_t(x[m], 3), 2),
-            **{s: round(float(x[sg == s].mean()), 2) for s in RS.SEGS if (sg == s).any()}, "最大回落(月底)": round(float((w / w.cummax() - 1).min() * 100)),
+            **{s: round(float(x[sg == s].mean()), 2) for s in RS.SEGS if (sg == s).any()}, "最大回落(月底)": round(float((lambda v: (v / np.maximum.accumulate(v) - 1).min())(np.r_[1.0, w.values]) * 100)),   # 11/27：含起點 1
             "年化": round(float(w.iloc[-1] ** (12 / m.sum()) - 1) * 100), "贏0050月%": round(float((x[m] > 0).mean() * 100))}
 
 if __name__ == "__main__":

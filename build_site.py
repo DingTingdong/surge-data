@@ -378,6 +378,15 @@ try:
     _w = P["C"][ttop].iloc[-21:].pct_change(fill_method=None); _v = _w.std().where(_w.notna().sum() >= 15).sort_values()
     tlow = set(list(_v.index)[:NPICK])   # 11/27 第 64 輪：不再跳過 500 元以上
     tvol = {c: round(float(v) * 100, 2) for c, v in _v.items() if v == v}
+    # 11/27 第八份覆核：每天保存整個分析範圍的分數與 12 個百分位（往後紀錄）。融資到齊（mg_ok=1）的版本會取代同一天未到齊的版本，其他不改。
+    _tsf = f"data/tscore/{days[-1].year}.csv.gz"; os.makedirs("data/tscore", exist_ok=True)
+    _tt = _cs.table(P, f, S, days[-1], _bt).round(4); _tt.index.name = "code"; _tt = _tt.reset_index()
+    _tt.insert(0, "date", days[-1].strftime("%Y-%m-%d")); _tt["mg_ok"] = int(_cs.margin_ok(days[-1])); _tt["rank"] = _tt.score.rank(ascending=False, method="first").astype(int)
+    _old = pd.read_csv(_tsf, dtype={"code": str}) if os.path.exists(_tsf) else None
+    _have = None if _old is None else _old[_old.date == _tt.date.iloc[0]]
+    if _have is None or not len(_have) or (int(_have.mg_ok.max()) == 0 and int(_tt.mg_ok.iloc[0]) == 1):
+        _keep = _old[_old.date != _tt.date.iloc[0]] if _old is not None else None
+        pd.concat([_keep, _tt], ignore_index=True).to_csv(_tsf, index=False) if _keep is not None else _tt.to_csv(_tsf, index=False)
 except Exception as _e:
     print("today score skipped:", _e)
 CL = "data/score_log.csv"
@@ -392,6 +401,11 @@ if cscore and set(cscore) & set(S[(S.date == days[-1]) & S.pk].code) and (_cl is
 # 每月營收期限日（10 日起第一個交易日）的下一個交易日收盤後，分析範圍內「趨勢＋營收」分數最高的 20 檔，隔天開盤買；下次換股日還在前 20 的續抱。
 # 名單第一次算出（而且當天融資資料已更新）就記到 data/top20_log.csv，只增不改；之後的報酬才是真正的前瞻驗證。
 T20_LOG = "data/top20_log.csv"; m20 = {}; m20_meta = None
+OFFICIAL = pd.Timestamp("2026-12-11")   # 正式紀錄第一期（11/27 第八份覆核：這期空手起算，不繼承事後補算的持股）
+def _late(logged, fdate, entry):
+    logged = str(logged)
+    if len(logged) > 10: return entry is not None and logged >= entry + " 09:00"
+    return logged > fdate
 try:
     import composite_score as _cs2
     # 第 58 輪（11/25）：月營收期限＝每月 10 日起第一個交易日（遇假日順延）；換股日＝期限日的下一個交易日（10 日是交易日時＝11 日起第一個交易日，與舊規則相同）
@@ -400,16 +414,17 @@ try:
     _form = _fdm.iloc[-1]; _fs = _form.strftime("%Y-%m-%d")
     _t20 = pd.read_csv(T20_LOG, dtype={"code": str}) if os.path.exists(T20_LOG) else None
     import glob as _g2; _chfs = sorted(_g2.glob("data/chips/*.csv*"), key=lambda x: (os.path.basename(x)[:4], x.endswith(".csv"))); _chf = _chfs[-1] if _chfs else None
-    _chip_ok = _chf is not None and pd.Timestamp(pd.read_csv(_chf, usecols=["date"]).date.max()) >= _form
+    _chip_ok = _cs2.margin_ok(_form)   # 11/27 第八份覆核：要融資餘額真的到齊（上市、上櫃各 ≥ 前一天的 90%），只看檔案日期不夠
     if _t20 is not None and _fs in set(_t20.date):
-        _cur = _t20[_t20.date == _fs].sort_values("rank"); _logged = str(_cur.logged.iloc[0])
+        _cur = _t20[_t20.date == _fs].sort_values("rank"); _logged = str(_cur.logged.iloc[0]); _prov = False
     else:
         _bs = [c for c in S[(S.date == _form) & S.base].code if not _cs2.is_tdr([c])[0]]   # 11/27 第 64 輪：排除 TDR
         _sc = _cs2.scores(P, f, S, _form, _bs)
         _top = sorted(_sc.items(), key=lambda kv: (-kv[1], kv[0]))[:20]
-        _logged = (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d")
+        _logged = (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")   # 11/27 起記到分鐘
         _cur = pd.DataFrame([{"date": _fs, "rank": i + 1, "code": c, "name": name.get(c, ""), "score": round(v, 4), "logged": _logged} for i, (c, v) in enumerate(_top)])
-        if _chip_ok and len(_cur) == 20:
+        _prov = not (_chip_ok and len(_cur) == 20)
+        if not _prov:
             pd.concat([_t20, _cur], ignore_index=True).to_csv(T20_LOG, index=False) if _t20 is not None else _cur.to_csv(T20_LOG, index=False)
     _ie = days.get_loc(_form) + 1; _rets = []
     for c, rk in zip(_cur.code, _cur["rank"]):
@@ -432,7 +447,7 @@ try:
     _nx += pd.Timedelta(days=1)
     while _nx.weekday() >= 5 or (_nx.month == 10 and _nx.day == 10): _nx += pd.Timedelta(days=1)
     m20_meta = {"form": _form.strftime("%m/%d"), "entry": days[_ie].strftime("%m/%d") if _ie < len(days) else None, "n": len(_rets), "nx": int(sum(1 for v in m20.values() if v.get("m20x"))),
-                "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _logged > _fs}
+                "avg": round(float(np.mean(_rets)), 1) if _rets else None, "b": _b, "next": _nx.strftime("%m/%d"), "logged": _logged, "late": _late(_logged, _fs, days[_ie].strftime("%Y-%m-%d") if _ie < len(days) else None), "prov": _prov}
     # 歷次名單（data/top20_log.csv）：每期 換股日隔天開盤 → 下次換股日隔天開盤（進行中的到最新收盤），扣 0.6% × 換股比例（11/25 改，與研究同）；0050 同段含息
     _hist = []; _h3 = []; _sels = []; _pairs = []
     def _calm(codes, i0):  # 穩健版：前 20 名依換股日（i0 − 1）收盤前 20 日波動由低到高排（第 24 輪，使用者 11/23 選定）
@@ -460,6 +475,7 @@ try:
                 if c not in _prev and (not (_o == _o and _o > 0) or (_pc == _pc and _pc > 0 and _o / _pc - 1 >= LOCK)): continue
                 _x = O.iloc[_i1][c] if _i1 is not None and O.iloc[_i1][c] == O.iloc[_i1][c] else C[c].iloc[:(_i1 if _i1 is not None else len(days))].dropna().iloc[-1]
                 _rr.append((float(_x) / float(_o if _o == _o and _o > 0 else _pc) - 1) * 100)
+            if _t0 == OFFICIAL: _h3 = []
             _keep3 = [c for c in _h3 if c in _codes]; _new3 = []
             for c in _calm(_codes, _i0):
                 if len(_keep3) + len(_new3) >= NPICK: break
@@ -482,18 +498,19 @@ try:
                 if _px1 == _px1: _bb = round((_px1 / float(_e5.open[days[_i0]]) / _dv - 1) * 100, 1)
             _hist.append({"f": _t0.strftime("%y/%m/%d"), "r": round(float(np.mean(_rr)) - 0.6 * _to, 1) if _rr else None, "b": _bb, "done": _i1 is not None,
                           "r3": round(float(np.mean(_rr3)) - 0.6 * _to3, 1) if _rr3 else None, "s3": _sel3,
-                          "late": str(_tl[_tl.date == _f0].logged.iloc[0]) > _f0})
+                          "late": _late(_tl[_tl.date == _f0].logged.iloc[0], _f0, days[_i0].strftime("%Y-%m-%d"))})
     _s3 = None
     for h in _hist:
         _sx = h.pop("s3", None)
         if h["f"] == _form.strftime("%y/%m/%d"): _s3 = _sx
     if _s3 is None:  # 換股日當晚（還沒到買進日）：上期 NPICK 檔還在前 20 的續抱，其餘依名次補（開盤漲停買不到就再往下補）
-        _cc = _cur.code.tolist(); _s3 = [c for c in _h3 if c in _cc]; _s3 += [c for c in _calm(_cc, days.get_loc(_form) + 1) if c not in _s3][:NPICK - len(_s3)]
+        _cc = _cur.code.tolist(); _s3 = [c for c in (_h3 if _form != OFFICIAL else []) if c in _cc]; _s3 += [c for c in _calm(_cc, days.get_loc(_form) + 1) if c not in _s3][:NPICK - len(_s3)]
     for c in _s3:
         if c in m20: m20[c]["m3"] = 1
     # 換股提醒：上一期的 3 檔 → 這一期的 3 檔
     _incur = bool(_hist) and _hist[-1]["f"] == _form.strftime("%y/%m/%d")
     _prev3 = (_sels[-2] if len(_sels) >= 2 else []) if _incur else (_sels[-1] if _sels else [])
+    if _form == OFFICIAL: _prev3 = []   # 正式第一期：空手，全部是「買」
     _nm = lambda c: f"{name.get(c, c)}（{c}）"
     m20_meta["chg"] = {"sell": [_nm(c) for c in _prev3 if c not in _s3], "buy": [_nm(c) for c in _s3 if c not in _prev3], "keep": [_nm(c) for c in _s3 if c in _prev3]}
     _r3 = [m20[c]["m20r"] for c in _s3 if c in m20 and "m20r" in m20[c]]
@@ -550,7 +567,7 @@ try:
             if _i1 is not None:
                 if _e5 is not None and days[_i1] in _e5.index:
                     _oo = float(_e5.open[days[_i1]]); _cc5 = float(_e5.close.iloc[-1]); _d50 = float(_aj[(_aj.code == "0050") & (_aj.date > days[_i1])].ratio.prod()) if len(_aj) else 1.0
-                    _k50 = int(BUDGET // (_oo * (1 + FEE))); v50 = BUDGET - _k50 * _oo * (1 + FEE) + _k50 * _cc5 / _d50 * (1 - FEE - 0.001)
+                    _k50 = int(BUDGET // (_oo * (1 + FEE))); v50 = BUDGET - _k50 * _oo * (1 + FEE) + _k50 * _cc5 / _d50   # 11/27：和月選帳戶一樣用市值，不預扣賣出成本
             acct = {"budget": BUDGET, "val": round(val), "cash": round(cash), "v50": round(float(v50)) if v50 is not None else None, "hold": [{"c": c, "n": name.get(c, ""), "sh": k, "px": round(float(_rC[c].dropna().iloc[-1]), 2)} for c, k in sh.items()], "trades": trades[-3:]}
     except Exception as _e:
         print("acct skipped:", _e)
@@ -905,7 +922,7 @@ print(json.dumps(summary, ensure_ascii=False))
 try:
     import sys as _sys; _sys.path.insert(0, "tools"); import notify as _nt
     _td = days[-1]; _tds = _td.strftime("%m/%d"); _url = "https://dingtingdong.github.io/surge-data/"
-    if m20_meta and m20_meta.get("chg") and m20_meta.get("form") == _tds and not m20_meta.get("entry"):
+    if m20_meta and m20_meta.get("chg") and m20_meta.get("form") == _tds and not m20_meta.get("entry") and not m20_meta.get("prov"):   # 11/27：融資到齊、名單寫入後才通知
         _c = m20_meta["chg"]
         _msg = f"【月選換股】{_tds} 收盤選出，明天開盤：" + "".join(f"\n{k} " + "、".join(v) for k, v in (("賣", _c["sell"]), ("買", _c["buy"]), ("續抱", _c["keep"])) if v)
         _ac = m20_meta.get("acct"); _fmt = lambda k: (f"{k // 1000} 張" if k >= 1000 else "") + (f"{'＋' if k >= 1000 and k % 1000 else ''}{k % 1000} 股" if k % 1000 else "")
