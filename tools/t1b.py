@@ -8,6 +8,12 @@
   成本：個股買、賣各 0.3%（來回 0.6%）；0050 只對淨買賣扣 0.09%。除權息用 adjust.csv 的比例把股數放大（等於股利再投入）。
   起始：2026-11-30 開盤全部買 0050，1.0 單位。
 紀錄：data/t1b_state.json（目前狀態）、data/t1b_log.csv（每天淨值與交易，只增不改）。
+
+檢查點（11/28 00:30 使用者選 A，事先寫死；到時由 GitHub Actions 自動計算並發 Telegram，不需要 Claude）：
+  每 3 個月（2027-02-28、05-30、08-30）：狀態報告（淨值、0050、一般股票、個股占比、因排名太晚沒交易的次數）。不改規則。
+  1 年（2027-11-30）：累計淨值 ÷ 同期 0050 − 1 < −5% → 停止；否則繼續。
+  2 年（2028-11-30）：累計贏 0050，而且也贏「一般股票」（前一天 20 日均額 ≥ 1,000 萬普通股等權）→ 可以考慮小額實盤；否則停止。
+偵測觀察池（data/detect_log.csv，只用正式版 ver＝1）：2027-05-27 自動報告各分類的筆數、20 日內最高漲 ≥ 20% 的比例、20 日報酬減 0050 中位數。
 """
 import json, os
 import numpy as np, pandas as pd
@@ -22,7 +28,7 @@ def _ranks(date, before):
     if "made" not in t.columns or str(t.made.iloc[0]) in ("", "nan") or str(t.made.iloc[0]) >= before: return None, f"正式排名太晚（{t['made'].iloc[0] if 'made' in t.columns else '無時間'}）"
     return t.set_index("code")["rank"].sort_values(), "ok"
 
-def run(P, days):
+def run(P, days, ew=None):
     raw = P["rawC"]; rawO = P["O"] * (P["rawC"] / P["C"])
     e = pd.read_csv("data/etf.csv", dtype={"code": str}); e = e[e.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).drop_duplicates("date", keep="last").set_index("date").sort_index()
     adj = pd.read_csv("data/adjust.csv", dtype={"code": str}); adj["date"] = pd.to_datetime(adj.date)
@@ -89,7 +95,7 @@ def run(P, days):
             q["etf"] = (ev + (net * (1 - ECOST) if net >= 0 else net / (1 - ECOST))) / eo
             if abs(net) > 1e-12: tl.append({"date": dstr, "batch": st["tr"].index(q) + 1, "side": "0050 買" if net >= 0 else "0050 賣", "code": "0050", "price": eo, "shares": round(abs(net) / eo, 6), "amount": round(abs(net), 6), "fee": round(abs(net) * ECOST, 6)})
         sv = sum(p["sh"] * cl(p["c"]) for q in st["tr"] for p in q["pos"]); etv = sum(q["etf"] for q in st["tr"]) * ec
-        rows.append({"date": dstr, "nav": round(sv + etv, 6), "stock": round(sv / (sv + etv), 4) if sv + etv > 0 else 0, "n": sum(len(q["pos"]) for q in st["tr"]),
+        rows.append({"date": dstr, "ew": round(float(ew.get(d, 0.0)), 6) if ew is not None else None, "nav": round(sv + etv, 6), "stock": round(sv / (sv + etv), 4) if sv + etv > 0 else 0, "n": sum(len(q["pos"]) for q in st["tr"]),
                      "rank": ok, "trades": " ".join(trades), "made": (pd.Timestamp.now(tz="UTC") + pd.Timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")})
         st["last"] = dstr
         if tl:
@@ -103,4 +109,38 @@ def run(P, days):
     d0 = pd.Timestamp(st["d0"]); b0 = float(e.open.get(d0, np.nan)); bl = float(e.close.loc[:days[-1]].iloc[-1])
     f50 = float(np.prod([adj.get((x, "0050"), 1.0) for x in days if d0 < x <= days[-1]]))
     hold = sorted({p["c"] for q in st["tr"] for p in q["pos"]})
-    return {"start": st["d0"], "n": len(L), "nav": round(float(L.nav.iloc[-1]), 4), "b": round(bl / f50 / b0 * (1 - ECOST), 4), "stock": float(L.stock.iloc[-1]), "hold": hold}
+    ewc = float(np.prod(1 + L.ew.fillna(0).values[1:])) if "ew" in L.columns else None   # 一般股票：起始日之後每天等權報酬連乘
+    return {"start": st["d0"], "n": len(L), "nav": round(float(L.nav.iloc[-1]), 4), "b": round(bl / f50 / b0 * (1 - ECOST), 4), "stock": float(L.stock.iloc[-1]), "hold": hold, "ew": round(ewc, 4) if ewc else None, "skip": int(L.trades.fillna("").str.contains("不交易").sum())}
+
+
+def checkpoints(meta, today, send):
+    """依上面事先寫死的時間點發 Telegram（send(key, text) 會自己去重）。"""
+    if not meta or not meta.get("n"): return
+    t = today.strftime("%Y-%m-%d"); nav, b, ew = meta["nav"], meta["b"], meta.get("ew")
+    x = (nav / b - 1) * 100; y = (nav / ew - 1) * 100 if ew else None
+    head = f"【今日分數前 5 名續抱版・前瞻模擬】{meta['start']} 起\n淨值 {(nav-1)*100:+.1f}%，同期 0050 {(b-1)*100:+.1f}%" + (f"，一般股票 {(ew-1)*100:+.1f}%" if ew else "") + f"\n比 0050 {x:+.1f}%；個股占 {meta['stock']*100:.0f}%；因排名太晚沒交易 {meta.get('skip', 0)} 次。"
+    for d in ("2027-02-28", "2027-05-30", "2027-08-30"):
+        if t >= d: send(f"t1b-q-{d}", head + "\n（季度報告，不改規則）")
+    if t >= "2027-11-30":
+        send("t1b-1y", head + ("\n1 年檢查：落後 0050 超過 5%，依事先規則【停止】。" if x < -5 else "\n1 年檢查：沒有落後 0050 超過 5%，依事先規則【繼續】到 2028-11-30。"))
+    if t >= "2028-11-30":
+        ok = x > 0 and y is not None and y > 0
+        send("t1b-2y", head + ("\n2 年檢查：贏 0050 也贏一般股票，依事先規則【可以考慮小額實盤】。" if ok else "\n2 年檢查：沒有同時贏 0050 和一般股票，依事先規則【停止】。"))
+
+def detect_report(P, today, send):
+    if today.strftime("%Y-%m-%d") < "2027-05-27" or not os.path.exists("data/detect_log.csv"): return
+    L = pd.read_csv("data/detect_log.csv", dtype={"code": str}); L = L[L.ver.astype(str).str.replace(".0", "", regex=False) == "1"]
+    C = P["rawC"]; days = C.index; e = pd.read_csv("data/etf.csv", dtype={"code": str}); e = e[e.code == "0050"].assign(date=lambda z: pd.to_datetime(z.date)).set_index("date").close
+    name = {"B": "第一根大漲", "C": "第一根量不足、後來放量", "D": "第一次進今日分數前 20"}; out = []
+    for k, g in L.groupby("sig"):
+        hit, xs = [], []
+        for r in g.itertuples():
+            d = pd.Timestamp(r.date)
+            if d not in days or r.code not in C.columns: continue
+            i = days.get_loc(d)
+            if i + 20 >= len(days): continue
+            c0 = C[r.code].iloc[i]; w = C[r.code].iloc[i + 1:i + 21]
+            if not c0 > 0: continue
+            hit.append(w.max() / c0 - 1 >= 0.20); xs.append((w.iloc[-1] / c0 - 1) * 100 - (e.reindex(days).iloc[i + 20] / e.reindex(days).iloc[i] - 1) * 100)
+        if hit: out.append(f"{name.get(k, k)}：{len(hit)} 筆，20 日內漲 ≥20% 的 {np.mean(hit)*100:.0f}%（回測約 17～19%），20 日比 0050 中位數 {np.median(xs):+.1f}%")
+    if out: send("detect-6m", "【偵測觀察池・半年報告】11/27 起的正式訊號\n" + "\n".join(out) + "\n（只是記錄；要變成買進規則得另外事先登錄再驗證）")

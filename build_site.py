@@ -427,7 +427,11 @@ except Exception as _e:
     print("detect skipped:", _e)
 t1b_meta = None
 try:
-    import sys as _sy; _sy.path.insert(0, "tools"); import t1b as _t1b; t1b_meta = _t1b.run(P, days)
+    import sys as _sy; _sy.path.insert(0, "tools"); import t1b as _t1b
+    _okc2 = [c for c in P["C"].columns if not str(c).startswith("0") and not str(c).startswith("91")]
+    _uni = (f["amt"][_okc2].shift(1) >= 10); _r1 = P["C"][_okc2].pct_change(fill_method=None)
+    _ew = _r1.where(_uni).mean(axis=1)   # 一般股票：前一天 20 日均額 ≥ 1,000 萬的普通股，當天等權報酬
+    t1b_meta = _t1b.run(P, days, _ew)
     if t1b_meta and t1b_meta.get("hold"): t1b_meta["hold"] = [f"{name.get(c, c)}" for c in t1b_meta["hold"]]
 except Exception as _e:
     print("t1b skipped:", _e)
@@ -983,6 +987,9 @@ print(json.dumps(summary, ensure_ascii=False))
 try:
     import sys as _sys; _sys.path.insert(0, "tools"); import notify as _nt
     _td = days[-1]; _tds = _td.strftime("%m/%d"); _url = "https://dingtingdong.github.io/surge-data/"
+    try:   # 11/28：前瞻帳戶與觀察池的事先寫死檢查點，自動發 Telegram
+        _t1b.checkpoints(t1b_meta, days[-1], _nt.send); _t1b.detect_report(P, days[-1], _nt.send)
+    except Exception as _e: print("checkpoints skipped:", _e)
     if m20_meta and m20_meta.get("chg") and m20_meta.get("form") == _tds and not m20_meta.get("entry") and not m20_meta.get("prov"):   # 11/27：融資到齊、名單寫入後才通知
         _c = m20_meta["chg"]
         _msg = f"【月選換股】{_tds} 收盤選出，明天開盤：" + "".join(f"\n{k} " + "、".join(v) for k, v in (("賣", _c["sell"]), ("買", _c["buy"]), ("續抱", _c["keep"])) if v)
